@@ -260,6 +260,40 @@ const convertGradeToNumericLegacy = (grade) => {
   return gradeMap[grade] ?? null;
 };
 
+const normalizeCourseCodeForMatching = (courseCode) =>
+  normalizeText(courseCode).toUpperCase().replace(/[^A-Z0-9]/g, "");
+
+const getNstpComponentFromCode = (normalizedCourseCode) => {
+  if (!normalizedCourseCode) return 0;
+  if (/(^|NSTP)(C?WTS)/.test(normalizedCourseCode)) return 1; // CWTS/CTWS
+  if (/(^|NSTP)LTS/.test(normalizedCourseCode)) return 2;
+  if (/(^|NSTP)MTS/.test(normalizedCourseCode)) return 3;
+  return 0;
+};
+
+const transformNstpSubject = (courseCode, semesterDescription) => {
+  const normalizedSource = normalizeCourseCodeForMatching(courseCode);
+  if (!normalizedSource.includes("NSTP")) {
+    return {
+      courseCode: normalizeText(courseCode),
+      component: 0,
+      normalizedSource,
+      isNstp: false,
+    };
+  }
+
+  let normalizedCourseCode = "NSTPROG";
+  if (/FIRST\s+SEMESTER/i.test(semesterDescription || "")) normalizedCourseCode = "NSTPROG1";
+  else if (/SECOND\s+SEMESTER/i.test(semesterDescription || "")) normalizedCourseCode = "NSTPROG2";
+
+  return {
+    courseCode: normalizedCourseCode,
+    component: getNstpComponentFromCode(normalizedSource),
+    normalizedSource,
+    isNstp: true,
+  };
+};
+
 function parseStudentNameLegacy(fullName) {
   if (!fullName) {
     return { lastName: null, firstName: null, middleName: null };
@@ -2264,6 +2298,50 @@ router.post("/api/import-xlsx", upload.single("file"), async (req, res) => {
         .json({ error: "Missing required metadata from Excel" });
     }
 
+    // Validate NSTP variants early so no DB write happens when component is invalid.
+    const invalidNstpComponents = [];
+    let detectedSemester = null;
+    for (const row of rowsToInsert) {
+      const text = String(row.A || "").trim();
+
+      if (/^School Year/i.test(text)) {
+        if (/first semester/i.test(text)) detectedSemester = "First Semester";
+        else if (/second semester/i.test(text)) detectedSemester = "Second Semester";
+        else if (/summer/i.test(text)) detectedSemester = "Summer";
+        else detectedSemester = null;
+        continue;
+      }
+
+      if (!detectedSemester || !row.A || /^Subject Code/i.test(text)) continue;
+
+      const nstp = transformNstpSubject(row.A, detectedSemester);
+      if (nstp.isNstp && nstp.component === 0) {
+        invalidNstpComponents.push({
+          detected_course_code: normalizeText(row.A),
+          semester: detectedSemester,
+        });
+      }
+    }
+
+    if (invalidNstpComponents.length > 0) {
+      const uniqueInvalid = [
+        ...new Map(
+          invalidNstpComponents.map((item) => [
+            `${item.detected_course_code}__${item.semester}`,
+            item,
+          ]),
+        ).values(),
+      ];
+
+      return res.status(400).json({
+        error:
+          "Upload failed. Detected NSTP course code has a component outside allowed options (LTS, CWTS, MTS).",
+        warning:
+          "Please update NSTP course code to include one of: LTS, CWTS/CTWS, or MTS.",
+        invalid_nstp_components: uniqueInvalid,
+      });
+    }
+
     const { lastName, firstName, middleName } = parseStudentNameLegacy(studentName);
 
     // --- Step 2: Insert New student data in person table ---
@@ -2298,6 +2376,11 @@ router.post("/api/import-xlsx", upload.single("file"), async (req, res) => {
     }
 
     const person_id = person.person_id;
+
+    await db3.query(`
+      INSERT INTO person_status_table (person_id, student_registration_status)
+      VALUES (?, ?);
+    `, [person_id, 1]);
 
     await db3.query(
       `
@@ -2360,6 +2443,7 @@ router.post("/api/import-xlsx", upload.single("file"), async (req, res) => {
 
         currentSY = { normalizedSchoolYear, normalizedSemester };
       } else if (currentSY && row.A && !/^Subject Code/i.test(text)) {
+        const nstp = transformNstpSubject(row.A, currentSY.normalizedSemester);
         const finalGradeRaw = String(row.D || "").trim();
         let finalGrade = 0.0;
         let enRemark = 0;
@@ -2387,12 +2471,14 @@ router.post("/api/import-xlsx", upload.single("file"), async (req, res) => {
         }
 
         subjects.push({
-          course_code: row.A,
+          course_code: nstp.courseCode,
           description: row.B || "",
           units: row.C || 0,
           final_grade: finalGrade,
           en_remark: enRemark,
           status,
+          component: nstp.component,
+          nstp_normalized_source: nstp.normalizedSource,
         });
       }
     }
@@ -2520,14 +2606,14 @@ router.post("/api/import-xlsx", upload.single("file"), async (req, res) => {
         if (!subj.course_code) continue;
 
         const [[course]] = await db3.query(
-          "SELECT course_id FROM course_table WHERE course_code = ?",
+          "SELECT course_id FROM course_table WHERE UPPER(TRIM(course_code)) = UPPER(TRIM(?))",
           [subj.course_code],
         );
         if (!course) continue;
 
         const [result] = await db3.query(
           `UPDATE enrolled_subject
-           SET final_grade = ?, en_remarks = ?, status = ?
+           SET final_grade = ?, en_remarks = ?, status = ?, component = ?
            WHERE student_number = ?
              AND course_id = ?
              AND curriculum_id = ?
@@ -2536,6 +2622,7 @@ router.post("/api/import-xlsx", upload.single("file"), async (req, res) => {
             subj.final_grade,
             subj.en_remark,
             subj.status,
+            subj.component || 0,
             studentNumber,
             course.course_id,
             curriculum.curriculum_id,
@@ -2548,13 +2635,14 @@ router.post("/api/import-xlsx", upload.single("file"), async (req, res) => {
         } else {
           await db3.query(
             `INSERT INTO enrolled_subject
-              (student_number, curriculum_id, course_id, active_school_year_id,
+              (student_number, curriculum_id, course_id, component, active_school_year_id,
                midterm, finals, final_grade, en_remarks, department_section_id, status, fe_status, remarks)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
               studentNumber,
               curriculum.curriculum_id,
               course.course_id,
+              subj.component || 0,
               active_school_year_id,
               0,
               0,

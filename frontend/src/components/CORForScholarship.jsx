@@ -479,7 +479,7 @@ const CertificateOfRegistration = forwardRef(
     const [confirmTarget, setConfirmTarget] = useState(null);
     const [scholarshipModalOpen, setScholarshipModalOpen] = useState(false);
     const [scholarshipTypes, setScholarshipTypes] = useState([]);
-    const [selectedScholarshipType, setSelectedScholarshipType] = useState("");
+    const [selectedScholarshipId, setSelectedScholarshipId] = useState("");
     const [savedUnifast, setSavedUnifast] = useState(false);
     const [savedMatriculation, setSavedMatriculation] = useState(false);
 
@@ -720,8 +720,10 @@ const CertificateOfRegistration = forwardRef(
       medical_and_dental_fees: 0,
       registration_fees: 0,
       school_id_fees: 0,
+      total_misc: 0,
       total_tosf: 0,
       remark: "",
+      scholarship_id: null,
       active_school_year_id: 1,
     });
 
@@ -762,6 +764,17 @@ const CertificateOfRegistration = forwardRef(
         schoolIdFee +
         (isHaveComputerFees !== 0 ? Number(tosf[0]?.computer_fees || 0) : 0) +
         (isHaveLaboratory !== 0 ? Number(tosf[0]?.laboratory_fees || 0) : 0);
+      const totalMisc =
+        Number(tosf[0]?.cultural_fee || 0) +
+        Number(tosf[0]?.athletic_fee || 0) +
+        Number(tosf[0]?.developmental_fee || 0) +
+        Number(tosf[0]?.guidance_fee || 0) +
+        Number(tosf[0]?.library_fee || 0) +
+        Number(tosf[0]?.medical_and_dental_fee || 0) +
+        Number(tosf[0]?.registration_fee || 0) +
+        schoolIdFee +
+        (isHaveComputerFees !== 0 ? Number(tosf[0]?.computer_fees || 0) : 0) +
+        (isHaveLaboratory !== 0 ? Number(tosf[0]?.laboratory_fees || 0) : 0);
 
       setRequestedData({
         campus_name: campusName,
@@ -791,11 +804,113 @@ const CertificateOfRegistration = forwardRef(
         medical_and_dental_fees: tosf[0]?.medical_and_dental_fee || 0,
         registration_fees: tosf[0]?.registration_fee, // ONGOING
         school_id_fees: schoolIdFee,
+        total_misc: totalMisc,
         total_tosf: totalTotalTOSF,
         remark: "",
         active_school_year_id: activeSchoolYear[0]?.id || null,
       });
     }, [data, tosf, enrolled, totalLabFees, totalLecFees]);
+
+    const toNumber = (value) => {
+      if (typeof value === "string") {
+        const cleaned = value.replace(/[^0-9.-]/g, "");
+        const parsedFromString = Number(cleaned);
+        return Number.isFinite(parsedFromString) ? parsedFromString : 0;
+      }
+      const parsed = Number(value);
+      return Number.isFinite(parsed) ? parsed : 0;
+    };
+
+    const toDecimalPercent = (value) => {
+      const numeric = toNumber(value);
+      if (numeric <= 0) return 0;
+      return numeric > 1 ? numeric / 100 : numeric;
+    };
+
+    const round2 = (value) =>
+      Math.round((toNumber(value) + Number.EPSILON) * 100) / 100;
+
+    const applyScholarshipToMatriculationFees = (baseData, scholarship) => {
+      if (!scholarship) {
+        return {
+          payload: { ...baseData, scholarship_id: null },
+          computed: null,
+        };
+      }
+
+      const tuitionFee = toNumber(baseData.tuition_fees);
+      const nstpFee = toNumber(baseData.nstp_fees);
+
+      const miscKeys = [
+        "cultural_fees",
+        "athletic_fees",
+        "development_fees",
+        "guidance_fees",
+        "library_fees",
+        "medical_and_dental_fees",
+        "registration_fees",
+        "school_id_fees",
+        "computer_fees",
+        "laboratory_fees",
+      ];
+
+      const miscTotal = miscKeys.reduce((sum, key) => sum + toNumber(baseData[key]), 0);
+
+      const afd = toNumber(scholarship.afd);
+      const hasAfdOverride = afd > 0;
+      const tfdDec = toDecimalPercent(scholarship.tfd);
+      const mfdDec = toDecimalPercent(scholarship.mfd);
+      const nfdDec = toDecimalPercent(scholarship.nfd);
+
+      let finalTuitionFee = tuitionFee;
+      let finalMiscTotal = miscTotal;
+      let finalNstpFee = nstpFee;
+
+      if (!hasAfdOverride) {
+        finalTuitionFee = tuitionFee - tuitionFee * tfdDec;
+        finalMiscTotal = miscTotal - miscTotal * mfdDec;
+        finalNstpFee = nstpFee - nstpFee * nfdDec;
+      }
+
+      finalTuitionFee = round2(finalTuitionFee);
+      finalMiscTotal = round2(finalMiscTotal);
+      finalNstpFee = round2(finalNstpFee);
+
+      const miscScale = miscTotal > 0 ? finalMiscTotal / miscTotal : 0;
+      const scaledMiscEntries = miscKeys.map((key) => ({
+        key,
+        value: round2(toNumber(baseData[key]) * miscScale),
+      }));
+
+      if (scaledMiscEntries.length > 0) {
+        const scaledMiscSum = scaledMiscEntries.reduce((sum, item) => sum + item.value, 0);
+        const delta = round2(finalMiscTotal - scaledMiscSum);
+        scaledMiscEntries[scaledMiscEntries.length - 1].value = round2(
+          scaledMiscEntries[scaledMiscEntries.length - 1].value + delta,
+        );
+      }
+
+      const scaledMiscMap = scaledMiscEntries.reduce((acc, item) => {
+        acc[item.key] = item.value;
+        return acc;
+      }, {});
+
+      const totalTosf = round2(finalTuitionFee + finalNstpFee + finalMiscTotal);
+
+      return {
+        payload: {
+          ...baseData,
+          ...scaledMiscMap,
+          tuition_fees: finalTuitionFee,
+          nstp_fees: finalNstpFee,
+          registration_fees: scaledMiscMap.registration_fees ?? 0,
+          total_tosf: totalTosf,
+          total_misc: finalMiscTotal,
+          scholarship_id: scholarship.id ? Number(scholarship.id) : null,
+        },
+        computed: null,
+      };
+    };
 
     const handleSaveToUnifast = async () => {
       try {
@@ -823,9 +938,23 @@ const CertificateOfRegistration = forwardRef(
 
     const handleSaveToMatriculation = async () => {
       try {
+        const selectedScholarship = scholarshipTypes.find(
+          (item) => Number(item.id) === Number(selectedScholarshipId),
+        );
+
+        if (!selectedScholarship) {
+          showSnackbar("Selected scholarship type not found.", "error");
+          return;
+        }
+
+        const { payload } = applyScholarshipToMatriculationFees(
+          { ...requestedData },
+          selectedScholarship,
+        );
+
         const res = await axios.post(`${API_BASE_URL}/save_to_matriculation`, {
-          ...requestedData,
-          matriculation_remark: selectedScholarshipType,
+          ...payload,
+          matriculation_remark: selectedScholarship.scholarship_name,
           status: 1,
         });
         if (res.data.success) {
@@ -861,17 +990,17 @@ const CertificateOfRegistration = forwardRef(
 
     const closeScholarshipModal = () => {
       setScholarshipModalOpen(false);
-      setSelectedScholarshipType("");
+      setSelectedScholarshipId("");
     };
 
     const handleConfirmScholarshipModal = async () => {
-      if (!selectedScholarshipType) {
+      if (!selectedScholarshipId) {
         showSnackbar("Please select a scholarship type.", "error");
         return;
       }
       setScholarshipModalOpen(false);
       await handleSaveToMatriculation();
-      setSelectedScholarshipType("");
+      setSelectedScholarshipId("");
     };
 
     const handleConfirmSave = async () => {
@@ -1014,12 +1143,12 @@ const CertificateOfRegistration = forwardRef(
               select
               fullWidth
               label="Scholarship Type"
-              value={selectedScholarshipType}
-              onChange={(e) => setSelectedScholarshipType(e.target.value)}
+              value={selectedScholarshipId}
+              onChange={(e) => setSelectedScholarshipId(e.target.value)}
               sx={{ mt: 1 }}
             >
               {scholarshipTypes.map((item) => (
-                <MenuItem key={item.id} value={item.scholarship_name}>
+                <MenuItem key={item.id} value={item.id}>
                   {item.scholarship_name}
                 </MenuItem>
               ))}

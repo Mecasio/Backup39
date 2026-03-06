@@ -14,8 +14,6 @@ import {
   Container,
   Typography,
   Button,
-  Snackbar,
-  Alert,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -36,26 +34,17 @@ import API_BASE_URL from "../apiConfig";
 
 const CertificateOfRegistration = forwardRef(
 
-  ({ student_number }, divToPrintRef) => {
+  ({ student_number, onNotify }, divToPrintRef) => {
     const settings = useContext(SettingsContext);
     const [fetchedLogo, setFetchedLogo] = useState(null);
     const [companyName, setCompanyName] = useState("");
-    const [snack, setSnack] = useState({
-      open: false,
-      message: "",
-      severity: "",
-    });
 
     const showSnackbar = (message, severity = "success") => {
-      setSnack({ open: true, message, severity });
+      if (typeof onNotify === "function") {
+        onNotify({ message, severity });
+      }
     };
     const FreeTuitionImage = `${API_BASE_URL}/assets/FreeTuition.png`;
-
-
-    const handleSnackClose = (_, reason) => {
-      if (reason === "clickaway") return;
-      setSnack((prev) => ({ ...prev, open: false }));
-    };
 
     useEffect(() => {
       if (settings) {
@@ -808,7 +797,6 @@ const CertificateOfRegistration = forwardRef(
         };
       }
 
-      const registrationFee = toNumber(baseData.registration_fees);
       const tuitionFee = toNumber(baseData.tuition_fees);
       const nstpFee = toNumber(baseData.nstp_fees);
 
@@ -819,6 +807,7 @@ const CertificateOfRegistration = forwardRef(
         "guidance_fees",
         "library_fees",
         "medical_and_dental_fees",
+        "registration_fees",
         "school_id_fees",
         "computer_fees",
         "laboratory_fees",
@@ -832,24 +821,20 @@ const CertificateOfRegistration = forwardRef(
       const afd = toNumber(scholarship.afd);
       const hasAfdOverride = afd > 0;
 
-      const rfdDec = toDecimalPercent(scholarship.rfd ?? scholarship.rf);
       const tfdDec = toDecimalPercent(scholarship.tfd);
       const mfdDec = toDecimalPercent(scholarship.mfd);
       const nfdDec = toDecimalPercent(scholarship.nfd);
 
-      let finalRegistrationFee = registrationFee;
       let finalTuitionFee = tuitionFee;
       let finalMiscTotal = miscTotal;
       let finalNstpFee = nstpFee;
 
       if (!hasAfdOverride) {
-        finalRegistrationFee = registrationFee - registrationFee * rfdDec;
         finalTuitionFee = tuitionFee - tuitionFee * tfdDec;
         finalMiscTotal = miscTotal - miscTotal * mfdDec;
         finalNstpFee = nstpFee - nstpFee * nfdDec;
       }
 
-      finalRegistrationFee = round2(finalRegistrationFee);
       finalTuitionFee = round2(finalTuitionFee);
       finalMiscTotal = round2(finalMiscTotal);
       finalNstpFee = round2(finalNstpFee);
@@ -874,7 +859,7 @@ const CertificateOfRegistration = forwardRef(
       }, {});
 
       const totalTosf = round2(
-        finalTuitionFee + finalNstpFee + finalRegistrationFee + finalMiscTotal,
+        finalTuitionFee + finalNstpFee + finalMiscTotal,
       );
 
       return {
@@ -883,21 +868,19 @@ const CertificateOfRegistration = forwardRef(
           ...scaledMiscMap,
           tuition_fees: finalTuitionFee,
           nstp_fees: finalNstpFee,
-          registration_fees: finalRegistrationFee,
+          registration_fees: scaledMiscMap.registration_fees ?? 0,
           total_tosf: totalTosf,
           total_misc: finalMiscTotal,
           scholarship_id: scholarship.id ? Number(scholarship.id) : null,
         },
         computed: {
           scholarship_name: scholarship.scholarship_name || "",
-          rfd: scholarship.rfd ?? scholarship.rf ?? 0,
           tfd: scholarship.tfd ?? 0,
           mfd: scholarship.mfd ?? 0,
           nfd: scholarship.nfd ?? 0,
           afd: scholarship.afd ?? 0,
           miscTotal,
           finalMiscTotal,
-          finalRegistrationFee,
           finalTuitionFee,
           finalNstpFee,
         },
@@ -1150,22 +1133,6 @@ const CertificateOfRegistration = forwardRef(
             </Button>
           </DialogActions>
         </Dialog>
-
-        <Snackbar
-          open={snack.open}
-          autoHideDuration={3000}
-          onClose={handleSnackClose}
-          anchorOrigin={{ vertical: "top", horizontal: "center" }}
-        >
-          <Alert
-            onClose={handleSnackClose}
-            severity={snack.severity || "success"}
-            variant="filled"
-            sx={{ width: "100%" }}
-          >
-            {snack.message}
-          </Alert>
-        </Snackbar>
 
         <div className="flex-container">
           <div className="section">
@@ -1873,6 +1840,7 @@ const CertificateOfRegistration = forwardRef(
                       <td colSpan={6} style={{ fontSize: "40%" }}>
                         <input
                           type="text"
+                          value={savedUnifast ? "Unifast " : ""}
                           readOnly
                           style={{
                             fontFamily: "Arial, sans-serif",
@@ -3883,7 +3851,7 @@ const CertificateOfRegistration = forwardRef(
                           >
                             <input
                               type="text"
-                              value={"Scholar"}
+                              value={savedUnifast ? "Scholar" : ""}
                               readOnly
                               style={{
                                 color: "black",
@@ -3895,7 +3863,7 @@ const CertificateOfRegistration = forwardRef(
                                 border: "none",
                                 outline: "none",
                                 background: "none",
-                                borderBottom: "1px solid black", // underlines the field like a line
+                                borderBottom: "1px solid black",
                               }}
                             />
                           </td>
@@ -4203,14 +4171,16 @@ const CertificateOfRegistration = forwardRef(
                           paddingLeft: "50px", // ?? margin-left effect
                         }}
                       >
-                        <img
-                          src={FreeTuitionImage}
-                          alt="EARIST MIS FEE"
-                          style={{
-                            width: "300px",
-                            height: "160px",
-                          }}
-                        />
+                        {savedUnifast && (
+                          <img
+                            src={FreeTuitionImage}
+                            alt="EARIST MIS FEE"
+                            style={{
+                              width: "300px",
+                              height: "160px",
+                            }}
+                          />
+                        )}
                       </td>
 
                       {/* RIGHT SIDE */}

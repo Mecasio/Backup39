@@ -27,6 +27,8 @@ import axios from "axios";
 import API_BASE_URL from "../apiConfig";
 import HistoryToggleOffIcon from '@mui/icons-material/HistoryToggleOff';
 import html2canvas from "html2canvas";
+import Unauthorized from "../components/Unauthorized";
+import LoadingOverlay from "../components/LoadingOverlay";
 import {
     ResponsiveContainer,
     BarChart,
@@ -148,6 +150,10 @@ const MatriculationPaymentModule = () => {
     const settings = useContext(SettingsContext);
 
     const [borderColor, setBorderColor] = useState("#000000");
+    const [titleColor, setTitleColor] = useState("#6D2323");
+    const [loading, setLoading] = useState(false);
+    const [hasAccess, setHasAccess] = useState(null);
+    const pageId = 121;
 
     // Pagination states
     const [currentPage, setCurrentPage] = useState(1);
@@ -159,6 +165,7 @@ const MatriculationPaymentModule = () => {
         const keepVisible = String(row?.id) === String(keepVisiblePaidMatriculationId);
         return !isPaid || keepVisible;
     });
+    
     const totalPages = Math.max(1, Math.ceil(visibleData.length / pageSize));
 
     // Dialog states
@@ -190,11 +197,45 @@ const MatriculationPaymentModule = () => {
     useEffect(() => {
         if (!settings) return;
         if (settings.border_color) setBorderColor(settings.border_color);
+        if (settings.title_color) setTitleColor(settings.title_color);
     }, [settings]);
 
     useEffect(() => {
-        fetchStudentData();
-    }, [])
+        const storedUser = localStorage.getItem("email");
+        const storedRole = localStorage.getItem("role");
+        const storedID = localStorage.getItem("person_id");
+        const storedEmployeeID = localStorage.getItem("employee_id");
+
+        if (storedUser && storedRole && storedID) {
+            if (storedRole === "registrar") {
+                checkAccess(storedEmployeeID);
+            } else {
+                window.location.href = "/login";
+            }
+        } else {
+            window.location.href = "/login";
+        }
+    }, []);
+
+    const checkAccess = async (employeeIDValue) => {
+        setLoading(true);
+        try {
+            const response = await axios.get(
+                `${API_BASE_URL}/api/page_access/${employeeIDValue}/${pageId}`,
+            );
+            if (response.data && response.data.page_privilege === 1) {
+                setHasAccess(true);
+                await fetchStudentData();
+            } else {
+                setHasAccess(false);
+            }
+        } catch (error) {
+            console.error("Error checking access:", error);
+            setHasAccess(false);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     useEffect(() => {
         if (currentPage > totalPages) {
@@ -576,6 +617,14 @@ const MatriculationPaymentModule = () => {
         },
     ];
 
+    if (loading || hasAccess === null) {
+        return <LoadingOverlay open={loading} message="Loading..." />;
+    }
+
+    if (!hasAccess) {
+        return <Unauthorized />;
+    }
+
     return (
         <Box sx={{ height: "calc(100vh - 150px)", overflowY: "auto", paddingRight: 1, backgroundColor: "transparent", mt: 1, padding: 2 }}>
             <Box
@@ -591,7 +640,7 @@ const MatriculationPaymentModule = () => {
                     variant="h4"
                     sx={{
                         fontWeight: "bold",
-                        color: "maroon",
+                        color: titleColor,
                         fontSize: "36px"
                     }}
                 >
@@ -605,7 +654,11 @@ const MatriculationPaymentModule = () => {
             <Box fullWidth sx={{p: '10px 0px', display: "flex", justifyContent: "flex-end"}}>
                 <Button
                     startIcon={<HistoryToggleOffIcon />}
-                    sx={{backgroundColor: "maroon", color: "white", width: "230px"}}
+                    sx={{
+                        backgroundColor: settings?.header_color || "maroon",
+                        color: "white",
+                        width: "230px",
+                    }}
                     onClick={openTransactionHistory}
                 >
                     Transaction History

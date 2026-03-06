@@ -224,6 +224,7 @@ import TOSFCrud from './superadmin/TOSFCrud';
 import Receipt from './superadmin/Receipt';
 import ReceiptCounterAssignment from "./superadmin/ReceiptCounterAssignment";
 import MatriculationPaymentModule from "./superadmin/MatriculationPaymentModule";
+import SectionSlotMonitoring from "./superadmin/SlotMonitoring";
 
 // ✅ Create a Context so all components can access settings
 export const SettingsContext = createContext(null);
@@ -646,7 +647,7 @@ function App() {
                     <Route path="/report_of_grades" element={<ProtectedRoute><ReportOfGrade /></ProtectedRoute>} />
                     <Route path="/user_page_access" element={<ProtectedRoute><UserPageAccess /></ProtectedRoute>} />
                     <Route path="/student_scholarship_list" element={<ProtectedRoute><StudentScholarshipList /></ProtectedRoute>} />
-
+                    <Route path="/section_slot_monitoring" element={<ProtectedRoute><SectionSlotMonitoring /></ProtectedRoute>} />
                   </Routes>
 
                 </main>

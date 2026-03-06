@@ -150,6 +150,12 @@ const SearchCertificateOfRegistration = () => {
   const [studentDetails, setStudentDetails] = useState([]);
   const [openSnackbar, setOpenSnackbar] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
+  const [snackbarSeverity, setSnackbarSeverity] = useState("info");
+  const showSnackbar = (message, severity = "info") => {
+    setSnackbarMessage(message);
+    setSnackbarSeverity(severity);
+    setOpenSnackbar(true);
+  };
   const handleCloseSnackbar = (_, reason) => {
     if (reason === "clickaway") return;
     setOpenSnackbar(false);
@@ -182,21 +188,18 @@ const SearchCertificateOfRegistration = () => {
             setStudentDetails(detailsData);
           } else {
             setStudentDetails([]);
-            setSnackbarMessage("No enrolled subjects found for this student.");
-            setOpenSnackbar(true);
+            showSnackbar("No enrolled subjects found for this student.", "info");
           }
         } else {
           setSelectedStudent(null);
           setStudentData([]);
           setStudentDetails([]);
-          setSnackbarMessage("No student data found.");
-          setOpenSnackbar(true);
+          showSnackbar("No student data found.", "info");
         }
       } catch (err) {
         console.error("Error fetching student", err);
-        setSnackbarMessage("Server error. Please try again.");
+        showSnackbar("Server error. Please try again.", "error");
         localStorage.removeItem("admin_edit_person_id");
-        setOpenSnackbar(true);
       }
     };
 
@@ -488,7 +491,10 @@ const SearchCertificateOfRegistration = () => {
           transformOrigin: "top center", // keeps it centered
         }}
       >
-        <CertificateOfRegistration student_number={debouncedStudentNumber} />
+        <CertificateOfRegistration
+          student_number={debouncedStudentNumber}
+          onNotify={({ message, severity }) => showSnackbar(message, severity)}
+        />
       </div>
 
 
@@ -498,7 +504,7 @@ const SearchCertificateOfRegistration = () => {
         onClose={handleCloseSnackbar}
         anchorOrigin={{ vertical: "top", horizontal: "center" }}
       >
-        <Alert onClose={handleCloseSnackbar} severity="info" variant="filled">
+        <Alert onClose={handleCloseSnackbar} severity={snackbarSeverity} variant="filled">
           {snackbarMessage}
         </Alert>
       </Snackbar>

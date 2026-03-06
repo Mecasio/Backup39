@@ -193,8 +193,6 @@ const TOR = () => {
         { label: "Transcript of Records", to: "/transcript_of_records", icon: <SchoolIcon /> },
     ];
 
-
-
     useEffect(() => {
         const queryParams = new URLSearchParams(location.search);
         const personIdFromUrl = queryParams.get("person_id");
@@ -1096,8 +1094,15 @@ const TOR = () => {
                                                                         )}
                                                                     </td>
                                                                     <td style={{ display: "flex", width: "38rem" }}>
-                                                                        <span style={{ width: "90px", margin: "0", padding: "0", fontSize: "18px", letterSpacing: "-0.5px" }}>{p.course_code}</span>
-                                                                        <span style={{ marginLeft: "30px", padding: "0", fontSize: "18px", letterSpacing: "-0.5px" }}>{p.course_description.toUpperCase()}</span>
+                                                                        <span style={{ width: "90px", margin: "0", padding: "0", fontSize: "18px", letterSpacing: "-0.5px" }}>{p.course_code}
+                                                                            
+                                                                        </span>
+                                                                        <span style={{ marginLeft: "30px", padding: "0", fontSize: "18px", letterSpacing: "-0.5px" }}>{p.course_description.toUpperCase()}&nbsp;{
+                                                                                p.component === 1 ? "CWTS" :
+                                                                                p.component === 2 ? "LTS" :
+                                                                                p.component === 3 ? "MTS" :
+                                                                                ""
+                                                                            }</span>
                                                                     </td>
                                                                     <td>
                                                                         <div style={{ display: "flex", alignItems: "center" }}>

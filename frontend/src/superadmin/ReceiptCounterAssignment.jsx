@@ -1,4 +1,5 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useContext, useEffect, useMemo, useState } from 'react';
+import { SettingsContext } from "../App";
 import {
     Box,
     Typography,
@@ -24,6 +25,8 @@ import {
 } from '@mui/material';
 import axios from 'axios';
 import API_BASE_URL from '../apiConfig';
+import Unauthorized from "../components/Unauthorized";
+import LoadingOverlay from "../components/LoadingOverlay";
 
 const capitalize = (word) => {
     if (!word) return "";
@@ -33,6 +36,12 @@ const toDigitsOnly = (value) => String(value ?? "").replace(/\D/g, "");
 const getFirstFour = (value) => String(value ?? "").slice(0, 4);
 
 const ReceiptCounterAssignment = () => {
+    const settings = useContext(SettingsContext);
+    const [titleColor, setTitleColor] = useState("#6D2323");
+    const [loading, setLoading] = useState(false);
+    const [hasAccess, setHasAccess] = useState(null);
+    const pageId = 122;
+
     const [employeesData, setEmployeesData] = useState([]);
     const [department, setDepartment] = useState([]);
     const [schoolYears, setSchoolYears] = useState([]);
@@ -65,6 +74,47 @@ const ReceiptCounterAssignment = () => {
         severity: "success"
     });
 
+    useEffect(() => {
+        if (!settings) return;
+        if (settings.title_color) setTitleColor(settings.title_color);
+    }, [settings]);
+
+    useEffect(() => {
+        const storedUser = localStorage.getItem("email");
+        const storedRole = localStorage.getItem("role");
+        const storedID = localStorage.getItem("person_id");
+        const storedEmployeeID = localStorage.getItem("employee_id");
+
+        if (storedUser && storedRole && storedID) {
+            if (storedRole === "registrar") {
+                checkAccess(storedEmployeeID);
+            } else {
+                window.location.href = "/login";
+            }
+        } else {
+            window.location.href = "/login";
+        }
+    }, []);
+
+    const checkAccess = async (employeeIDValue) => {
+        setLoading(true);
+        try {
+            const response = await axios.get(
+                `${API_BASE_URL}/api/page_access/${employeeIDValue}/${pageId}`,
+            );
+            if (response.data && response.data.page_privilege === 1) {
+                setHasAccess(true);
+            } else {
+                setHasAccess(false);
+            }
+        } catch (error) {
+            console.error("Error checking access:", error);
+            setHasAccess(false);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const fetchAssignments = async (activeSchoolYearId) => {
         if (!activeSchoolYearId) return;
 
@@ -82,6 +132,7 @@ const ReceiptCounterAssignment = () => {
     };
 
     useEffect(() => {
+        if (!hasAccess) return;
         const fetchInitialData = async () => {
             try {
                 const [employeeRes, departmentRes, schoolYearRes, semesterRes, activeSchoolYearRes] = await Promise.all([
@@ -114,7 +165,7 @@ const ReceiptCounterAssignment = () => {
         };
 
         fetchInitialData();
-    }, []);
+    }, [hasAccess]);
 
     const filteredEmployees = useMemo(() => {
         return [...employeesData]
@@ -295,6 +346,14 @@ const ReceiptCounterAssignment = () => {
         }
     };
 
+    if (loading || hasAccess === null) {
+        return <LoadingOverlay open={loading} message="Loading..." />;
+    }
+
+    if (!hasAccess) {
+        return <Unauthorized />;
+    }
+
     return (
         <Box sx={{ height: "calc(100vh - 150px)", overflowY: "auto", paddingRight: 1, backgroundColor: "transparent", mt: 1, padding: 2 }}>
             <Box
@@ -310,7 +369,7 @@ const ReceiptCounterAssignment = () => {
                     variant="h4"
                     sx={{
                         fontWeight: "bold",
-                        color: "maroon",
+                        color: titleColor,
                         fontSize: "36px"
                     }}
                 >
@@ -323,9 +382,9 @@ const ReceiptCounterAssignment = () => {
 
             <TableContainer component={Paper} sx={{ width: '100%', mt: 1 }}>
                 <Table size="small">
-                    <TableHead sx={{ backgroundColor: '#6D2323', color: "white" }}>
+                    <TableHead sx={{ backgroundColor: settings?.header_color || '#6D2323', color: "white" }}>
                         <TableRow>
-                            <TableCell colSpan={10} sx={{ py: 0.5, backgroundColor: "maroon", color: "white", height: "1.5cm", textAlign: 'center' }}>
+                            <TableCell colSpan={10} sx={{ py: 0.5, backgroundColor: settings?.header_color || "maroon", color: "white", height: "1.5cm", textAlign: 'center' }}>
                                 Assign Receipt Counter to Employee
                             </TableCell>
                         </TableRow>
@@ -374,9 +433,9 @@ const ReceiptCounterAssignment = () => {
 
             <TableContainer component={Paper} sx={{ width: '100%', mt: 1 }}>
                 <Table size="small">
-                    <TableHead sx={{ backgroundColor: '#6D2323', color: "white" }}>
+                    <TableHead sx={{ backgroundColor: settings?.header_color || '#6D2323', color: "white" }}>
                         <TableRow>
-                            <TableCell colSpan={10} sx={{ py: 0.5, backgroundColor: "maroon", color: "white" }}>
+                            <TableCell colSpan={10} sx={{ py: 0.5, backgroundColor: settings?.header_color || "maroon", color: "white" }}>
                                 <Box display="flex" justifyContent="space-between" alignItems="center">
                                     <Typography fontSize="14px" fontWeight="bold" color="white">
                                         Total Employees: {filteredEmployees.length}

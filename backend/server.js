@@ -38,8 +38,8 @@ const allowedOrigins = [
   'http://192.168.50.39:5173',
   'http://192.168.50.211:5173',
   'http://136.239.248.58:5173',
-  'http://192.168.50.123:5173',
-  'http://192.168.50.123:5173',
+  'http://192.168.0.108:5173',
+  'http://192.168.0.108:5173',
 ];
 
 app.use(
@@ -10920,10 +10920,27 @@ app.post("/save_to_unifast", async (req, res) => {
 
   try {
     const statusValue = Number.isFinite(Number(status)) ? Number(status) : 1;
+    const [unifastScholarships] = await db3.query(
+      `SELECT id
+       FROM scholarship_types
+       WHERE UPPER(TRIM(scholarship_name)) LIKE '%UNIFAST%'
+         AND scholarship_status = 1
+       ORDER BY id ASC
+       LIMIT 1`,
+    );
+
+    const unifastScholarshipId = unifastScholarships?.[0]?.id ?? null;
+    if (!unifastScholarshipId) {
+      return res.status(400).json({
+        message:
+          "Cannot save to UNIFAST because no active scholarship type containing 'UNIFAST' was found.",
+      });
+    }
+
     const query = `
       INSERT INTO unifast (
         campus_name, student_number, learner_reference_number, last_name, given_name, middle_initial,
-        degree_program, year_level, sex, email_address, phone_number, laboratory_units, computer_units,
+        degree_program, year_level, sex, email_address, phone_number, scholarship_id, laboratory_units, computer_units,
         academic_units_enrolled, academic_units_nstp_enrolled, tuition_fees, nstp_fees, athletic_fees, computer_fees,
         cultural_fees, development_fees, guidance_fees, laboratory_fees, library_fees,
         medical_and_dental_fees, registration_fees, school_id_fees, total_tosf, remark, active_school_year_id, status
@@ -10942,6 +10959,7 @@ app.post("/save_to_unifast", async (req, res) => {
       sex,
       email_address,
       phone_number,
+      unifastScholarshipId,
       laboratory_units,
       computer_units,
       academic_units_enrolled,
@@ -12902,13 +12920,15 @@ app.get("/api/college/persons", async (req, res) => {
   try {
     // STEP 1: Get all eligible persons (from ENROLLMENT DB)
     const [persons] = await db.execute(`
-      SELECT p.*, SUBSTRING(a.applicant_number, 5, 1) AS middle_code
+      SELECT p.*, SUBSTRING(a.applicant_number, 5, 1) AS middle_code, pt.*
       FROM admission.person_table p
       JOIN admission.person_status_table ps ON p.person_id = ps.person_id
       LEFT JOIN admission.applicant_numbering_table AS a
         ON p.person_id = a.person_id
+      INNER JOIN enrollment.curriculum_table ct ON p.program = ct.curriculum_id
+      INNER JOIN enrollment.program_table pt ON ct.program_id = pt.program_id
       WHERE ps.student_registration_status = 0
-      AND p.person_id NOT IN (SELECT person_id FROM enrollment.student_numbering_table)
+      AND p.person_id NOT IN (SELECT person_id FROM enrollment.student_numbering_table);
     `);
 
     if (persons.length === 0) return res.json([]);
@@ -13725,6 +13745,7 @@ app.get("/api/program_evaluation/details/:student_number", async (req, res) => {
         SELECT
           es.id as enrolled_id,
           es.final_grade,
+          es.component,
           ct.course_code,
           st.description as section,
           ct.course_description,
