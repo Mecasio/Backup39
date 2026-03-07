@@ -97,9 +97,11 @@ const RegistrarExamPermit = ({ personId }) => {
                         `${API_BASE_URL}/api/verification-status/${applicant_number}`
                     );
 
-                    const { verified, totalRequired, totalVerified, hasSchedule } = verifyStatusRes.data;
+                    const { verified, totalRequired, totalVerified, hasSchedule } =
+                        verifyStatusRes.data;
 
-                    setIsVerified(verified);
+                    // ✅ FIX: if applicant has schedule, treat as verified
+                    setIsVerified(verified || hasSchedule);
 
                     if (!verified) {
                         console.warn(

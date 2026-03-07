@@ -21,7 +21,7 @@ import {
     FormControl,
     Select,
     InputLabel,
-       IconButton,
+    IconButton,
 } from "@mui/material";
 import {
     Dialog,
@@ -45,7 +45,12 @@ const AnnouncementPanel = () => {
     const [mainButtonColor, setMainButtonColor] = useState("#1976d2");
 
     const [announcements, setAnnouncements] = useState([]);
-    const [form, setForm] = useState({ title: "", content: "", valid_days: "7", target_role: "" });
+    const [form, setForm] = useState({
+        title: "",
+        content: "",
+        valid_days: "permanent",
+        target_role: ""
+    });
     const [editingId, setEditingId] = useState(null);
     const [image, setImage] = useState(null);
     const [userRole, setUserRole] = useState("");
@@ -99,9 +104,8 @@ const AnnouncementPanel = () => {
 
             const list = (res.data?.data || res.data || []).map(a => ({
                 ...a,
-                valid_days: a.valid_days != null ? String(a.valid_days) : "7",
+                valid_days: a.valid_days != null && a.valid_days !== 0 ? String(a.valid_days) : "permanent",
             }));
-
             setAnnouncements(list);
         } catch (err) {
             console.error(err);
@@ -133,7 +137,12 @@ const AnnouncementPanel = () => {
                 setSnackbar({ open: true, message: "Announcement created!", severity: "success" });
             }
 
-            setForm({ title: "", content: "", valid_days: "7", target_role: "" });
+            setForm({
+                title: "",
+                content: "",
+                valid_days: "permanent",
+                target_role: ""
+            });
             setEditingId(null);
             setImage(null);
             fetchAnnouncements();
@@ -149,9 +158,10 @@ const AnnouncementPanel = () => {
         setForm({
             title: announcement?.title ?? "",
             content: announcement?.content ?? "",
-            valid_days: announcement?.valid_days != null
-                ? String(announcement.valid_days)
-                : "7", // fallback default
+            valid_days:
+                announcement.valid_days === null || announcement.valid_days === 0
+                    ? "permanent"
+                    : announcement.valid_days.toString(),
             target_role: announcement?.target_role ?? "",
         });
 
@@ -507,7 +517,10 @@ const AnnouncementPanel = () => {
                                     </td>
 
                                     <td style={{ border: `2px solid ${borderColor}`, padding: "8px", textAlign: "center" }}>
-                                        {a.valid_days}
+                                        {a.valid_days === null || a.valid_days === 0 || a.valid_days === "permanent"
+                                            ? "Permanent"
+                                            : `${a.valid_days} Day(s)`
+                                        }
                                     </td>
                                     <td style={{ border: `2px solid ${borderColor}`, padding: "8px", textAlign: "center" }}>
                                         {a.target_role}
@@ -753,7 +766,9 @@ const AnnouncementPanel = () => {
                                 label="Valid For"
                                 onChange={(e) => setForm({ ...form, valid_days: e.target.value })}
                             >
-                                {["1", "3", "7", "14", "30", "60", "90"].map((d) => (
+                                <MenuItem value="permanent">Permanent</MenuItem>
+
+                                {["1", "3", "7", "14", "30", "60", "90", "120", "180"].map((d) => (
                                     <MenuItem key={d} value={d}>{d} Day(s)</MenuItem>
                                 ))}
                             </Select>

@@ -1106,7 +1106,7 @@ const ApplicantDashboard = (props) => {
                                   marginBottom: "6px",
                                   cursor: "pointer"
                                 }}
-                                onClick={() => setOpenImage(`${API_BASE_URL}/uploads/announcement${a.file_path}`)}
+                                onClick={() => setOpenImage(`${API_BASE_URL}/uploads/announcement/${a.file_path}`)}
                               />
 
                               <Dialog

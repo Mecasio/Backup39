@@ -17,6 +17,10 @@ import {
   Alert,
   FormControlLabel,
   Switch,
+  FormControl,
+  Select,
+  InputLabel,
+  MenuItem,
   TableContainer
 } from "@mui/material";
 import {
@@ -204,6 +208,17 @@ export default function EmailTemplateManager() {
     }
   };
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const rowsPerPage = 5;
+
+  const totalPages = Math.ceil(rows.length / rowsPerPage);
+
+  // Data to display in current page
+  const paginatedRows = rows.slice(
+    (currentPage - 1) * rowsPerPage,
+    currentPage * rowsPerPage
+  );
+
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
   const [templateToDelete, setTemplateToDelete] = useState(null);
 
@@ -238,25 +253,6 @@ export default function EmailTemplateManager() {
     };
     fetchDepartments();
   }, []);
-
-
-  // 🔒 Disable right-click + block dev tools
-  document.addEventListener("contextmenu", (e) => e.preventDefault());
-  document.addEventListener("keydown", (e) => {
-    const isBlocked =
-      e.key === "F12" ||
-      e.key === "F11" ||
-      (e.ctrlKey &&
-        e.shiftKey &&
-        (e.key.toLowerCase() === "i" || e.key.toLowerCase() === "j")) ||
-      (e.ctrlKey && e.key.toLowerCase() === "u") ||
-      (e.ctrlKey && e.key.toLowerCase() === "p");
-    if (isBlocked) {
-      e.preventDefault();
-      e.stopPropagation();
-    }
-  });
-
 
 
 
@@ -309,112 +305,452 @@ export default function EmailTemplateManager() {
       <hr style={{ border: "1px solid #ccc", width: "100%" }} />
       <br />
       <br />
-   
+      <TableContainer component={Paper} sx={{ width: '100%', }}>
+        <Table size="small">
+          <TableHead sx={{ backgroundColor: '#6D2323', color: "white" }}>
+            <TableRow>
+              <TableCell colSpan={10} sx={{ border: `2px solid ${borderColor}`, py: 0.5, backgroundColor: settings?.header_color || "#1976d2", color: "white" }}>
+                <Box display="flex" justifyContent="space-between" alignItems="center">
+                  {/* Left: Total Count */}
+                  <Typography fontSize="14px" fontWeight="bold" color="white">
+                    Total Registered Email Accounts:
+                  </Typography>
+
+                  {/* Right: Pagination Controls */}
+                  <Box display="flex" alignItems="center" gap={1}>
+                    {/* First & Prev */}
+                    <Button
+                      onClick={() => setCurrentPage(1)}
+                      disabled={currentPage === 1}
+                      variant="outlined"
+                      size="small"
+                      sx={{
+                        minWidth: 80,
+                        color: "white",
+                        borderColor: "white",
+                        backgroundColor: "transparent",
+                        '&:hover': {
+                          borderColor: 'white',
+                          backgroundColor: 'rgba(255,255,255,0.1)',
+                        },
+                        '&.Mui-disabled': {
+                          color: "white",
+                          borderColor: "white",
+                          backgroundColor: "transparent",
+                          opacity: 1,
+                        }
+                      }}
+                    >
+                      First
+                    </Button>
+
+                    <Button
+                      onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                      disabled={currentPage === 1}
+                      variant="outlined"
+                      size="small"
+                      sx={{
+                        minWidth: 80,
+                        color: "white",
+                        borderColor: "white",
+                        backgroundColor: "transparent",
+                        '&:hover': {
+                          borderColor: 'white',
+                          backgroundColor: 'rgba(255,255,255,0.1)',
+                        },
+                        '&.Mui-disabled': {
+                          color: "white",
+                          borderColor: "white",
+                          backgroundColor: "transparent",
+                          opacity: 1,
+                        }
+                      }}
+                    >
+                      Prev
+                    </Button>
+
+
+                    {/* Page Dropdown */}
+                    <FormControl size="small" sx={{ minWidth: 80 }}>
+                      <Select
+                        value={currentPage}
+                        onChange={(e) => setCurrentPage(Number(e.target.value))}
+                        displayEmpty
+                        sx={{
+                          fontSize: '12px',
+                          height: 36,
+                          color: 'white',
+                          border: '1px solid white',
+                          backgroundColor: 'transparent',
+                          '.MuiOutlinedInput-notchedOutline': {
+                            borderColor: 'white',
+                          },
+                          '&:hover .MuiOutlinedInput-notchedOutline': {
+                            borderColor: 'white',
+                          },
+                          '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                            borderColor: 'white',
+                          },
+                          '& svg': {
+                            color: 'white', // dropdown arrow icon color
+                          }
+                        }}
+                        MenuProps={{
+                          PaperProps: {
+                            sx: {
+                              maxHeight: 200,
+                              backgroundColor: '#fff', // dropdown background
+                            }
+                          }
+                        }}
+                      >
+                        {Array.from({ length: totalPages }, (_, i) => (
+                          <MenuItem key={i + 1} value={i + 1}>
+                            Page {i + 1}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+
+                    <Typography fontSize="11px" color="white">
+                      of {totalPages} page{totalPages > 1 ? 's' : ''}
+                    </Typography>
+
+
+                    {/* Next & Last */}
+                    <Button
+                      onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                      disabled={currentPage === totalPages}
+                      variant="outlined"
+                      size="small"
+                      sx={{
+                        minWidth: 80,
+                        color: "white",
+                        borderColor: "white",
+                        backgroundColor: "transparent",
+                        '&:hover': {
+                          borderColor: 'white',
+                          backgroundColor: 'rgba(255,255,255,0.1)',
+                        },
+                        '&.Mui-disabled': {
+                          color: "white",
+                          borderColor: "white",
+                          backgroundColor: "transparent",
+                          opacity: 1,
+                        }
+                      }}
+                    >
+                      Next
+                    </Button>
+
+                    <Button
+                      onClick={() => setCurrentPage(totalPages)}
+                      disabled={currentPage === totalPages}
+                      variant="outlined"
+                      size="small"
+                      sx={{
+                        minWidth: 80,
+                        color: "white",
+                        borderColor: "white",
+                        backgroundColor: "transparent",
+                        '&:hover': {
+                          borderColor: 'white',
+                          backgroundColor: 'rgba(255,255,255,0.1)',
+                        },
+                        '&.Mui-disabled': {
+                          color: "white",
+                          borderColor: "white",
+                          backgroundColor: "transparent",
+                          opacity: 1,
+                        }
+                      }}
+                    >
+                      Last
+                    </Button>
+                  </Box>
+                </Box>
+              </TableCell>
+            </TableRow>
+          </TableHead>
+        </Table>
+      </TableContainer>
+
+
       {/* ✅ Table Section */}
       <Grid item xs={12} md={7}>
- 
-          <Box
-            sx={{
-              maxHeight: 400,
-              overflowY: "auto",
-              backgroundColor: "#f5f5f5", // Table container bg
-              color: "black",
-              border: `2px solid ${borderColor}`, // Outer border
-              borderRadius: 1, // optional: rounded corners
-            }}
-          >
-            <Table stickyHeader size="small">
-              <TableHead>
-                <TableRow
-                  sx={{
-                    backgroundColor: settings?.header_color || "#1976d2", // Header color from settings
-                  }}
-                >
-                  <TableCell sx={{ fontWeight: "bold", border: `2px solid ${borderColor}`, backgroundColor: settings?.header_color || "#1976d2", color: "#fff" }}>#</TableCell>
-                  <TableCell sx={{ fontWeight: "bold", border: `2px solid ${borderColor}`, backgroundColor: settings?.header_color || "#1976d2", color: "#fff" }}>Gmail Account</TableCell>
-                  <TableCell sx={{ fontWeight: "bold", border: `2px solid ${borderColor}`, backgroundColor: settings?.header_color || "#1976d2", color: "#fff" }}>Department</TableCell>
-                  <TableCell sx={{ fontWeight: "bold", border: `2px solid ${borderColor}`, backgroundColor: settings?.header_color || "#1976d2", color: "#fff" }}>Active</TableCell>
-                  <TableCell sx={{ fontWeight: "bold", width: "150px", border: `2px solid ${borderColor}`, backgroundColor: settings?.header_color || "#1976d2", color: "#fff", textAlign: "center" }}>Actions</TableCell>
-                </TableRow>
-              </TableHead>
 
-              <TableBody>
-                {rows.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={5} align="center" sx={{ border: `2px solid ${borderColor}` }}>
-                      No templates found.
+        <Box
+          sx={{
+            maxHeight: 400,
+            overflowY: "auto",
+            backgroundColor: "#f5f5f5", // Table container bg
+            color: "black",
+            border: `2px solid ${borderColor}`, // Outer border
+            borderRadius: 1, // optional: rounded corners
+          }}
+        >
+          <Table stickyHeader size="small">
+            <TableHead>
+              <TableRow
+                sx={{
+                  backgroundColor: "#F5F5F5", // Header color from settings
+                }}
+              >
+                <TableCell sx={{ border: `2px solid ${borderColor}`, backgroundColor: "#F5F5F5", color: "#000" }}>#</TableCell>
+                <TableCell sx={{ border: `2px solid ${borderColor}`, backgroundColor: "#F5F5F5", color: "#000" }}>Gmail Account</TableCell>
+                <TableCell sx={{ border: `2px solid ${borderColor}`, backgroundColor: "#F5F5F5", color: "#000" }}>Department</TableCell>
+                <TableCell sx={{ border: `2px solid ${borderColor}`, backgroundColor: "#F5F5F5", color: "#000" }}>Active</TableCell>
+                <TableCell sx={{ width: "150px", border: `2px solid ${borderColor}`, backgroundColor: "#F5F5F5", color: "#000", textAlign: "center" }}>Actions</TableCell>
+              </TableRow>
+            </TableHead>
+
+            <TableBody>
+              {rows.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={5} align="center" sx={{ border: `2px solid ${borderColor}` }}>
+                    No templates found.
+                  </TableCell>
+                </TableRow>
+              ) : (
+                paginatedRows.map((r, index) => (
+                  <TableRow key={r.template_id}>
+                    <TableCell sx={{ border: `2px solid ${borderColor}` }}>{(currentPage - 1) * rowsPerPage + index + 1}</TableCell>
+                    <TableCell sx={{ border: `2px solid ${borderColor}` }}>{r.sender_name}</TableCell>
+                    <TableCell sx={{ border: `2px solid ${borderColor}` }}>{r.department_name || "N/A"}</TableCell>
+                    <TableCell sx={{ border: `2px solid ${borderColor}` }}>{r.is_active ? "Yes" : "No"}</TableCell>
+                    <TableCell sx={{ width: "150px", border: `2px solid ${borderColor}` }}>
+                      <Box sx={{ display: "flex", gap: 1 }}>
+                        <Button
+                          variant="contained"
+                          size="small"
+                          sx={{
+                            backgroundColor: "green",
+                            color: "white",
+                            border: "none",
+                            borderRadius: "5px",
+                            padding: "8px 14px",
+
+                            cursor: "pointer",
+                            width: "100px",
+                            height: "40px",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            gap: "5px",
+
+                          }}
+                          onClick={() => handleEdit(r)}
+                        >
+                          <EditIcon fontSize="small" /> Edit
+                        </Button>
+                        <Button
+                          variant="contained"
+                          size="small"
+                          sx={{
+                            backgroundColor: "#9E0000",
+                            color: "white",
+                            border: "none",
+                            borderRadius: "5px",
+                            padding: "8px 14px",
+                            cursor: "pointer",
+                            width: "100px",
+                            height: "40px",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            gap: "5px",
+
+                          }}
+                          onClick={() => {
+                            setTemplateToDelete(r);
+                            setOpenDeleteDialog(true);
+                          }}
+                        >
+                          <DeleteIcon fontSize="small" /> Delete
+                        </Button>
+
+                      </Box>
                     </TableCell>
                   </TableRow>
-                ) : (
-                  rows.map((r, index) => (
-                    <TableRow key={r.template_id}>
-                      <TableCell sx={{ border: `2px solid ${borderColor}` }}>{index + 1}</TableCell>
-                      <TableCell sx={{ border: `2px solid ${borderColor}` }}>{r.sender_name}</TableCell>
-                      <TableCell sx={{ border: `2px solid ${borderColor}` }}>{r.department_name || "N/A"}</TableCell>
-                      <TableCell sx={{ border: `2px solid ${borderColor}` }}>{r.is_active ? "Yes" : "No"}</TableCell>
-                      <TableCell sx={{ width: "150px", border: `2px solid ${borderColor}` }}>
-                        <Box sx={{ display: "flex", gap: 1 }}>
-                          <Button
-                            variant="contained"
-                            size="small"
-                            sx={{
-                              backgroundColor: "green",
-                              color: "white",
-                              border: "none",
-                              borderRadius: "5px",
-                              padding: "8px 14px",
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </Box>
 
-                              cursor: "pointer",
-                              width: "100px",
-                              height: "40px",
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              gap: "5px",
 
-                            }}
-                            onClick={() => handleEdit(r)}
-                          >
-                            <EditIcon fontSize="small" /> Edit
-                          </Button>
-                          <Button
-                            variant="contained"
-                            size="small"
-                            sx={{
-                              backgroundColor: "#9E0000",
-                              color: "white",
-                              border: "none",
-                              borderRadius: "5px",
-                              padding: "8px 14px",
-                              cursor: "pointer",
-                              width: "100px",
-                              height: "40px",
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              gap: "5px",
 
-                            }}
-                            onClick={() => {
-                              setTemplateToDelete(r);
-                              setOpenDeleteDialog(true);
-                            }}
-                          >
-                            <DeleteIcon fontSize="small" /> Delete
-                          </Button>
-
-                        </Box>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </Box>
-
-      
 
       </Grid>
+      <TableContainer component={Paper} sx={{ width: '100%', }}>
+        <Table size="small">
+          <TableHead sx={{ backgroundColor: '#6D2323', color: "white" }}>
+            <TableRow>
+              <TableCell colSpan={10} sx={{ border: `2px solid ${borderColor}`, py: 0.5, backgroundColor: settings?.header_color || "#1976d2", color: "white" }}>
+                <Box display="flex" justifyContent="space-between" alignItems="center">
+                  {/* Left: Total Count */}
+                  <Typography fontSize="14px" fontWeight="bold" color="white">
+                    Total Registered Email Accounts:
+                  </Typography>
+
+                  {/* Right: Pagination Controls */}
+                  <Box display="flex" alignItems="center" gap={1}>
+                    {/* First & Prev */}
+                    <Button
+                      onClick={() => setCurrentPage(1)}
+                      disabled={currentPage === 1}
+                      variant="outlined"
+                      size="small"
+                      sx={{
+                        minWidth: 80,
+                        color: "white",
+                        borderColor: "white",
+                        backgroundColor: "transparent",
+                        '&:hover': {
+                          borderColor: 'white',
+                          backgroundColor: 'rgba(255,255,255,0.1)',
+                        },
+                        '&.Mui-disabled': {
+                          color: "white",
+                          borderColor: "white",
+                          backgroundColor: "transparent",
+                          opacity: 1,
+                        }
+                      }}
+                    >
+                      First
+                    </Button>
+
+                    <Button
+                      onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                      disabled={currentPage === 1}
+                      variant="outlined"
+                      size="small"
+                      sx={{
+                        minWidth: 80,
+                        color: "white",
+                        borderColor: "white",
+                        backgroundColor: "transparent",
+                        '&:hover': {
+                          borderColor: 'white',
+                          backgroundColor: 'rgba(255,255,255,0.1)',
+                        },
+                        '&.Mui-disabled': {
+                          color: "white",
+                          borderColor: "white",
+                          backgroundColor: "transparent",
+                          opacity: 1,
+                        }
+                      }}
+                    >
+                      Prev
+                    </Button>
+
+
+                    {/* Page Dropdown */}
+                    <FormControl size="small" sx={{ minWidth: 80 }}>
+                      <Select
+                        value={currentPage}
+                        onChange={(e) => setCurrentPage(Number(e.target.value))}
+                        displayEmpty
+                        sx={{
+                          fontSize: '12px',
+                          height: 36,
+                          color: 'white',
+                          border: '1px solid white',
+                          backgroundColor: 'transparent',
+                          '.MuiOutlinedInput-notchedOutline': {
+                            borderColor: 'white',
+                          },
+                          '&:hover .MuiOutlinedInput-notchedOutline': {
+                            borderColor: 'white',
+                          },
+                          '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                            borderColor: 'white',
+                          },
+                          '& svg': {
+                            color: 'white', // dropdown arrow icon color
+                          }
+                        }}
+                        MenuProps={{
+                          PaperProps: {
+                            sx: {
+                              maxHeight: 200,
+                              backgroundColor: '#fff', // dropdown background
+                            }
+                          }
+                        }}
+                      >
+                        {Array.from({ length: totalPages }, (_, i) => (
+                          <MenuItem key={i + 1} value={i + 1}>
+                            Page {i + 1}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+
+                    <Typography fontSize="11px" color="white">
+                      of {totalPages} page{totalPages > 1 ? 's' : ''}
+                    </Typography>
+
+
+                    {/* Next & Last */}
+                    <Button
+                      onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                      disabled={currentPage === totalPages}
+                      variant="outlined"
+                      size="small"
+                      sx={{
+                        minWidth: 80,
+                        color: "white",
+                        borderColor: "white",
+                        backgroundColor: "transparent",
+                        '&:hover': {
+                          borderColor: 'white',
+                          backgroundColor: 'rgba(255,255,255,0.1)',
+                        },
+                        '&.Mui-disabled': {
+                          color: "white",
+                          borderColor: "white",
+                          backgroundColor: "transparent",
+                          opacity: 1,
+                        }
+                      }}
+                    >
+                      Next
+                    </Button>
+
+                    <Button
+                      onClick={() => setCurrentPage(totalPages)}
+                      disabled={currentPage === totalPages}
+                      variant="outlined"
+                      size="small"
+                      sx={{
+                        minWidth: 80,
+                        color: "white",
+                        borderColor: "white",
+                        backgroundColor: "transparent",
+                        '&:hover': {
+                          borderColor: 'white',
+                          backgroundColor: 'rgba(255,255,255,0.1)',
+                        },
+                        '&.Mui-disabled': {
+                          color: "white",
+                          borderColor: "white",
+                          backgroundColor: "transparent",
+                          opacity: 1,
+                        }
+                      }}
+                    >
+                      Last
+                    </Button>
+                  </Box>
+                </Box>
+              </TableCell>
+            </TableRow>
+          </TableHead>
+        </Table>
+      </TableContainer>
 
       <br />
       <br />
@@ -437,7 +773,7 @@ export default function EmailTemplateManager() {
           elevation={3}
           sx={{ p: 3, border: `2px solid ${borderColor}`, width: "50%" }}
         >
-      
+
 
           <Typography fontWeight={500}>Sender Name:</Typography>
           <TextField

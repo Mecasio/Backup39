@@ -34,6 +34,12 @@ router.post("/register", async (req, res) => {
     [firstName.trim(), lastName.trim(), birthday]
   );
 
+  if (existingPerson.length > 0) {
+    return res.status(400).json({
+      success: false,
+      message: "This applicant already exists in the system."
+    });
+  }
 
   if (!email || !password) {
     return res.json({ success: false, message: "Please fill up all required fields" });

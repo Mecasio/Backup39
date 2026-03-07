@@ -58,7 +58,12 @@ const AnnouncementPanel = () => {
     const [mainButtonColor, setMainButtonColor] = useState("#1976d2");
 
     const [announcements, setAnnouncements] = useState([]);
-    const [form, setForm] = useState({ title: "", content: "", valid_days: "7", target_role: "" });
+    const [form, setForm] = useState({
+        title: "",
+        content: "",
+        valid_days: "permanent",
+        target_role: "applicant"
+    });
     const [editingId, setEditingId] = useState(null);
     const [image, setImage] = useState(null);
     const [userRole, setUserRole] = useState("");
@@ -167,7 +172,12 @@ const AnnouncementPanel = () => {
                 setSnackbar({ open: true, message: "Announcement created!", severity: "success" });
             }
 
-           setForm({ title: "", content: "", valid_days: "7", target_role: "applicant" });
+            setForm({
+                title: "",
+                content: "",
+                valid_days: "permanent",
+                target_role: "applicant"
+            });
 
             setEditingId(null);
             setImage(null);
@@ -183,7 +193,10 @@ const AnnouncementPanel = () => {
         setForm({
             title: announcement.title,
             content: announcement.content,
-            valid_days: announcement.valid_days.toString(),
+            valid_days:
+                announcement.valid_days === null || announcement.valid_days === 0
+                    ? "permanent"
+                    : announcement.valid_days.toString(),
             target_role: announcement.target_role,
         });
         setEditingId(announcement.id);
@@ -338,7 +351,7 @@ const AnnouncementPanel = () => {
             </Box>
 
 
-           <br />
+            <br />
             <br />
             <TableContainer
                 component={Paper}
@@ -583,7 +596,10 @@ const AnnouncementPanel = () => {
                                     </td>
 
                                     <td style={{ border: `2px solid ${borderColor}`, padding: "8px", textAlign: "center" }}>
-                                        {a.valid_days}
+                                        {a.valid_days === null || a.valid_days === 0 || a.valid_days === "permanent"
+                                            ? "Permanent"
+                                            : `${a.valid_days} Day(s)`
+                                        }
                                     </td>
                                     <td style={{ border: `2px solid ${borderColor}`, padding: "8px", textAlign: "center" }}>
                                         {a.target_role}
@@ -653,7 +669,7 @@ const AnnouncementPanel = () => {
 
             </Grid>
             <TableContainer
-                component={Paper} 
+                component={Paper}
                 sx={{ width: "100%", border: `2px solid ${borderColor}` }}
             >
                 <Table size="small">
@@ -822,7 +838,9 @@ const AnnouncementPanel = () => {
                             label="Valid For"
                             onChange={(e) => setForm({ ...form, valid_days: e.target.value })}
                         >
-                            {["1", "3", "7", "14", "30", "60", "90"].map((d) => (
+                            <MenuItem value="permanent">Permanent</MenuItem>
+
+                            {["1", "3", "7", "14", "30", "60", "90", "120", "180"].map((d) => (
                                 <MenuItem key={d} value={d}>{d} Day(s)</MenuItem>
                             ))}
                         </Select>

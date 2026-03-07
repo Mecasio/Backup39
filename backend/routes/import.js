@@ -263,19 +263,47 @@ const convertGradeToNumericLegacy = (grade) => {
 const normalizeCourseCodeForMatching = (courseCode) =>
   normalizeText(courseCode).toUpperCase().replace(/[^A-Z0-9]/g, "");
 
+const normalizeImportedCourseCode = (courseCode) =>
+  normalizeText(courseCode).toUpperCase();
+
+const normalizeNstpSourceCode = (courseCode) => {
+  const normalized = normalizeCourseCodeForMatching(courseCode);
+  if (!normalized.includes("NSTP")) return normalized;
+
+  // Canonicalize common NSTP PROG variants like NSTP_PROG1/NSTP-PROG1/NSTP PROG1.
+  if (/^NSTPPROG[12]$/.test(normalized)) {
+    return normalized.replace(/^NSTPPROG/, "NSTPROG");
+  }
+
+  return normalized;
+};
+
 const getNstpComponentFromCode = (normalizedCourseCode) => {
   if (!normalizedCourseCode) return 0;
-  if (/(^|NSTP)(C?WTS)/.test(normalizedCourseCode)) return 1; // CWTS/CTWS
-  if (/(^|NSTP)LTS/.test(normalizedCourseCode)) return 2;
-  if (/(^|NSTP)MTS/.test(normalizedCourseCode)) return 3;
+  if (/^NSTP(CWTS|CTWS)\d*$/.test(normalizedCourseCode)) return 1;
+  if (/^NSTPLTS\d*$/.test(normalizedCourseCode)) return 2;
+  if (/^NSTPMTS\d*$/.test(normalizedCourseCode)) return 3;
   return 0;
 };
 
+const hasKnownNstpComponentKeyword = (normalizedCourseCode) =>
+  /NSTP(CWTS|CTWS|LTS|MTS)/.test(normalizedCourseCode || "");
+
+const hasUnknownNstpComponentKeyword = (normalizedCourseCode) => {
+  const code = normalizedCourseCode || "";
+  if (!code.includes("NSTP")) return false;
+  if (hasKnownNstpComponentKeyword(code)) return false;
+  if (/^NSTP[12]?$/.test(code)) return false;
+  if (/^NSTPROG[12]?$/.test(code)) return false;
+  if (!/\d/.test(code)) return false;
+  return /^NSTP[A-Z]+\d*$/.test(code);
+};
+
 const transformNstpSubject = (courseCode, semesterDescription) => {
-  const normalizedSource = normalizeCourseCodeForMatching(courseCode);
+  const normalizedSource = normalizeNstpSourceCode(courseCode);
   if (!normalizedSource.includes("NSTP")) {
     return {
-      courseCode: normalizeText(courseCode),
+      courseCode: normalizeImportedCourseCode(courseCode),
       component: 0,
       normalizedSource,
       isNstp: false,
@@ -283,7 +311,9 @@ const transformNstpSubject = (courseCode, semesterDescription) => {
   }
 
   let normalizedCourseCode = "NSTPROG";
-  if (/FIRST\s+SEMESTER/i.test(semesterDescription || "")) normalizedCourseCode = "NSTPROG1";
+  if (/NSTPROG1|NSTPCWTS1/.test(normalizedSource)) normalizedCourseCode = "NSTPROG1";
+  else if (/NSTPROG2|NSTPCWTS2/.test(normalizedSource)) normalizedCourseCode = "NSTPROG2";
+  else if (/FIRST\s+SEMESTER/i.test(semesterDescription || "")) normalizedCourseCode = "NSTPROG1";
   else if (/SECOND\s+SEMESTER/i.test(semesterDescription || "")) normalizedCourseCode = "NSTPROG2";
 
   return {
@@ -291,6 +321,8 @@ const transformNstpSubject = (courseCode, semesterDescription) => {
     component: getNstpComponentFromCode(normalizedSource),
     normalizedSource,
     isNstp: true,
+    hasKnownComponentKeyword: hasKnownNstpComponentKeyword(normalizedSource),
+    hasUnknownComponentKeyword: hasUnknownNstpComponentKeyword(normalizedSource),
   };
 };
 
@@ -2314,10 +2346,16 @@ router.post("/api/import-xlsx", upload.single("file"), async (req, res) => {
 
       if (!detectedSemester || !row.A || /^Subject Code/i.test(text)) continue;
 
-      const nstp = transformNstpSubject(row.A, detectedSemester);
-      if (nstp.isNstp && nstp.component === 0) {
+      const importedCourseCode = normalizeImportedCourseCode(row.A);
+      const nstp = transformNstpSubject(importedCourseCode, detectedSemester);
+      console.log("Checking NSTP subject:", importedCourseCode, "→", nstp);
+      if (
+        nstp.isNstp &&
+        (nstp.hasUnknownComponentKeyword ||
+          (nstp.hasKnownComponentKeyword && nstp.component === 0))
+      ) {
         invalidNstpComponents.push({
-          detected_course_code: normalizeText(row.A),
+          detected_course_code: importedCourseCode,
           semester: detectedSemester,
         });
       }
@@ -2335,9 +2373,9 @@ router.post("/api/import-xlsx", upload.single("file"), async (req, res) => {
 
       return res.status(400).json({
         error:
-          "Upload failed. Detected NSTP course code has a component outside allowed options (LTS, CWTS, MTS).",
+          "Upload failed. Detected NSTP course code has an unsupported component tag.",
         warning:
-          "Please update NSTP course code to include one of: LTS, CWTS/CTWS, or MTS.",
+          "Please use only NSTP component tags: CWTS/CTWS, LTS, or MTS. Generic NSTP codes are allowed but will not set a component.",
         invalid_nstp_components: uniqueInvalid,
       });
     }
@@ -2443,7 +2481,11 @@ router.post("/api/import-xlsx", upload.single("file"), async (req, res) => {
 
         currentSY = { normalizedSchoolYear, normalizedSemester };
       } else if (currentSY && row.A && !/^Subject Code/i.test(text)) {
-        const nstp = transformNstpSubject(row.A, currentSY.normalizedSemester);
+        const importedCourseCode = normalizeImportedCourseCode(row.A);
+        const nstp = transformNstpSubject(
+          importedCourseCode,
+          currentSY.normalizedSemester,
+        );
         const finalGradeRaw = String(row.D || "").trim();
         let finalGrade = 0.0;
         let enRemark = 0;
@@ -2515,6 +2557,8 @@ router.post("/api/import-xlsx", upload.single("file"), async (req, res) => {
     const missingCourseCodes = allCourseCodes.filter(code =>
       code === "(blank course code)" || !existingCodesSet.has(code)
     );
+
+    console.log("missing course codes", missingCourseCodes);
 
     if (missingCourseCodes.length > 0) {
       return res.status(400).json({

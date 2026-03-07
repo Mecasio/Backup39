@@ -9,19 +9,19 @@ const router = express.Router();
 router.get("/announcements", async (req, res) => {
   try {
     const sql = `
-      SELECT 
-        id,
-        title,
-        content,
-        valid_days,
-        file_path,
-        expires_at,
-        target_role,
-        created_at
-      FROM announcements
-      WHERE expires_at >= NOW()
-      ORDER BY created_at DESC
-    `;
+  SELECT 
+    id,
+    title,
+    content,
+    valid_days,
+    file_path,
+    expires_at,
+    target_role,
+    created_at
+  FROM announcements
+  WHERE expires_at >= NOW() OR expires_at IS NULL
+  ORDER BY created_at DESC
+`;
 
     const [rows] = await db.query(sql);
     console.log("Fetched announcements Hello:", rows);
@@ -34,123 +34,150 @@ router.get("/announcements", async (req, res) => {
 });
 
 router.post("/announcements", announcementUpload.single("image"), async (req, res) => {
-    console.log("BODY:", req.body);
-    console.log("FILE:", req.file);
+  console.log("BODY:", req.body);
+  console.log("FILE:", req.file);
 
-    const {
-      title,
-      content,
-      valid_days,
-      target_role,
-    } = req.body;
+  const {
+    title,
+    content,
+    valid_days,
+    target_role,
+  } = req.body;
 
-    // ✅ Validate valid_days
-    const allowedDays = ["1", "3", "7", "14", "30", "60", "90", "120", "180"];
-    if (!valid_days || !allowedDays.includes(valid_days.toString())) {
-      return res.status(400).json({ error: "Invalid valid_days value" });
-    }
-
-    // ✅ Validate target role
-    if (!["student", "faculty", "applicant"].includes(target_role)) {
-      return res.status(400).json({ error: "Invalid target_role" });
-    }
-
-    try {
-      // ✅ FIXED SQL (5 columns, 5 values)
-      const [result] = await db.execute(
-        `INSERT INTO announcements 
-         (title, content, valid_days, target_role, expires_at)
-         VALUES (?, ?, ?, ?, DATE_ADD(NOW(), INTERVAL ? DAY))`,
-        [
-          title,
-          content,
-          valid_days,
-          target_role,
-          valid_days,
-        ]
-      );
-
-      const announcementId = result.insertId;
-      let filename = null;
-
-      // ✅ Handle image upload
-      if (req.file) {
-        const ext = path.extname(req.file.originalname).toLowerCase();
-        filename = `${announcementId}_announcement${ext}`;
-
-        const oldPath = path.join(__dirname, "../../uploads/Announcement", req.file.filename);
-        const newPath = path.join(__dirname, "../../uploads/Announcement", filename);
-        
-        fs.renameSync(oldPath, newPath);
-
-        await db.execute(
-          "UPDATE announcements SET file_path = ? WHERE id = ?",
-          [filename, announcementId]
-        );
-      }
-
-      res.json({
-        message: "Announcement created",
-        id: announcementId,
-        file: filename,
-      });
-
-    } catch (err) {
-      console.error("Error inserting announcement:", err);
-      res.status(500).json({ error: "Database error" });
-    }
+  // ✅ Validate valid_days
+  const allowedDays = ["permanent", "1", "3", "7", "14", "30", "60", "90", "120", "180"];
+  if (!valid_days || !allowedDays.includes(valid_days.toString())) {
+    return res.status(400).json({ error: "Invalid valid_days value" });
   }
+
+  // ✅ Validate target role
+  if (!["student", "faculty", "applicant"].includes(target_role)) {
+    return res.status(400).json({ error: "Invalid target_role" });
+  }
+
+  try {
+    // ✅ FIXED SQL (5 columns, 5 values)
+  let expiresAt = null;
+
+if (valid_days !== "permanent") {
+  expiresAt = valid_days;
+}
+
+const [result] = await db.execute(
+  `INSERT INTO announcements
+   (title, content, valid_days, target_role, expires_at)
+   VALUES (?, ?, ?, ?, ${
+     expiresAt ? "DATE_ADD(NOW(), INTERVAL ? DAY)" : "NULL"
+   })`,
+  expiresAt
+    ? [title, content, valid_days, target_role, valid_days]
+    : [title, content, null, target_role]
+);
+
+    const announcementId = result.insertId;
+    let filename = null;
+
+    // ✅ Handle image upload
+    if (req.file) {
+      const ext = path.extname(req.file.originalname).toLowerCase();
+      filename = `${announcementId}_announcement${ext}`;
+
+      const oldPath = path.join(__dirname, "../../uploads/Announcement", req.file.filename);
+      const newPath = path.join(__dirname, "../../uploads/Announcement", filename);
+
+      fs.renameSync(oldPath, newPath);
+
+      await db.execute(
+        "UPDATE announcements SET file_path = ? WHERE id = ?",
+        [filename, announcementId]
+      );
+    }
+
+    res.json({
+      message: "Announcement created",
+      id: announcementId,
+      file: filename,
+    });
+
+  } catch (err) {
+    console.error("Error inserting announcement:", err);
+    res.status(500).json({ error: "Database error" });
+  }
+}
 );
 
 router.put("/announcements/:id", announcementUpload.single("image"), async (req, res) => {
-    const { id } = req.params;
-    const { title, content, valid_days, target_role } = req.body;
+  const { id } = req.params;
+  const { title, content, valid_days, target_role } = req.body;
 
-    const allowedDays = ["1", "3", "7", "14", "30", "60", "90", "120", "180"];
-    if (!allowedDays.includes(valid_days.toString())) {
-      return res.status(400).json({ error: "Invalid valid_days value" });
+  const allowedDays = ["permanent", "1", "3", "7", "14", "30", "60", "90", "120", "180"];
+
+  if (!valid_days || !allowedDays.includes(valid_days.toString())) {
+    return res.status(400).json({ error: "Invalid valid_days value" });
+  }
+
+  if (!["student", "faculty", "applicant"].includes(target_role)) {
+    return res.status(400).json({ error: "Invalid target_role" });
+  }
+
+  try {
+
+    let query;
+    let params;
+
+    // ✅ Handle Permanent
+    if (valid_days === "permanent") {
+      query = `
+        UPDATE announcements
+        SET title = ?, content = ?, valid_days = NULL, target_role = ?, expires_at = NULL
+        WHERE id = ?
+      `;
+
+      params = [title, content, target_role, id];
+
+    } else {
+
+      // ✅ Handle Normal Days
+      query = `
+        UPDATE announcements
+        SET title = ?, content = ?, valid_days = ?, target_role = ?, 
+            expires_at = DATE_ADD(NOW(), INTERVAL ? DAY)
+        WHERE id = ?
+      `;
+
+      params = [title, content, valid_days, target_role, valid_days, id];
     }
 
-    if (!["student", "faculty", "applicant"].includes(target_role)) {
-      return res.status(400).json({ error: "Invalid target_role" });
+    const [result] = await db.execute(query, params);
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: "Announcement not found" });
     }
 
-    try {
-      // Update data
-      const [result] = await db.execute(
-        `UPDATE announcements
-         SET title = ?, content = ?, valid_days = ?, target_role = ?,
-             expires_at = DATE_ADD(NOW(), INTERVAL ? DAY)
-         WHERE id = ?`,
-        [title, content, valid_days, target_role, valid_days, id],
+    // ✅ Handle Image Update
+    if (req.file) {
+
+      const ext = path.extname(req.file.originalname).toLowerCase();
+      const filename = `${id}_announcement${ext}`;
+
+      const oldPath = path.join(__dirname, "../../uploads/Announcement", req.file.filename);
+      const newPath = path.join(__dirname, "../../uploads/Announcement", filename);
+
+      fs.renameSync(oldPath, newPath);
+
+      await db.execute(
+        "UPDATE announcements SET file_path = ? WHERE id = ?",
+        [filename, id]
       );
-
-      if (result.affectedRows === 0) {
-        return res.status(404).json({ error: "Announcement not found" });
-      }
-
-      // Handle updated image
-      if (req.file) {
-        const ext = path.extname(req.file.originalname).toLowerCase();
-        const filename = `${id}_announcement${ext}`;
-        const oldPath = path.join(__dirname, "../../uploads/Announcement", req.file.filename);
-        const newPath = path.join(__dirname, "../../uploads/Announcement", filename);
-
-        fs.renameSync(oldPath, newPath);
-
-        await db.execute(
-          "UPDATE announcements SET file_path = ? WHERE id = ?",
-          [filename, id],
-        );
-      }
-
-      res.json({ message: "Announcement updated successfully" });
-    } catch (err) {
-      console.error("Error updating announcement:", err);
-      res.status(500).json({ error: "Database error" });
     }
-  },
-);
+
+    res.json({ message: "Announcement updated successfully" });
+
+  } catch (err) {
+    console.error("Error updating announcement:", err);
+    res.status(500).json({ error: "Database error" });
+  }
+});
 
 router.delete("/announcements/:id", async (req, res) => {
   const { id } = req.params;

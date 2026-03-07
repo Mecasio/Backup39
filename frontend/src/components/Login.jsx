@@ -50,6 +50,25 @@ const Login = ({ setIsAuthenticated }) => {
     setCurrentYear(new Date(now).getFullYear());
   }, []);
 
+  const calculateAge = (birthDate) => {
+    if (!birthDate) return "";
+
+    const today = new Date();
+    const birth = new Date(birthDate);
+
+    let age = today.getFullYear() - birth.getFullYear();
+    const monthDiff = today.getMonth() - birth.getMonth();
+
+    if (
+      monthDiff < 0 ||
+      (monthDiff === 0 && today.getDate() < birth.getDate())
+    ) {
+      age--;
+    }
+
+    return age;
+  };
+
   const handleLogin = async () => {
     if (!email || !password) {
       setSnack({
@@ -89,7 +108,11 @@ const Login = ({ setIsAuthenticated }) => {
       localStorage.setItem("first_name", response.data.first_name || "");
       localStorage.setItem("last_name", response.data.last_name || "");
       localStorage.setItem("middle_name", response.data.middle_name || "");
-      localStorage.setItem("birthOfDate", response.data.birthOfDate || "");
+      const birthDate = response.data.birthOfDate || "";
+      const age = calculateAge(birthDate);
+
+      localStorage.setItem("birthOfDate", birthDate);
+      localStorage.setItem("age", age);
       localStorage.setItem("academicProgram", response.academicProgram ?? "");
       localStorage.setItem("applicantEmail", response.data.email);
 

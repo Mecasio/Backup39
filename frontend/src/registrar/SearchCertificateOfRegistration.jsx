@@ -162,7 +162,7 @@ const SearchCertificateOfRegistration = () => {
   };
 
   useEffect(() => {
-    if (!searchQuery || searchQuery.length < 9) {
+    if (!searchQuery || searchQuery.length < 5) {
       setSelectedStudent(null);
       setStudentData([]);
       return;
@@ -285,7 +285,7 @@ const SearchCertificateOfRegistration = () => {
 
 
   useEffect(() => {
-    if (studentNumber.trim().length >= 9) { // adjust min length if needed
+    if (studentNumber.trim().length >= 5) { // adjust min length if needed
       const delayDebounce = setTimeout(() => {
         setDebouncedStudentNumber(studentNumber);
       }, 500); // half-second debounce

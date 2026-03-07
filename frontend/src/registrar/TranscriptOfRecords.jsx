@@ -292,7 +292,7 @@ const TOR = () => {
     };
 
     useEffect(() => {
-        if (!searchQuery || searchQuery.length < 9) {
+        if (!searchQuery || searchQuery.length < 5) {
             setSelectedStudent(null);
             setStudentData([]);
             return;

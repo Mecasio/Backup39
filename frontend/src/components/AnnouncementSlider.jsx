@@ -25,7 +25,7 @@ const AnnouncementSlider = () => {
 
         const timer = setInterval(() => {
             setIndex(prev => (prev + 1) % slides.length);
-        }, 4000);
+        }, 5000);
 
         return () => clearInterval(timer);
     }, [slides.length]);
@@ -49,7 +49,7 @@ const AnnouncementSlider = () => {
         <div
             style={{
                 width: "950px",
-                height: "700px",
+                height: "720px",
                 overflow: "hidden",
                 marginRight: "300px",
                 border: "2px solid black",
