@@ -193,30 +193,37 @@ const settings = useContext(SettingsContext);
         let text;
         if (totalHours === 1) {
           text = (
-            <>
-              <span className="block truncate text-[10px]">{entry.course_code}</span>
-              <span className="block truncate text-[8px]">
+            <div className="w-full min-w-0 px-1">
+              <span className="block w-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap text-[10px]">
+                {entry.course_code}
+              </span>
+              <span className="block mx-auto whitespace-normal break-words text-[8px] leading-tight">
                 {entry.room_description === "TBA" ? "TBA" : `${entry.room_description}`}
               </span>
-              <span className="block truncate text-[8px]">
+              <span className="block w-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap text-[8px]">
                 {entry.prof_lastname === "TBA" ? "TBA" : `Prof. ${entry.prof_lastname}`}
               </span>
-            </>
+            </div>
           );
         } else {
           text = (
-            <>
-              {entry.course_code} <br />
-              ({entry.room_description === "TBA" ? "TBA" : `${entry.room_description}`})
-              <br />
-              {entry.prof_lastname === "TBA" ? "TBA" : `Prof. ${entry.prof_lastname}`}
-            </>
+            <div className="w-full min-w-0 px-1">
+              <span className="block w-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap text-[11px]">
+                {entry.course_code}
+              </span>
+              <span className="block max-w-[92px] mx-auto whitespace-normal break-words text-[11px] leading-tight">
+                ({entry.room_description === "TBA" ? "TBA" : `${entry.room_description}`})
+              </span>
+              <span className="block w-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap text-[10px]">
+                {entry.prof_lastname === "TBA" ? "TBA" : `Prof. ${entry.prof_lastname}`}
+              </span>
+            </div>
           );
         }
     
         return (
           <span
-            className={`relative inline-block text-center ${
+            className={`relative inline-block text-center w-full min-w-0 ${
               totalHours === 1 ? "text-[10px]" : "text-[11px]"
             }`}
             style={{ marginTop }}
@@ -345,32 +352,32 @@ const settings = useContext(SettingsContext);
                   <p className='min-w-[6.6rem] text-center border border-black border-l-0 text-[11.5px] font-bold mt-[-3px]'>Official Time</p>
                 </td>
                 <td className='p-0 m-0'>
-                  <div className='min-w-[6.8rem] text-center border border-black border-l-0 border-b-0 text-[14px]'>MONDAY</div>
-                  <p className='min-w-[6.8rem] text-center border border-black border-l-0 text-[11.5px] mt-[-3px]'>7:00AM - 9:00PM</p>
+                  <div className='min-w-[8.5rem] text-center border border-black border-l-0 border-b-0 text-[14px]'>MONDAY</div>
+                  <p className='min-w-[8.5rem] text-center border border-black border-l-0 text-[11.5px] mt-[-3px]'>7:00AM - 9:00PM</p>
                 </td>
                 <td className='p-0 m-0'>
-                  <div className='min-w-[6.8rem] text-center border border-black border-l-0 border-b-0 text-[14px]'>TUESDAY</div>
-                  <p className='min-w-[6.8rem] text-center border border-black border-l-0 text-[11.5px] mt-[-3px]'>7:00AM - 9:00PM</p>
+                  <div className='min-w-[8.5rem] text-center border border-black border-l-0 border-b-0 text-[14px]'>TUESDAY</div>
+                  <p className='min-w-[8.5rem] text-center border border-black border-l-0 text-[11.5px] mt-[-3px]'>7:00AM - 9:00PM</p>
                 </td>
                 <td className='p-0 m-0'>
-                  <div className='min-w-[7rem] text-center border border-black border-l-0 border-b-0 text-[14px]'>WEDNESDAY</div>
-                  <p className='min-w-[7rem] text-center border border-black border-l-0 text-[11.5px] mt-[-3px]'>7:00AM - 9:00PM</p>
+                  <div className='min-w-[8.5rem] text-center border border-black border-l-0 border-b-0 text-[14px]'>WEDNESDAY</div>
+                  <p className='min-w-[8.5rem] text-center border border-black border-l-0 text-[11.5px] mt-[-3px]'>7:00AM - 9:00PM</p>
                 </td>
                 <td className='p-0 m-0'>
-                  <div className='min-w-[6.9rem] text-center border border-black border-l-0 border-b-0 text-[14px]'>THURSDAY</div>
-                  <p className='min-w-[6.9rem] text-center border border-black border-l-0 text-[11.5px] mt-[-3px]'>7:00AM - 9:00PM</p>
+                  <div className='min-w-[8.5rem] text-center border border-black border-l-0 border-b-0 text-[14px]'>THURSDAY</div>
+                  <p className='min-w-[8.5rem] text-center border border-black border-l-0 text-[11.5px] mt-[-3px]'>7:00AM - 9:00PM</p>
                 </td>
                 <td className='p-0 m-0'>
-                  <div className='min-w-[6.8rem] text-center border border-black border-l-0 border-b-0 text-[14px]'>FRIDAY</div>
-                  <p className='min-w-[6.8rem] text-center border border-black border-l-0 text-[11.5px] mt-[-3px]'>7:00AM - 9:00PM</p>
+                  <div className='min-w-[8.5rem] text-center border border-black border-l-0 border-b-0 text-[14px]'>FRIDAY</div>
+                  <p className='min-w-[8.5rem] text-center border border-black border-l-0 text-[11.5px] mt-[-3px]'>7:00AM - 9:00PM</p>
                 </td>
                 <td className='p-0 m-0'>
-                  <div className='min-w-[6.8rem] text-center border border-black border-l-0 border-b-0 text-[14px]'>SATUDAY</div>
-                  <p className='min-w-[6.8rem] text-center border border-black border-l-0 text-[11.5px] mt-[-3px]'>7:00AM - 9:00PM</p>
+                  <div className='min-w-[8.5rem] text-center border border-black border-l-0 border-b-0 text-[14px]'>SATUDAY</div>
+                  <p className='min-w-[8.5rem] text-center border border-black border-l-0 text-[11.5px] mt-[-3px]'>7:00AM - 9:00PM</p>
                 </td>
                 <td className='p-0 m-0'>
-                  <div className='min-w-[6.8rem] text-center border border-black border-l-0 border-b-0 text-[14px]'>SUNDAY</div>
-                  <p className='min-w-[6.8rem] text-center border border-black border-l-0 text-[11.5px] mt-[-3px]'>7:00AM - 9:00PM</p>
+                  <div className='min-w-[8.5rem] text-center border border-black border-l-0 border-b-0 text-[14px]'>SUNDAY</div>
+                  <p className='min-w-[8.5rem] text-center border border-black border-l-0 text-[11.5px] mt-[-3px]'>7:00AM - 9:00PM</p>
                 </td>
               </tr>
             </thead>
@@ -383,7 +390,7 @@ const settings = useContext(SettingsContext);
                 </td>
 
                 {["MON","TUE","WED","THU","FRI","SAT","SUN"].map((day, i) => (
-                  <td key={day} className={`m-0 p-0 ${day==="WED" ? "min-w-[7rem]" : day==="THU" ? "min-w-[6.9rem]" : "min-w-[6.8rem]"}`}>
+                  <td key={day} className={`m-0 p-0 ${day==="WED" ? "min-w-[8.5rem]" : day==="THU" ? "min-w-[8.5rem]" : "min-w-[8.5rem]"}`}>
                     <div className={`h-[2.5rem] border border-black border-t-0 border-l-0 text-[14px] flex items-center justify-center  
                       ${isTimeInSchedule("7:00 AM", "8:00 AM", day) ? 'bg-yellow-300' : ''} 
                       ${isTimeInSchedule("7:00 AM", "8:00 AM", day) && hasAdjacentSchedule("7:00 AM", "8:00 AM", day, "top") === "same" ? "border-t-0" : ''} 
@@ -403,7 +410,7 @@ const settings = useContext(SettingsContext);
                 </td>
 
                 {["MON","TUE","WED","THU","FRI","SAT","SUN"].map((day, i) => (
-                  <td key={day} className={`m-0 p-0 ${day==="WED" ? "min-w-[7rem]" : day==="THU" ? "min-w-[6.9rem]" : "min-w-[6.8rem]"}`}>
+                  <td key={day} className={`m-0 p-0 ${day==="WED" ? "min-w-[8.5rem]" : day==="THU" ? "min-w-[8.5rem]" : "min-w-[8.5rem]"}`}>
                     <div className={`h-[2.5rem] border border-black border-t-0 border-l-0 text-[14px] flex items-center justify-center  
                       ${isTimeInSchedule("8:00 AM", "9:00 AM", day) ? 'bg-yellow-300' : ''} 
                       ${isTimeInSchedule("8:00 AM", "9:00 AM", day) && hasAdjacentSchedule("8:00 AM", "9:00 AM", day, "top") === "same" ? "border-t-0" : ''} 
@@ -423,7 +430,7 @@ const settings = useContext(SettingsContext);
                 </td>
 
                 {["MON","TUE","WED","THU","FRI","SAT","SUN"].map((day, i) => (
-                  <td key={day} className={`m-0 p-0 ${day==="WED" ? "min-w-[7rem]" : day==="THU" ? "min-w-[6.9rem]" : "min-w-[6.8rem]"}`}>
+                  <td key={day} className={`m-0 p-0 ${day==="WED" ? "min-w-[8.5rem]" : day==="THU" ? "min-w-[8.5rem]" : "min-w-[8.5rem]"}`}>
                     <div className={`h-[2.5rem] border border-black border-t-0 border-l-0 text-[14px] flex items-center justify-center  
                       ${isTimeInSchedule("9:00 AM", "10:00 AM", day) ? 'bg-yellow-300' : ''} 
                       ${isTimeInSchedule("9:00 AM", "10:00 AM", day) && hasAdjacentSchedule("9:00 AM", "10:00 AM", day, "top") === "same" ? "border-t-0" : ''} 
@@ -443,7 +450,7 @@ const settings = useContext(SettingsContext);
                 </td>
 
                 {["MON","TUE","WED","THU","FRI","SAT","SUN"].map((day, i) => (
-                  <td key={day} className={`m-0 p-0 ${day==="WED" ? "min-w-[7rem]" : day==="THU" ? "min-w-[6.9rem]" : "min-w-[6.8rem]"}`}>
+                  <td key={day} className={`m-0 p-0 ${day==="WED" ? "min-w-[8.5rem]" : day==="THU" ? "min-w-[8.5rem]" : "min-w-[8.5rem]"}`}>
                     <div className={`h-[2.5rem] border border-black border-t-0 border-l-0 text-[14px] flex items-center justify-center  
                       ${isTimeInSchedule("10:00 AM", "11:00 AM", day) ? 'bg-yellow-300' : ''} 
                       ${isTimeInSchedule("10:00 AM", "11:00 AM", day) && hasAdjacentSchedule("10:00 AM", "11:00 AM", day, "top") === "same" ? "border-t-0" : ''} 
@@ -463,7 +470,7 @@ const settings = useContext(SettingsContext);
                 </td>
 
                 {["MON","TUE","WED","THU","FRI","SAT","SUN"].map((day, i) => (
-                  <td key={day} className={`m-0 p-0 ${day==="WED" ? "min-w-[7rem]" : day==="THU" ? "min-w-[6.9rem]" : "min-w-[6.8rem]"}`}>
+                  <td key={day} className={`m-0 p-0 ${day==="WED" ? "min-w-[8.5rem]" : day==="THU" ? "min-w-[8.5rem]" : "min-w-[8.5rem]"}`}>
                     <div className={`h-[2.5rem] border border-black border-t-0 border-l-0 text-[14px] flex items-center justify-center  
                       ${isTimeInSchedule("11:00 AM", "12:00 PM", day) ? 'bg-yellow-300' : ''} 
                       ${isTimeInSchedule("11:00 AM", "12:00 PM", day) && hasAdjacentSchedule("11:00 AM", "12:00 PM", day, "top") === "same" ? "border-t-0" : ''} 
@@ -483,7 +490,7 @@ const settings = useContext(SettingsContext);
                 </td>
 
                 {["MON","TUE","WED","THU","FRI","SAT","SUN"].map((day, i) => (
-                  <td key={day} className={`m-0 p-0 ${day==="WED" ? "min-w-[7rem]" : day==="THU" ? "min-w-[6.9rem]" : "min-w-[6.8rem]"}`}>
+                  <td key={day} className={`m-0 p-0 ${day==="WED" ? "min-w-[8.5rem]" : day==="THU" ? "min-w-[8.5rem]" : "min-w-[8.5rem]"}`}>
                     <div className={`h-[2.5rem] border border-black border-t-0 border-l-0 text-[14px] flex items-center justify-center  
                       ${isTimeInSchedule("12:00 PM", "1:00 PM", day) ? 'bg-yellow-300' : ''} 
                       ${isTimeInSchedule("12:00 PM", "1:00 PM", day) && hasAdjacentSchedule("12:00 PM", "1:00 PM", day, "top") === "same" ? "border-t-0" : ''} 
@@ -503,7 +510,7 @@ const settings = useContext(SettingsContext);
                 </td>
 
                 {["MON","TUE","WED","THU","FRI","SAT","SUN"].map((day, i) => (
-                  <td key={day} className={`m-0 p-0 ${day==="WED" ? "min-w-[7rem]" : day==="THU" ? "min-w-[6.9rem]" : "min-w-[6.8rem]"}`}>
+                  <td key={day} className={`m-0 p-0 ${day==="WED" ? "min-w-[8.5rem]" : day==="THU" ? "min-w-[8.5rem]" : "min-w-[8.5rem]"}`}>
                     <div className={`h-[2.5rem] border border-black border-t-0 border-l-0 text-[14px] flex items-center justify-center  
                       ${isTimeInSchedule("1:00 PM", "2:00 PM", day) ? 'bg-yellow-300' : ''} 
                       ${isTimeInSchedule("1:00 PM", "2:00 PM", day) && hasAdjacentSchedule("1:00 PM", "2:00 PM", day, "top") === "same" ? "border-t-0" : ''} 
@@ -523,7 +530,7 @@ const settings = useContext(SettingsContext);
                 </td>
 
                 {["MON","TUE","WED","THU","FRI","SAT","SUN"].map((day, i) => (
-                  <td key={day} className={`m-0 p-0 ${day==="WED" ? "min-w-[7rem]" : day==="THU" ? "min-w-[6.9rem]" : "min-w-[6.8rem]"}`}>
+                  <td key={day} className={`m-0 p-0 ${day==="WED" ? "min-w-[8.5rem]" : day==="THU" ? "min-w-[8.5rem]" : "min-w-[8.5rem]"}`}>
                     <div className={`h-[2.5rem] border border-black border-t-0 border-l-0 text-[14px] flex items-center justify-center  
                       ${isTimeInSchedule("2:00 PM", "3:00 PM", day) ? 'bg-yellow-300' : ''} 
                       ${isTimeInSchedule("2:00 PM", "3:00 PM", day) && hasAdjacentSchedule("2:00 PM", "3:00 PM", day, "top") === "same" ? "border-t-0" : ''} 
@@ -541,7 +548,7 @@ const settings = useContext(SettingsContext);
                 </td>
 
                 {["MON","TUE","WED","THU","FRI","SAT","SUN"].map((day, i) => (
-                  <td key={day} className={`m-0 p-0 ${day==="WED" ? "min-w-[7rem]" : day==="THU" ? "min-w-[6.9rem]" : "min-w-[6.8rem]"}`}>
+                  <td key={day} className={`m-0 p-0 ${day==="WED" ? "min-w-[8.5rem]" : day==="THU" ? "min-w-[8.5rem]" : "min-w-[8.5rem]"}`}>
                     <div className={`h-[2.5rem] border border-black border-t-0 border-l-0 text-[14px] flex items-center justify-center  
                       ${isTimeInSchedule("3:00 PM", "4:00 PM", day) ? 'bg-yellow-300' : ''} 
                       ${isTimeInSchedule("3:00 PM", "4:00 PM", day) && hasAdjacentSchedule("3:00 PM", "4:00 PM", day, "top") === "same" ? "border-t-0" : ''} 
@@ -559,7 +566,7 @@ const settings = useContext(SettingsContext);
                 </td>
 
                 {["MON","TUE","WED","THU","FRI","SAT","SUN"].map((day, i) => (
-                  <td key={day} className={`m-0 p-0 ${day==="WED" ? "min-w-[7rem]" : day==="THU" ? "min-w-[6.9rem]" : "min-w-[6.8rem]"}`}>
+                  <td key={day} className={`m-0 p-0 ${day==="WED" ? "min-w-[8.5rem]" : day==="THU" ? "min-w-[8.5rem]" : "min-w-[8.5rem]"}`}>
                     <div className={`h-[2.5rem] border border-black border-t-0 border-l-0 text-[14px] flex items-center justify-center  
                       ${isTimeInSchedule("4:00 PM", "5:00 PM", day) ? 'bg-yellow-300' : ''} 
                       ${isTimeInSchedule("4:00 PM", "5:00 PM", day) && hasAdjacentSchedule("4:00 PM", "5:00 PM", day, "top") === "same" ? "border-t-0" : ''} 
@@ -577,7 +584,7 @@ const settings = useContext(SettingsContext);
                 </td>
 
                 {["MON","TUE","WED","THU","FRI","SAT","SUN"].map((day, i) => (
-                  <td key={day} className={`m-0 p-0 ${day==="WED" ? "min-w-[7rem]" : day==="THU" ? "min-w-[6.9rem]" : "min-w-[6.8rem]"}`}>
+                  <td key={day} className={`m-0 p-0 ${day==="WED" ? "min-w-[8.5rem]" : day==="THU" ? "min-w-[8.5rem]" : "min-w-[8.5rem]"}`}>
                     <div className={`h-[2.5rem] border border-black border-t-0 border-l-0 text-[14px] flex items-center justify-center  
                       ${isTimeInSchedule("5:00 PM", "6:00 PM", day) ? 'bg-yellow-300' : ''} 
                       ${isTimeInSchedule("5:00 PM", "6:00 PM", day) && hasAdjacentSchedule("5:00 PM", "6:00 PM", day, "top") === "same" ? "border-t-0" : ''} 
@@ -595,7 +602,7 @@ const settings = useContext(SettingsContext);
                 </td>
 
                 {["MON","TUE","WED","THU","FRI","SAT","SUN"].map((day, i) => (
-                  <td key={day} className={`m-0 p-0 ${day==="WED" ? "min-w-[7rem]" : day==="THU" ? "min-w-[6.9rem]" : "min-w-[6.8rem]"}`}>
+                  <td key={day} className={`m-0 p-0 ${day==="WED" ? "min-w-[8.5rem]" : day==="THU" ? "min-w-[8.5rem]" : "min-w-[8.5rem]"}`}>
                     <div className={`h-[2.5rem] border border-black border-t-0 border-l-0 text-[14px] flex items-center justify-center  
                       ${isTimeInSchedule("6:00 PM", "7:00 PM", day) ? 'bg-yellow-300' : ''} 
                       ${isTimeInSchedule("6:00 PM", "7:00 PM", day) && hasAdjacentSchedule("6:00 PM", "7:00 PM", day, "top") === "same" ? "border-t-0" : ''} 
@@ -613,7 +620,7 @@ const settings = useContext(SettingsContext);
                 </td>
 
                 {["MON","TUE","WED","THU","FRI","SAT","SUN"].map((day, i) => (
-                  <td key={day} className={`m-0 p-0 ${day==="WED" ? "min-w-[7rem]" : day==="THU" ? "min-w-[6.9rem]" : "min-w-[6.8rem]"}`}>
+                  <td key={day} className={`m-0 p-0 ${day==="WED" ? "min-w-[8.5rem]" : day==="THU" ? "min-w-[8.5rem]" : "min-w-[8.5rem]"}`}>
                     <div className={`h-[2.5rem] border border-black border-t-0 border-l-0 text-[14px] flex items-center justify-center  
                       ${isTimeInSchedule("7:00 PM", "8:00 PM", day) ? 'bg-yellow-300' : ''} 
                       ${isTimeInSchedule("7:00 PM", "8:00 PM", day) && hasAdjacentSchedule("7:00 PM", "8:00 PM", day, "top") === "same" ? "border-t-0" : ''} 
@@ -631,7 +638,7 @@ const settings = useContext(SettingsContext);
                 </td>
 
                 {["MON","TUE","WED","THU","FRI","SAT","SUN"].map((day, i) => (
-                  <td key={day} className={`m-0 p-0 ${day==="WED" ? "min-w-[7rem]" : day==="THU" ? "min-w-[6.9rem]" : "min-w-[6.8rem]"}`}>
+                  <td key={day} className={`m-0 p-0 ${day==="WED" ? "min-w-[8.5rem]" : day==="THU" ? "min-w-[8.5rem]" : "min-w-[8.5rem]"}`}>
                     <div className={`h-[2.5rem] border border-black border-t-0 border-l-0 text-[14px] flex items-center justify-center  
                       ${isTimeInSchedule("8:00 PM", "9:00 PM", day) ? 'bg-yellow-300' : ''} 
                       ${isTimeInSchedule("8:00 PM", "9:00 PM", day) && hasAdjacentSchedule("8:00 PM", "9:00 PM", day, "top") === "same" ? "border-t-0" : ''} 
