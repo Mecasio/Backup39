@@ -483,7 +483,7 @@ const ProgramTagging = () => {
       course_id: program.course_id,
       lec_fee: program.lec_fee ?? "",
       lab_fee: program.lab_fee ?? "",
-      iscomputer_lab: program.  iscomputer_lab ?? 0,
+      iscomputer_lab: program.iscomputer_lab ?? 0,
       islaboratory_fee: program.islaboratory_fee ?? 0,
       is_nstp: program.is_nstp ?? 0,
       amount: program.amount ?? 0,
@@ -730,6 +730,17 @@ const ProgramTagging = () => {
           >
             <FaFileExcel style={{ marginRight: 8 }} />
             {importingXlsx ? "Importing..." : "Import Program Tagging"}
+          </Button>
+          <Button
+            onClick={() => {
+              window.location.href = `${API_BASE_URL}/program_tagging_template`;
+            }}
+            sx={{
+              height: 40, color: "black", border: "2px solid black",
+              backgroundColor: "#f0f0f0", textTransform: "none", fontWeight: "bold", minWidth: 165
+            }}
+          >
+            📥 Download Template
           </Button>
         </Box>
 

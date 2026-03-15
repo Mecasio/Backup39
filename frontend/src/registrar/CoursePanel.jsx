@@ -524,6 +524,15 @@ const CoursePanel = () => {
             <FaFileExcel style={{ marginRight: 8 }} />
             {importingXlsx ? "Importing..." : "Import Course"}
           </Button>
+          <Button
+            onClick={() => {
+              window.location.href = `${API_BASE_URL}/course_panel_template`;
+            }}
+            sx={{ height: 40, mb: 2, color: "black", border: "2px solid black",
+              backgroundColor: "#f0f0f0", textTransform: "none", fontWeight: "bold", minWidth: 165 }}
+          >
+            📥 Download Template
+          </Button>
         </Box>
       </Box>
 
@@ -558,7 +567,9 @@ const CoursePanel = () => {
         </Typography>
 
         <Grid container spacing={2}>
+          
           <Grid item xs={12} md={4}>
+             <label style={{ fontWeight: "bold" }}>Course Code:</label>
             <TextField
               fullWidth
               label="Course Code"
@@ -570,6 +581,7 @@ const CoursePanel = () => {
           </Grid>
 
           <Grid item xs={12} md={8}>
+             <label style={{ fontWeight: "bold" }}>Course Description:</label>
             <TextField
               fullWidth
               label="Course Description"
@@ -581,6 +593,7 @@ const CoursePanel = () => {
           </Grid>
 
           <Grid item xs={12} md={4}>
+             <label style={{ fontWeight: "bold" }}>Lecture Unit:</label>
             <TextField
               fullWidth
               label="Lecture Unit"
@@ -596,6 +609,7 @@ const CoursePanel = () => {
           </Grid>
 
           <Grid item xs={12} md={4}>
+             <label style={{ fontWeight: "bold" }}>Laboratory Unit:</label>
             <TextField
               fullWidth
               label="Laboratory Unit"
@@ -611,6 +625,7 @@ const CoursePanel = () => {
           </Grid>
 
           <Grid item xs={12} md={4}>
+             <label style={{ fontWeight: "bold" }}>Course Unit:</label>
             <TextField
               fullWidth
               label="Course Unit"
@@ -622,6 +637,7 @@ const CoursePanel = () => {
           </Grid>
 
           <Grid item xs={12} md={6}>
+             <label style={{ fontWeight: "bold" }}>Prerequisite:</label>
             <TextField
               fullWidth
               label="Prerequisite"
@@ -632,6 +648,7 @@ const CoursePanel = () => {
           </Grid>
 
           <Grid item xs={12} md={6}>
+             <label style={{ fontWeight: "bold" }}>Corequisite:</label>
             <TextField
               fullWidth
               label="Corequisite"
@@ -903,7 +920,7 @@ const CoursePanel = () => {
                           border: "none",
                           borderRadius: "5px",
                           padding: "8px 14px",
-                         
+
                           cursor: "pointer",
                           width: "100px",
                           height: "40px",

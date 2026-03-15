@@ -529,6 +529,17 @@ const CurriculumPanel = () => {
             <FaFileExcel style={{ marginRight: 8 }} />
             {importingXlsx ? "Importing..." : "Import Curriculum"}
           </Button>
+          <Button
+            onClick={() => {
+              window.location.href = `${API_BASE_URL}/curriculum_panel_template`;
+            }}
+            sx={{
+              height: 40, color: "black", border: "2px solid black",
+              backgroundColor: "#f0f0f0", textTransform: "none", fontWeight: "bold", minWidth: 165
+            }}
+          >
+            📥 Download Template
+          </Button>
         </Box>
       </Box>
 

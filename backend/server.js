@@ -199,6 +199,46 @@ app.get("/student_data", (req, res) => {
   });
 });
 
+app.get("/curriculum_panel_template", (req, res) => {
+  const filePath = path.join(__dirname, "excelfiles", "CurriculumPanelTemplate.xlsx");
+  res.download(filePath, "CurriculumPanelTemplate.xlsx", (err) => {
+    if (err) {
+      console.error("Error sending file:", err);
+      res.status(500).send("Error downloading file");
+    }
+  });
+});
+
+app.get("/course_panel_template", (req, res) => {
+  const filePath = path.join(__dirname, "excelfiles", "CoursePanelTemplate.xlsx");
+  res.download(filePath, "CoursePanelTemplate.xlsx", (err) => {
+    if (err) {
+      console.error("Error sending file:", err);
+      res.status(500).send("Error downloading file");
+    }
+  });
+});
+
+app.get("/program_tagging_template", (req, res) => {
+  const filePath = path.join(__dirname, "excelfiles", "ProgramTaggingTemplate.xlsx");
+  res.download(filePath, "ProgramTaggingTemplate.xlsx", (err) => {
+    if (err) {
+      console.error("Error sending file:", err);
+      res.status(500).send("Error downloading file");
+    }
+  });
+});
+
+app.get("/program_panel_template", (req, res) => {
+  const filePath = path.join(__dirname, "excelfiles", "ProgramPanelTemplate.xlsx");
+  res.download(filePath, "ProgramPanelTemplate.xlsx", (err) => {
+    if (err) {
+      console.error("Error sending file:", err);
+      res.status(500).send("Error downloading file");
+    }
+  });
+});
+
 const signatureStorage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, path.join(__dirname, "uploads", "signature"));

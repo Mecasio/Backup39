@@ -477,6 +477,17 @@ const ProgramPanel = () => {
             <FaFileExcel style={{ marginRight: 8 }} />
             {importingXlsx ? "Importing..." : "Import Program"}
           </Button>
+          <Button
+            onClick={() => {
+              window.location.href = `${API_BASE_URL}/program_panel_template`;
+            }}
+            sx={{
+              height: 40, color: "black", border: "2px solid black",
+              backgroundColor: "#f0f0f0", textTransform: "none", fontWeight: "bold", minWidth: 165
+            }}
+          >
+            📥 Download Template
+          </Button>
         </Box>
 
       </Box>
@@ -909,7 +920,7 @@ const ProgramPanel = () => {
           </Table>
         </TableContainer>
 
-        
+
         <br />
         <br />
         <TableContainer component={Paper} sx={{ width: '100%', border: `2px solid ${borderColor}`, }}>
