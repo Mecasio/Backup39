@@ -363,7 +363,7 @@ const StudentDashboard = ({ profileImage, setProfileImage }) => {
 
       // ✅ Upload image using same backend API
       await axios.post(
-        `${API_BASE_URL}/student/update_student`,
+        `${API_BASE_URL}/update_student`,
         formData
       );
 

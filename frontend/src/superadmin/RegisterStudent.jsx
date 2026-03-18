@@ -828,7 +828,7 @@ const RegisterStudents = () => {
                                     <TableCell sx={{ textAlign: "center", border: `2px solid ${borderColor}` }}>
                                         {r.profile_picture ? (
                                             <Avatar
-                                                src={`${API_BASE_URL}/uploads/${r.profile_picture}`}
+                                                src={`${API_BASE_URL}/uploads/Student1by1/${r.profile_picture}`}
                                                 alt={r.first_name}
                                                 sx={{ width: 60, height: 60, margin: "auto", border: `2px solid ${borderColor}` }}
                                             />

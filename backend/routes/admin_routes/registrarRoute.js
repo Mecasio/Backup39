@@ -308,4 +308,46 @@ router.put("/update_registrar/:id", upload.single("profile_picture"), async (req
   }
 });
 
+router.put("/api/registrar-status/:person_id", async (req, res) => {
+  const { person_id } = req.params;
+  const { registrar_status } = req.body;
+
+  const allowed = [0, 1, 2];
+  if (!allowed.includes(Number(registrar_status))) {
+    return res
+      .status(400)
+      .json({ error: "registrar_status must be 0, 1, or 2" });
+  }
+
+  try {
+    if (Number(registrar_status) === 1) {
+      await db.query(
+        `UPDATE admission.requirement_uploads
+         SET registrar_status = 1,
+             submitted_documents = 1,
+             missing_documents = '[]'
+         WHERE person_id = ?`,
+        [person_id],
+      );
+    } else {
+      await db.query(
+        `UPDATE admission.requirement_uploads
+         SET registrar_status = 0,
+             submitted_documents = 0,
+             missing_documents = NULL
+         WHERE person_id = ?`,
+        [person_id],
+      );
+    }
+
+    res.json({
+      message: "âœ… Registrar status updated for all docs",
+      registrar_status,
+    });
+  } catch (err) {
+    console.error("âŒ Error updating registrar status:", err);
+    res.status(500).json({ error: "Failed to update registrar status" });
+  }
+});
+
 module.exports = router;  

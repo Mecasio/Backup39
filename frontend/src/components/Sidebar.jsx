@@ -54,16 +54,16 @@ function buildSidebarStyles(s = {}, hasDepartment = true) {
   }
   .sb-profile-info { overflow: hidden; }
   .sb-profile-name {
-    font-size: 15px; font-weight: 600; color: ${titleColor};
+    font-size: 16px; font-weight: 600; color: ${titleColor};
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 160px;
   }
   .sb-profile-role {
-    font-size: 12.5px; color: ${subColor};
+    font-size: 13px; color: ${subColor};
     white-space: nowrap; overflow: hidden; margin-top: -5px;
-    text-overflow: ellipsis; min-width: 180px;
+    text-overflow: ellipsis; min-width: 190px;
   }
   .sb-profile-dprtmnt {
-    font-size: 18px; color: ${subColor};
+    font-size: 14px; color: ${subColor};
     opacity: 0.9; margin-top: -3px; font-style: italic;
   }`
     : `
@@ -374,7 +374,7 @@ const SideBar = ({ setIsAuthenticated, profileImage, setProfileImage }) => {
     registrar: makeUploadHandler("/admin/update_registrar", "Admin1by1"),
     applicant: makeUploadHandler("/form/upload-profile-picture", "Applicant1by1"),
     faculty: makeUploadHandler("/faculty/update_faculty", "Faculty1by1"),
-    student: makeUploadHandler("/student/update_student", "Student1by1"),
+    student: makeUploadHandler("/update_student", "Student1by1"),
   };
 
   function accessObjToSet(list) {

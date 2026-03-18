@@ -177,7 +177,7 @@ const StudentGradeFile = () => {
 
         try {
             const res = await axios.get(
-                `${API_BASE_URL}/student/student-info`,
+                `${API_BASE_URL}/student-info`,
                 { params: { searchQuery, campus: campusFilter } }
             );
             setStudentInfo(res.data);
@@ -200,7 +200,7 @@ const StudentGradeFile = () => {
     const fetchStudentGrade = async (student_number) => {
         try {
             const res = await axios.get(
-                `${API_BASE_URL}/student/student-info/${student_number}`
+                `${API_BASE_URL}/student-info/${student_number}`
             );
             const convertedGrades = (res.data || []).map((course) => ({
                 ...course,

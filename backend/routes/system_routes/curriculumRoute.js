@@ -1,4 +1,9 @@
-app.post("/curriculum", async (req, res) => {
+const express = require("express");
+const { db, db3 } = require("../database/database");
+
+const router = express.Router();
+
+router.post("/curriculum", async (req, res) => {
   const { year_id, program_id } = req.body;
 
   if (!year_id || !program_id) {
@@ -27,7 +32,7 @@ app.post("/curriculum", async (req, res) => {
 });
 
 // CURRICULUM LIST (UPDATED!)
-app.get("/get_curriculum", async (req, res) => {
+router.get("/get_curriculum", async (req, res) => {
   const readQuery = `
     SELECT ct.*, p.*, y.* 
     FROM curriculum_table ct 
@@ -48,7 +53,7 @@ app.get("/get_curriculum", async (req, res) => {
 });
 
 // ✅ UPDATE Curriculum lock_status (0 = inactive, 1 = active)
-app.put("/update_curriculum/:id", async (req, res) => {
+router.put("/update_curriculum/:id", async (req, res) => {
   const { id } = req.params;
   const { lock_status } = req.body;
 
@@ -72,7 +77,48 @@ app.put("/update_curriculum/:id", async (req, res) => {
   }
 });
 
-app.get("/get_active_curriculum", async (req, res) => {
+router.put("/update_curriculum_data/:id", async (req, res) => {
+  const { id } = req.params;
+  const { year_id, program_id } = req.body;
+
+  try {
+    const [result] = await db3.query(
+      "UPDATE curriculum_table SET year_id = ?, program_id = ? WHERE curriculum_id = ?",
+      [year_id, program_id, id],
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: "Curriculum not found" });
+    }
+
+    res.json({ message: "Curriculum updated successfully" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Update failed" });
+  }
+});
+
+router.delete("/delete_curriculum/:id", async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const [result] = await db3.query(
+      "DELETE FROM curriculum_table WHERE curriculum_id = ?",
+      [id],
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: "Curriculum not found" });
+    }
+
+    res.json({ message: "Curriculum deleted successfully" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Delete failed" });
+  }
+});
+
+router.get("/get_active_curriculum", async (req, res) => {
   const readQuery = `
     SELECT ct.*, p.*, y.* 
     FROM curriculum_table ct 
@@ -90,7 +136,7 @@ app.get("/get_active_curriculum", async (req, res) => {
   }
 });
 
-app.put("/api/update-active-curriculum", async (req, res) => {
+router.put("/api/update-active-curriculum", async (req, res) => {
   const { studentId, departmentSectionId } = req.body;
 
   if (!studentId || !departmentSectionId) {
@@ -130,127 +176,4 @@ app.put("/api/update-active-curriculum", async (req, res) => {
   }
 });
 
-app.get("/dprtmnt_curriculum/:dprtmnt_id", async (req, res) => {
-  const { dprtmnt_id } = req.params;
-  try {
-    const query = `
-      SELECT 
-        dc.dprtmnt_curriculum_id,
-        dc.dprtmnt_id,
-        dc.curriculum_id,
-        dt.dprtmnt_name,
-        dt.dprtmnt_code,
-        ct.curriculum_id AS ct_curriculum_id,
-        ct.year_id,
-        y.year_description,
-        ct.program_id,
-        ct.lock_status,
-        p.program_description AS p_description,
-        p.program_code AS p_code
-      FROM dprtmnt_curriculum_table AS dc
-      INNER JOIN dprtmnt_table AS dt 
-        ON dc.dprtmnt_id = dt.dprtmnt_id
-      LEFT JOIN curriculum_table AS ct 
-        ON dc.curriculum_id = ct.curriculum_id
-      LEFT JOIN program_table AS p 
-        ON ct.program_id = p.program_id
-      LEFT JOIN year_table AS y
-        ON ct.year_id = y.year_id
-      WHERE dc.dprtmnt_id = ?
-      ORDER BY 
-        COALESCE(p_code, ''), 
-        dc.curriculum_id;
-    `;
-
-    const [rows] = await db3.execute(query, [dprtmnt_id]);
-    res.status(200).json(rows);
-  } catch (err) {
-    console.error("Error fetching dprtmnt_curriculum:", err);
-    res.status(500).json({ error: "Internal Server Error", details: err.message });
-  }
-});
-
-// POST add mapping (dprtmnt_id + curriculum_id)
-app.post("/dprtmnt_curriculum", async (req, res) => {
-  const { dprtmnt_id, curriculum_id } = req.body;
-  if (!dprtmnt_id || !curriculum_id) {
-    return res.status(400).json({ error: "dprtmnt_id and curriculum_id are required" });
-  }
-
-  try {
-    // prevent duplicate mapping
-    const [exists] = await db3.execute(
-      "SELECT * FROM dprtmnt_curriculum_table WHERE dprtmnt_id = ? AND curriculum_id = ?",
-      [dprtmnt_id, curriculum_id]
-    );
-    if (exists.length > 0) {
-      return res.status(409).json({ message: "Mapping already exists" });
-    }
-
-    const [result] = await db3.execute(
-      "INSERT INTO dprtmnt_curriculum_table (dprtmnt_id, curriculum_id) VALUES (?, ?)",
-      [dprtmnt_id, curriculum_id]
-    );
-
-    // return inserted id
-    res.status(201).json({ message: "Mapping created", dprtmnt_curriculum_id: result.insertId });
-  } catch (err) {
-    console.error("Error creating mapping:", err);
-    res.status(500).json({ error: "Internal Server Error", details: err.message });
-  }
-});
-
-app.put("/dprtmnt_curriculum/:id", async (req, res) => {
-  const { id } = req.params;
-  const { curriculum_id, dprtmnt_id } = req.body;
-
-  if (!curriculum_id || !dprtmnt_id) {
-    return res.status(400).json({ message: "curriculum_id and dprtmnt_id required" });
-  }
-
-  try {
-    // Check duplicate mapping
-    const [exists] = await db3.execute(
-      `SELECT * FROM dprtmnt_curriculum_table 
-       WHERE dprtmnt_id = ? AND curriculum_id = ? AND dprtmnt_curriculum_id != ?`,
-      [dprtmnt_id, curriculum_id, id]
-    );
-
-    if (exists.length > 0) {
-      return res.status(409).json({ message: "Mapping already exists" });
-    }
-
-    const [result] = await db3.execute(
-      `UPDATE dprtmnt_curriculum_table 
-       SET curriculum_id = ? 
-       WHERE dprtmnt_curriculum_id = ?`,
-      [curriculum_id, id]
-    );
-
-    if (result.affectedRows === 0)
-      return res.status(404).json({ message: "Mapping ID not found" });
-
-    res.json({ message: "Mapping updated" });
-
-  } catch (err) {
-    console.error("Update error:", err);
-    res.status(500).json({ error: "Internal Server Error", details: err.message });
-  }
-});
-
-app.delete("/dprtmnt_curriculum/:id", async (req, res) => {
-  const { id } = req.params;
-  try {
-    const [result] = await db3.execute(
-      "DELETE FROM dprtmnt_curriculum_table WHERE dprtmnt_curriculum_id = ?",
-      [id]
-    );
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ message: "Mapping not found" });
-    }
-    res.status(200).json({ message: "Mapping deleted" });
-  } catch (err) {
-    console.error("Error deleting mapping:", err);
-    res.status(500).json({ error: "Internal Server Error", details: err.message });
-  }
-});
+module.exports = router;
