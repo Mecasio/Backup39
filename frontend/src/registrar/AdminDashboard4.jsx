@@ -28,6 +28,7 @@ import KeyIcon from "@mui/icons-material/Key";
 import CampaignIcon from '@mui/icons-material/Campaign';
 import ScoreIcon from '@mui/icons-material/Score';
 import API_BASE_URL from "../apiConfig";
+import DateField from "../components/DateField";
 const AdminDashboard4 = () => {
 
   const settings = useContext(SettingsContext);
@@ -697,7 +698,7 @@ const AdminDashboard4 = () => {
                   flex: 0.1,
                   mx: 1, // margin to keep spacing
                 }}
-              />
+                      />
             )}
           </React.Fragment>
         ))}
@@ -869,7 +870,7 @@ const AdminDashboard4 = () => {
               <PictureAsPdfIcon
                 className="card-icon"
                 sx={{ fontSize: 35, color: mainButtonColor, mr: 1.5 }}
-              />
+                      />
 
               {/* Label */}
               <Typography
@@ -982,7 +983,7 @@ const AdminDashboard4 = () => {
                     alignSelf: "center",
                     mx: 2,
                     }}
-                  />
+                      />
                 )}
               </React.Fragment>
             ))}
@@ -1038,11 +1039,11 @@ const AdminDashboard4 = () => {
                         handleUpdate(updatedPerson);
                       }}
                       onBlur={handleBlur}
-                    />
+                      />
                   }
                   label={symptom.charAt(0).toUpperCase() + symptom.slice(1)}
                   sx={{ ml: 5 }}
-                />
+                      />
               ))}
             </FormGroup>
 
@@ -1117,7 +1118,7 @@ const AdminDashboard4 = () => {
                                       handleUpdate(updatedPerson);
                                     }}
                                     onBlur={handleBlur}
-                                  />
+                      />
                                   <span style={{ fontSize: "15px", fontFamily: "Arial" }}>Yes</span>
                                 </div>
 
@@ -1136,7 +1137,7 @@ const AdminDashboard4 = () => {
                                       handleUpdate(updatedPerson);
                                     }}
                                     onBlur={handleBlur}
-                                  />
+                      />
                                   <span style={{ fontSize: "15px", fontFamily: "Arial" }}>No</span>
                                 </div>
                               </div>
@@ -1177,10 +1178,10 @@ const AdminDashboard4 = () => {
                             handleUpdate(updatedPerson);
                           }}
                           onBlur={handleBlur}
-                        />
+                      />
                       }
                       label="Yes"
-                    />
+                      />
 
                     {/* NO */}
                     <FormControlLabel
@@ -1198,10 +1199,10 @@ const AdminDashboard4 = () => {
                             handleUpdate(updatedPerson);
                           }}
                           onBlur={handleBlur}
-                        />
+                      />
                       }
                       label="No"
-                    />
+                      />
 
 
                   </Box>
@@ -1235,7 +1236,7 @@ const AdminDashboard4 = () => {
                   handleUpdate(updatedPerson);
                 }}
                 onBlur={handleBlur}
-              />
+                      />
             </Box>
 
             <br />
@@ -1267,7 +1268,7 @@ const AdminDashboard4 = () => {
                   handleUpdate(updatedPerson);
                 }}
                 onBlur={handleBlur}
-              />
+                      />
             </Box>
 
             {/* IV. COVID PROFILE */}
@@ -1316,7 +1317,7 @@ const AdminDashboard4 = () => {
                               handleUpdate(updatedPerson);
                             }}
                             onBlur={handleBlur}
-                          />
+                      />
                           <span style={{ fontSize: "15px", fontFamily: "Arial" }}>YES</span>
                         </Box>
 
@@ -1335,7 +1336,7 @@ const AdminDashboard4 = () => {
                               handleUpdate(updatedPerson);
                             }}
                             onBlur={handleBlur}
-                          />
+                      />
                           <span style={{ fontSize: "15px", fontFamily: "Arial" }}>NO</span>
 
 
@@ -1344,9 +1345,9 @@ const AdminDashboard4 = () => {
 
                       {/* IF YES, WHEN */}
                       <span>IF YES, WHEN:</span>
-                      <input
+                      <DateField
+                          size="small"
                         readOnly
-                        type="date"
                         name="covidDate"
                         value={person.covidDate || ""}
                         onChange={(e) => {
@@ -1422,7 +1423,7 @@ const AdminDashboard4 = () => {
                                 }}
                                 onBlur={handleBlur}
                                 style={inputStyle}
-                              />
+                      />
                             </td>
                           ))}
                         </tr>
@@ -1433,9 +1434,9 @@ const AdminDashboard4 = () => {
 
                           {["vaccine1Date", "vaccine2Date", "booster1Date", "booster2Date"].map((field) => (
                             <td key={field} style={{ padding: "4px" }}>
-                              <input
-                                readOnly
-                                type="date"
+                              <DateField
+                                  size="small"
+                        readOnly
                                 name={field}
                                 value={person[field] || ""}
                                 onChange={(e) => {
@@ -1448,7 +1449,7 @@ const AdminDashboard4 = () => {
                                 }}
                                 onBlur={handleBlur}
                                 style={inputStyle}
-                              />
+                      />
                             </td>
                           ))}
                         </tr>
@@ -1487,7 +1488,7 @@ const AdminDashboard4 = () => {
                       }}
                       onBlur={handleBlur}
                       className="w-full border px-3 py-2 rounded"
-                    />
+                      />
                   </td>
                 </tr>
 
@@ -1508,7 +1509,7 @@ const AdminDashboard4 = () => {
                       }}
                       onBlur={handleBlur}
                       className="w-full border px-3 py-2 rounded"
-                    />
+                      />
                   </td>
                 </tr>
 
@@ -1529,7 +1530,7 @@ const AdminDashboard4 = () => {
                       }}
                       onBlur={handleBlur}
                       className="w-full border px-3 py-2 rounded"
-                    />
+                      />
                   </td>
                 </tr>
 
@@ -1550,7 +1551,7 @@ const AdminDashboard4 = () => {
                       }}
                       onBlur={handleBlur}
                       className="w-full border px-3 py-2 rounded"
-                    />
+                      />
                   </td>
                 </tr>
               </tbody>
@@ -1604,7 +1605,7 @@ const AdminDashboard4 = () => {
                               handleUpdate(updatedPerson);
                             }}
                             onBlur={handleBlur}
-                          />
+                      />
                           <span style={{ fontSize: "15px", fontFamily: "Arial" }}>Physically Fit</span>
                         </div>
 
@@ -1623,7 +1624,7 @@ const AdminDashboard4 = () => {
                               handleUpdate(updatedPerson);
                             }}
                             onBlur={handleBlur}
-                          />
+                      />
                           <span style={{ fontSize: "15px", fontFamily: "Arial" }}>For Compliance</span>
                         </div>
                       </div>
@@ -1740,7 +1741,7 @@ const AdminDashboard4 = () => {
                       color: "#000",
                       transition: "color 0.3s",
                     }}
-                  />
+                      />
                 }
                 sx={{
                   backgroundColor: subButtonColor,
@@ -1771,7 +1772,7 @@ const AdminDashboard4 = () => {
                       color: '#fff',
                       transition: 'color 0.3s',
                     }}
-                  />
+                      />
                 }
                 sx={{
                   backgroundColor: mainButtonColor,

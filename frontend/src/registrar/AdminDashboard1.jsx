@@ -37,6 +37,7 @@ import CampaignIcon from '@mui/icons-material/Campaign';
 import API_BASE_URL from "../apiConfig";
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import ScoreIcon from '@mui/icons-material/Score';
+import DateField from "../components/DateField";
 
 const AdminDashboard1 = () => {
   const settings = useContext(SettingsContext);
@@ -2335,11 +2336,10 @@ const AdminDashboard1 = () => {
                 <Typography mb={1} fontWeight="medium">
                   Birth of Date
                 </Typography>
-                <TextField
+                <DateField
                   InputProps={{ readOnly: true }}
                   fullWidth
                   size="small"
-                  type="date"
                   name="birthOfDate"
                   required
                   value={person.birthOfDate || ""}
@@ -2347,7 +2347,7 @@ const AdminDashboard1 = () => {
                   onBlur={handleBlur}
                   error={!!errors.birthOfDate}
                   helperText={errors.birthOfDate ? "This field is required." : ""}
-                />
+                 />
               </Box>
 
               {/* 👤 Age (auto-filled, read-only) */}

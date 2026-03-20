@@ -44,6 +44,7 @@ import ListAltIcon from "@mui/icons-material/ListAlt";
 import DescriptionIcon from "@mui/icons-material/Description";
 import FactCheckIcon from "@mui/icons-material/FactCheck";
 import API_BASE_URL from "../apiConfig";
+import DateField from "../components/DateField";
 
 const StudentDashboard4 = () => {
   const settings = useContext(SettingsContext);
@@ -545,7 +546,7 @@ const StudentDashboard4 = () => {
               <PictureAsPdfIcon
                 className="card-icon"
                 sx={{ fontSize: 35, color: mainButtonColor, mr: 1.5 }}
-              />
+                      />
 
               {/* Label */}
               <Typography
@@ -657,7 +658,7 @@ const StudentDashboard4 = () => {
                     alignSelf: "center",
                     mx: 2,
                   }}
-                />
+                      />
               )}
             </React.Fragment>
           ))}
@@ -739,11 +740,11 @@ const StudentDashboard4 = () => {
                         handleUpdate(updatedPerson);
                       }}
                       onBlur={handleBlur}
-                    />
+                      />
                   }
                   label={symptom.charAt(0).toUpperCase() + symptom.slice(1)}
                   sx={{ ml: 5 }}
-                />
+                      />
               ))}
             </FormGroup>
 
@@ -883,7 +884,7 @@ const StudentDashboard4 = () => {
                                       handleUpdate(updatedPerson);
                                     }}
                                     onBlur={handleBlur}
-                                  />
+                      />
                                   <span
                                     style={{
                                       fontSize: "15px",
@@ -915,7 +916,7 @@ const StudentDashboard4 = () => {
                                       handleUpdate(updatedPerson);
                                     }}
                                     onBlur={handleBlur}
-                                  />
+                      />
                                   <span
                                     style={{
                                       fontSize: "15px",
@@ -971,10 +972,10 @@ const StudentDashboard4 = () => {
                             handleUpdate(updatedPerson);
                           }}
                           onBlur={handleBlur}
-                        />
+                      />
                       }
                       label="Yes"
-                    />
+                      />
 
                     {/* NO */}
                     <FormControlLabel
@@ -993,10 +994,10 @@ const StudentDashboard4 = () => {
                             handleUpdate(updatedPerson);
                           }}
                           onBlur={handleBlur}
-                        />
+                      />
                       }
                       label="No"
-                    />
+                      />
                   </Box>
                 </Box>
               </Box>
@@ -1027,7 +1028,7 @@ const StudentDashboard4 = () => {
                   handleUpdate(updatedPerson);
                 }}
                 onBlur={handleBlur}
-              />
+                      />
             </Box>
 
             <br />
@@ -1056,7 +1057,7 @@ const StudentDashboard4 = () => {
                   handleUpdate(updatedPerson);
                 }}
                 onBlur={handleBlur}
-              />
+                      />
             </Box>
 
             {/* IV. COVID PROFILE */}
@@ -1110,7 +1111,7 @@ const StudentDashboard4 = () => {
                               handleUpdate(updatedPerson);
                             }}
                             onBlur={handleBlur}
-                          />
+                      />
                           <span
                             style={{ fontSize: "15px", fontFamily: "Arial" }}
                           >
@@ -1133,7 +1134,7 @@ const StudentDashboard4 = () => {
                               handleUpdate(updatedPerson);
                             }}
                             onBlur={handleBlur}
-                          />
+                      />
                           <span
                             style={{ fontSize: "15px", fontFamily: "Arial" }}
                           >
@@ -1144,8 +1145,8 @@ const StudentDashboard4 = () => {
 
                       {/* IF YES, WHEN */}
                       <span>IF YES, WHEN:</span>
-                      <input
-                        type="date"
+                      <DateField
+                          size="small"
                         name="covidDate"
                         readOnly
                         value={person.covidDate || ""}
@@ -1227,7 +1228,7 @@ const StudentDashboard4 = () => {
                                 }}
                                 onBlur={handleBlur}
                                 style={inputStyle}
-                              />
+                      />
                             </td>
                           ))}
                         </tr>
@@ -1243,9 +1244,9 @@ const StudentDashboard4 = () => {
                             "booster2Date",
                           ].map((field) => (
                             <td key={field} style={{ padding: "4px" }}>
-                              <input
-                                type="date"
-                                name={field}
+                              <DateField
+                                  size="small"
+                        name={field}
                                 readOnly
                                 value={person[field] || ""}
                                 onChange={(e) => {
@@ -1258,7 +1259,7 @@ const StudentDashboard4 = () => {
                                 }}
                                 onBlur={handleBlur}
                                 style={inputStyle}
-                              />
+                      />
                             </td>
                           ))}
                         </tr>
@@ -1298,7 +1299,7 @@ const StudentDashboard4 = () => {
                       }}
                       onBlur={handleBlur}
                       className="w-full border px-3 py-2 rounded"
-                    />
+                      />
                   </td>
                 </tr>
 
@@ -1319,7 +1320,7 @@ const StudentDashboard4 = () => {
                       }}
                       onBlur={handleBlur}
                       className="w-full border px-3 py-2 rounded"
-                    />
+                      />
                   </td>
                 </tr>
 
@@ -1342,7 +1343,7 @@ const StudentDashboard4 = () => {
                       }}
                       onBlur={handleBlur}
                       className="w-full border px-3 py-2 rounded"
-                    />
+                      />
                   </td>
                 </tr>
 
@@ -1365,7 +1366,7 @@ const StudentDashboard4 = () => {
                       }}
                       onBlur={handleBlur}
                       className="w-full border px-3 py-2 rounded"
-                    />
+                      />
                   </td>
                 </tr>
               </tbody>
@@ -1437,7 +1438,7 @@ const StudentDashboard4 = () => {
                               handleUpdate(updatedPerson);
                             }}
                             onBlur={handleBlur}
-                          />
+                      />
                           <span
                             style={{ fontSize: "15px", fontFamily: "Arial" }}
                           >
@@ -1467,7 +1468,7 @@ const StudentDashboard4 = () => {
                               handleUpdate(updatedPerson);
                             }}
                             onBlur={handleBlur}
-                          />
+                      />
                           <span
                             style={{ fontSize: "15px", fontFamily: "Arial" }}
                           >
@@ -1548,7 +1549,7 @@ const StudentDashboard4 = () => {
                       color: "#000",
                       transition: "color 0.3s",
                     }}
-                  />
+                      />
                 }
                 sx={{
                   backgroundColor: subButtonColor,
@@ -1579,7 +1580,7 @@ const StudentDashboard4 = () => {
                       color: "#fff",
                       transition: "color 0.3s",
                     }}
-                  />
+                      />
                 }
                 sx={{
                   backgroundColor: mainButtonColor,

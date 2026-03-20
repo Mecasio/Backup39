@@ -19,6 +19,7 @@ import Unauthorized from "../components/Unauthorized";
 import LoadingOverlay from "../components/LoadingOverlay";
 
 import API_BASE_URL from "../apiConfig";
+import DateField from "../components/DateField";
 
 const SuperAdminApplicantDashboard4 = () => {
 
@@ -727,7 +728,7 @@ const SuperAdminApplicantDashboard4 = () => {
                             <PictureAsPdfIcon
                                 className="card-icon"
                                 sx={{ fontSize: 35, color: mainButtonColor, mr: 1.5 }}
-                            />
+                      />
 
                             {/* Label */}
                             <Typography
@@ -836,7 +837,7 @@ const SuperAdminApplicantDashboard4 = () => {
                     alignSelf: "center",
                     mx: 2,
                                     }}
-                                />
+                      />
                             )}
                         </React.Fragment>
                     ))}
@@ -891,11 +892,11 @@ const SuperAdminApplicantDashboard4 = () => {
                                                 handleUpdate(updatedPerson);
                                             }}
                                             onBlur={handleBlur}
-                                        />
+                      />
                                     }
                                     label={symptom.charAt(0).toUpperCase() + symptom.slice(1)}
                                     sx={{ ml: 5 }}
-                                />
+                      />
                             ))}
                         </FormGroup>
 
@@ -969,7 +970,7 @@ const SuperAdminApplicantDashboard4 = () => {
                                                                             handleUpdate(updatedPerson);
                                                                         }}
                                                                         onBlur={handleBlur}
-                                                                    />
+                      />
                                                                     <span style={{ fontSize: "15px", fontFamily: "Arial" }}>Yes</span>
                                                                 </div>
 
@@ -987,7 +988,7 @@ const SuperAdminApplicantDashboard4 = () => {
                                                                             handleUpdate(updatedPerson);
                                                                         }}
                                                                         onBlur={handleBlur}
-                                                                    />
+                      />
                                                                     <span style={{ fontSize: "15px", fontFamily: "Arial" }}>No</span>
                                                                 </div>
                                                             </div>
@@ -1027,10 +1028,10 @@ const SuperAdminApplicantDashboard4 = () => {
                                                         handleUpdate(updatedPerson);
                                                     }}
                                                     onBlur={handleBlur}
-                                                />
+                      />
                                             }
                                             label="Yes"
-                                        />
+                      />
 
                                         {/* NO */}
                                         <FormControlLabel
@@ -1047,10 +1048,10 @@ const SuperAdminApplicantDashboard4 = () => {
                                                         handleUpdate(updatedPerson);
                                                     }}
                                                     onBlur={handleBlur}
-                                                />
+                      />
                                             }
                                             label="No"
-                                        />
+                      />
 
 
                                     </Box>
@@ -1082,7 +1083,7 @@ const SuperAdminApplicantDashboard4 = () => {
                                     handleUpdate(updatedPerson);
                                 }}
                                 onBlur={handleBlur}
-                            />
+                      />
                         </Box>
 
                         <br />
@@ -1112,7 +1113,7 @@ const SuperAdminApplicantDashboard4 = () => {
                                     handleUpdate(updatedPerson);
                                 }}
                                 onBlur={handleBlur}
-                            />
+                      />
                         </Box>
 
                         {/* IV. COVID PROFILE */}
@@ -1160,7 +1161,7 @@ const SuperAdminApplicantDashboard4 = () => {
                                                             handleUpdate(updatedPerson);
                                                         }}
                                                         onBlur={handleBlur}
-                                                    />
+                      />
                                                     <span style={{ fontSize: "15px", fontFamily: "Arial" }}>YES</span>
                                                 </Box>
 
@@ -1178,7 +1179,7 @@ const SuperAdminApplicantDashboard4 = () => {
                                                             handleUpdate(updatedPerson);
                                                         }}
                                                         onBlur={handleBlur}
-                                                    />
+                      />
                                                     <span style={{ fontSize: "15px", fontFamily: "Arial" }}>NO</span>
 
 
@@ -1187,9 +1188,9 @@ const SuperAdminApplicantDashboard4 = () => {
 
                                             {/* IF YES, WHEN */}
                                             <span>IF YES, WHEN:</span>
-                                            <input
-                                                type="date"
-                                                name="covidDate"
+                                            <DateField
+                                                  size="small"
+                        name="covidDate"
                                                 value={person.covidDate || ""}
                                                 onChange={(e) => {
                                                     const updatedPerson = {
@@ -1208,7 +1209,7 @@ const SuperAdminApplicantDashboard4 = () => {
                                                     border: "1px solid #ccc",
                                                     borderRadius: "4px",
                                                 }}
-                                            />
+                      />
                                         </Box>
                                     </td>
                                 </tr>
@@ -1263,7 +1264,7 @@ const SuperAdminApplicantDashboard4 = () => {
                                                                 }}
                                                                 onBlur={handleBlur}
                                                                 style={inputStyle}
-                                                            />
+                      />
                                                         </td>
                                                     ))}
                                                 </tr>
@@ -1274,9 +1275,9 @@ const SuperAdminApplicantDashboard4 = () => {
 
                                                     {["vaccine1Date", "vaccine2Date", "booster1Date", "booster2Date"].map((field) => (
                                                         <td key={field} style={{ padding: "4px" }}>
-                                                            <input
-                                                                type="date"
-                                                                name={field}
+                                                            <DateField
+                                                                  size="small"
+                        name={field}
                                                                 value={person[field] || ""}
                                                                 onChange={(e) => {
                                                                     const updatedPerson = {
@@ -1288,7 +1289,7 @@ const SuperAdminApplicantDashboard4 = () => {
                                                                 }}
                                                                 onBlur={handleBlur}
                                                                 style={inputStyle}
-                                                            />
+                      />
                                                         </td>
                                                     ))}
                                                 </tr>
@@ -1326,7 +1327,7 @@ const SuperAdminApplicantDashboard4 = () => {
                                             }}
                                             onBlur={handleBlur}
                                             className="w-full border px-3 py-2 rounded"
-                                        />
+                      />
                                     </td>
                                 </tr>
 
@@ -1346,7 +1347,7 @@ const SuperAdminApplicantDashboard4 = () => {
                                             }}
                                             onBlur={handleBlur}
                                             className="w-full border px-3 py-2 rounded"
-                                        />
+                      />
                                     </td>
                                 </tr>
 
@@ -1366,7 +1367,7 @@ const SuperAdminApplicantDashboard4 = () => {
                                             }}
                                             onBlur={handleBlur}
                                             className="w-full border px-3 py-2 rounded"
-                                        />
+                      />
                                     </td>
                                 </tr>
 
@@ -1386,7 +1387,7 @@ const SuperAdminApplicantDashboard4 = () => {
                                             }}
                                             onBlur={handleBlur}
                                             className="w-full border px-3 py-2 rounded"
-                                        />
+                      />
                                     </td>
                                 </tr>
                             </tbody>
@@ -1439,7 +1440,7 @@ const SuperAdminApplicantDashboard4 = () => {
                                                             handleUpdate(updatedPerson);
                                                         }}
                                                         onBlur={handleBlur}
-                                                    />
+                      />
                                                     <span style={{ fontSize: "15px", fontFamily: "Arial" }}>Physically Fit</span>
                                                 </div>
 
@@ -1457,7 +1458,7 @@ const SuperAdminApplicantDashboard4 = () => {
                                                             handleUpdate(updatedPerson);
                                                         }}
                                                         onBlur={handleBlur}
-                                                    />
+                      />
                                                     <span style={{ fontSize: "15px", fontFamily: "Arial" }}>For Compliance</span>
                                                 </div>
                                             </div>
@@ -1510,7 +1511,7 @@ const SuperAdminApplicantDashboard4 = () => {
                                                         padding: 0,
                                                     },
                                                 }}
-                                            />
+                      />
                                         </TableCell>
                                     </TableRow>
                                 </TableBody>
@@ -1573,7 +1574,7 @@ const SuperAdminApplicantDashboard4 = () => {
                                             color: "#000",
                                             transition: "color 0.3s",
                                         }}
-                                    />
+                      />
                                 }
                                 sx={{
                                     backgroundColor: subButtonColor,
@@ -1606,7 +1607,7 @@ const SuperAdminApplicantDashboard4 = () => {
                                             color: '#fff',
                                             transition: 'color 0.3s',
                                         }}
-                                    />
+                      />
                                 }
                                 sx={{
                                     backgroundColor: mainButtonColor,

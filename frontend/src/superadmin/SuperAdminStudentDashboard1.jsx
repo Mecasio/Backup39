@@ -28,6 +28,7 @@ import LoadingOverlay from "../components/LoadingOverlay";
 import SearchIcon from "@mui/icons-material/Search";
 import API_BASE_URL from "../apiConfig";
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
+import DateField from "../components/DateField";
 
 
 
@@ -2121,10 +2122,9 @@ const SuperAdminStudentDashboard1 = () => {
                                 <Typography mb={1} fontWeight="medium">
                                     Birth of Date
                                 </Typography>
-                                <TextField
+                                <DateField
                                     fullWidth
                                     size="small"
-                                    type="date"
                                     name="birthOfDate"
                                     required
                                     value={person.birthOfDate || ""}
@@ -2132,7 +2132,7 @@ const SuperAdminStudentDashboard1 = () => {
                                     onBlur={handleBlur}
                                     error={!!errors.birthOfDate}
                                     helperText={errors.birthOfDate ? "This field is required." : ""}
-                                />
+                                 />
                             </Box>
 
                             {/* 👤 Age (auto-filled, read-only) */}

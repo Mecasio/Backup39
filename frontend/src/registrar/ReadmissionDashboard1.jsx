@@ -36,6 +36,7 @@ import GradeIcon from "@mui/icons-material/Grade";
 import MenuBookIcon from "@mui/icons-material/MenuBook";
 import UploadFileIcon from '@mui/icons-material/UploadFile';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
+import DateField from "../components/DateField";
 
 
 
@@ -2392,11 +2393,10 @@ const ReadmissionDashboard1 = () => {
                 <Typography mb={1} fontWeight="medium">
                   Birth of Date
                 </Typography>
-                <TextField
+                <DateField
                   InputProps={{ readOnly: true }}
                   fullWidth
                   size="small"
-                  type="date"
                   name="birthOfDate"
                   required
                   value={person.birthOfDate || ""}
@@ -2404,7 +2404,7 @@ const ReadmissionDashboard1 = () => {
                   onBlur={handleBlur}
                   error={!!errors.birthOfDate}
                   helperText={errors.birthOfDate ? "This field is required." : ""}
-                />
+                 />
               </Box>
               {/* 👤 Age (auto-filled, read-only) */}
               <Box flex={1}>

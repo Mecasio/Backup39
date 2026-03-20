@@ -54,6 +54,7 @@ import HowToRegIcon from "@mui/icons-material/HowToReg";
 import ListAltIcon from "@mui/icons-material/ListAlt";
 import FactCheckIcon from "@mui/icons-material/FactCheck";
 import WarningAmberIcon from "@mui/icons-material/WarningAmber";
+import DateField from "../components/DateField";
 
 const StudentDashboard1 = () => {
   const settings = useContext(SettingsContext);
@@ -2039,11 +2040,10 @@ const StudentDashboard1 = () => {
                 <Typography mb={1} fontWeight="medium">
                   Birth of Date
                 </Typography>
-                <TextField
+                <DateField
                   disabled
                   fullWidth
                   size="small"
-                  type="date"
                   name="birthOfDate"
                   required
                   value={person.birthOfDate || ""}
@@ -2053,7 +2053,7 @@ const StudentDashboard1 = () => {
                   helperText={
                     errors.birthOfDate ? "This field is required." : ""
                   }
-                />
+                 />
               </Box>
 
               {/* 👤 Age (auto-filled, read-only) */}

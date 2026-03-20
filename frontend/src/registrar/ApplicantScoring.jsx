@@ -41,6 +41,7 @@ import KeyIcon from "@mui/icons-material/Key";
 import API_BASE_URL from "../apiConfig";
 import CampaignIcon from '@mui/icons-material/Campaign';
 import ScoreIcon from '@mui/icons-material/Score';
+import DateField from "../components/DateField";
 
 const ApplicantScoring = () => {
 
@@ -1190,15 +1191,13 @@ th, td {
                             {/* From Date */}
                             <FormControl size="small" sx={{ width: 200 }}>
                                 <InputLabel shrink htmlFor="from-date">From Date</InputLabel>
-                                <TextField
+                                <DateField
                                     id="from-date"
-                                    type="date"
                                     size="small"
                                     name="fromDate"
                                     value={person.fromDate || ""}
                                     onChange={(e) => setPerson(prev => ({ ...prev, fromDate: e.target.value }))}
-                                    InputLabelProps={{ shrink: true }}
-                                />
+                                 />
                             </FormControl>
 
                             <div style={{ position: "relative" }}>
@@ -1238,15 +1237,13 @@ th, td {
                             <FormControl size="small" sx={{ width: 200 }}>
 
                                 <InputLabel shrink htmlFor="to-date">To Date</InputLabel>
-                                <TextField
+                                <DateField
                                     id="to-date"
-                                    type="date"
                                     size="small"
                                     name="toDate"
                                     value={person.toDate || ""}
                                     onChange={(e) => setPerson(prev => ({ ...prev, toDate: e.target.value }))}
-                                    InputLabelProps={{ shrink: true }}
-                                />
+                                 />
                             </FormControl>
 
 

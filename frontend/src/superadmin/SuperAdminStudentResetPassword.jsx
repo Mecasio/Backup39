@@ -30,6 +30,7 @@ import LoadingOverlay from "../components/LoadingOverlay";
 
 import API_BASE_URL from "../apiConfig";
 import { useNavigate, useLocation } from "react-router-dom";
+import DateField from "../components/DateField";
 import {
   People,
   School,
@@ -820,13 +821,11 @@ const SuperAdminStudentResetPassword = () => {
             InputProps={{ readOnly: true }}
           />
 
-          <TextField
+          <DateField
             label="Birthdate"
-            type="date"
             value={userInfo?.birthdate || ""}
-            InputLabelProps={{ shrink: true }}
             InputProps={{ readOnly: true }}
-          />
+           />
 
           <TextField
             select

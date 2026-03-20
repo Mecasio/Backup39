@@ -5,6 +5,7 @@
       "dev": "concurrently \"npm run backend\" \"npm run frontend\""
    },
    "dependencies": {
+      "@mui/x-date-pickers": "^8.27.2",
       "@react-pdf/renderer": "^4.3.2",
       "choco": "^0.2.1",
       "exceljs": "^4.4.0",

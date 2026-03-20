@@ -36,6 +36,7 @@ import SearchIcon from "@mui/icons-material/Search";
 import MenuBookIcon from '@mui/icons-material/MenuBook';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import ScoreIcon from '@mui/icons-material/Score';
+import DateField from "../components/DateField";
 
 
 const RegistrarDashboard1 = () => {
@@ -2345,11 +2346,10 @@ const RegistrarDashboard1 = () => {
                                 <Typography mb={1} fontWeight="medium">
                                     Birth of Date
                                 </Typography>
-                                <TextField
+                                <DateField
                                     InputProps={{ readOnly: true }}
                                     fullWidth
                                     size="small"
-                                    type="date"
                                     name="birthOfDate"
                                     required
                                     value={person.birthOfDate || ""}
@@ -2357,7 +2357,7 @@ const RegistrarDashboard1 = () => {
                                     onBlur={handleBlur}
                                     error={!!errors.birthOfDate}
                                     helperText={errors.birthOfDate ? "This field is required." : ""}
-                                />
+                                 />
                             </Box>
 
                             {/* 👤 Age (auto-filled, read-only) */}

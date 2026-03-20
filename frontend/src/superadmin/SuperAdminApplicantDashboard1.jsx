@@ -28,6 +28,7 @@ import SearchIcon from "@mui/icons-material/Search";
 import { Snackbar, Alert } from "@mui/material";
 import API_BASE_URL from "../apiConfig";
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
+import DateField from "../components/DateField";
 
 
 const SuperAdminApplicantDashboard1 = () => {
@@ -2224,10 +2225,9 @@ const SuperAdminApplicantDashboard1 = () => {
                                 <Typography mb={1} fontWeight="medium">
                                     Birth of Date
                                 </Typography>
-                                <TextField
+                                <DateField
                                     fullWidth
                                     size="small"
-                                    type="date"
                                     name="birthOfDate"
                                     required
                                     value={person.birthOfDate || ""}
@@ -2235,7 +2235,7 @@ const SuperAdminApplicantDashboard1 = () => {
                                     onBlur={handleBlur}
                                     error={!!errors.birthOfDate}
                                     helperText={errors.birthOfDate ? "This field is required." : ""}
-                                />
+                                 />
                             </Box>
 
                             {/* 👤 Age (auto-filled, read-only) */}
@@ -3482,16 +3482,14 @@ const SuperAdminApplicantDashboard1 = () => {
                                     onChange={handleApplicantChange}
                                 />
 
-                                <TextField
-                                    type="date"
+                                <DateField
                                     label="Birthdate"
                                     name="birthOfDate"
                                     fullWidth
                                     margin="normal"
-                                    InputLabelProps={{ shrink: true }}
                                     value={applicantForm.birthOfDate}
                                     onChange={handleApplicantChange}
-                                />
+                                 />
                                 <FormControl fullWidth margin="normal">
                                     <InputLabel id="applying-as-label">Applying As</InputLabel>
                                     <Select

@@ -37,6 +37,7 @@ import SearchIcon from "@mui/icons-material/Search";
 import InputAdornment from "@mui/material/InputAdornment";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
+import DateField from "../components/DateField";
 
 const VerifyDocumentsSchedule = () => {
 
@@ -1290,10 +1291,9 @@ const VerifyDocumentsSchedule = () => {
                                             <Typography fontWeight="600" mb={0.5}>
                                                 Exam Date
                                             </Typography>
-                                            <TextField
+                                            <DateField
                                                 fullWidth
                                                 size="small"
-                                                type="date"
                                                 value={day}
                                                 inputProps={{ min: minDate, max: maxDate }}
                                                 onChange={(e) => setDay(e.target.value)}

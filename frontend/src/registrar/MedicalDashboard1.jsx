@@ -38,6 +38,7 @@ import DescriptionIcon from "@mui/icons-material/Description";
 import HowToRegIcon from '@mui/icons-material/HowToReg';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
+import DateField from "../components/DateField";
 
 const MedicalDashboard1 = () => {
 
@@ -2400,11 +2401,10 @@ const MedicalDashboard1 = () => {
                 <Typography mb={1} fontWeight="medium">
                   Birth of Date
                 </Typography>
-                <TextField
+                <DateField
                   InputProps={{ readOnly: true }}
                   fullWidth
                   size="small"
-                  type="date"
                   name="birthOfDate"
                   required
                   value={person.birthOfDate || ""}
@@ -2412,7 +2412,7 @@ const MedicalDashboard1 = () => {
                   onBlur={handleBlur}
                   error={!!errors.birthOfDate}
                   helperText={errors.birthOfDate ? "This field is required." : ""}
-                />
+                 />
               </Box>
               {/* 👤 Age (auto-filled, read-only) */}
               <Box flex={1}>

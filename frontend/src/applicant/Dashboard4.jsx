@@ -18,6 +18,7 @@ import PictureAsPdfIcon from "@mui/icons-material/PictureAsPdf";
 import { useLocation } from "react-router-dom";
 import ExamPermit from "../applicant/ExamPermit";
 import API_BASE_URL from "../apiConfig";
+import DateField from "../components/DateField";
 const Dashboard4 = (props) => {
   const settings = useContext(SettingsContext);
 
@@ -480,7 +481,7 @@ const Dashboard4 = (props) => {
               <PictureAsPdfIcon
                 className="card-icon"
                 sx={{ fontSize: 35, color: mainButtonColor, mr: 1.5 }}
-              />
+                      />
 
               {/* Label */}
               <Typography
@@ -566,7 +567,7 @@ const Dashboard4 = (props) => {
       alignSelf: "center",
       mx: 2,
     }}
-  />
+                      />
 )}
             </React.Fragment>
           ))}
@@ -622,11 +623,11 @@ const Dashboard4 = (props) => {
                         handleUpdate(updatedPerson);
                       }}
                       onBlur={() => handleUpdate(person)}
-                    />
+                      />
                   }
                   label={symptom.charAt(0).toUpperCase() + symptom.slice(1)}
                   sx={{ ml: 5 }}
-                />
+                      />
               ))}
             </FormGroup>
 
@@ -700,7 +701,7 @@ const Dashboard4 = (props) => {
                                       handleUpdate(updatedPerson);
                                     }}
                                     onBlur={() => handleUpdate(person)}
-                                  />
+                      />
                                   <span style={{ fontSize: "15px", fontFamily: "Arial" }}>Yes</span>
                                 </div>
 
@@ -718,7 +719,7 @@ const Dashboard4 = (props) => {
                                       handleUpdate(updatedPerson);
                                     }}
                                     onBlur={() => handleUpdate(person)}
-                                  />
+                      />
                                   <span style={{ fontSize: "15px", fontFamily: "Arial" }}>No</span>
                                 </div>
                               </div>
@@ -758,10 +759,10 @@ const Dashboard4 = (props) => {
                             handleUpdate(updatedPerson);
                           }}
                           onBlur={() => handleUpdate(person)}
-                        />
+                      />
                       }
                       label="Yes"
-                    />
+                      />
 
                     {/* NO */}
                     <FormControlLabel
@@ -778,10 +779,10 @@ const Dashboard4 = (props) => {
                             handleUpdate(updatedPerson);
                           }}
                           onBlur={() => handleUpdate(person)}
-                        />
+                      />
                       }
                       label="No"
-                    />
+                      />
 
 
                   </Box>
@@ -813,7 +814,7 @@ const Dashboard4 = (props) => {
                   handleUpdate(updatedPerson);
                 }}
                 onBlur={() => handleUpdate(person)}
-              />
+                      />
             </Box>
 
             <br />
@@ -843,7 +844,7 @@ const Dashboard4 = (props) => {
                   handleUpdate(updatedPerson);
                 }}
                 onBlur={() => handleUpdate(person)}
-              />
+                      />
             </Box>
 
             {/* IV. COVID PROFILE */}
@@ -891,7 +892,7 @@ const Dashboard4 = (props) => {
                               handleUpdate(updatedPerson);
                             }}
                             onBlur={() => handleUpdate(person)}
-                          />
+                      />
                           <span style={{ fontSize: "15px", fontFamily: "Arial" }}>YES</span>
                         </Box>
 
@@ -909,7 +910,7 @@ const Dashboard4 = (props) => {
                               handleUpdate(updatedPerson);
                             }}
                             onBlur={() => handleUpdate(person)}
-                          />
+                      />
                           <span style={{ fontSize: "15px", fontFamily: "Arial" }}>NO</span>
 
 
@@ -918,8 +919,8 @@ const Dashboard4 = (props) => {
 
                       {/* IF YES, WHEN */}
                       <span>IF YES, WHEN:</span>
-                      <input
-                        type="date"
+                      <DateField
+                          size="small"
                         name="covidDate"
                         value={person.covidDate || ""}
                         onChange={(e) => {
@@ -994,7 +995,7 @@ const Dashboard4 = (props) => {
                                 }}
                                 onBlur={() => handleUpdate(person)}
                                 style={inputStyle}
-                              />
+                      />
                             </td>
                           ))}
                         </tr>
@@ -1005,9 +1006,9 @@ const Dashboard4 = (props) => {
 
                           {["vaccine1Date", "vaccine2Date", "booster1Date", "booster2Date"].map((field) => (
                             <td key={field} style={{ padding: "4px" }}>
-                              <input
-                                type="date"
-                                name={field}
+                              <DateField
+                                  size="small"
+                        name={field}
                                 value={person[field] || ""}
                                 onChange={(e) => {
                                   const updatedPerson = {
@@ -1019,7 +1020,7 @@ const Dashboard4 = (props) => {
                                 }}
                                 onBlur={() => handleUpdate(person)}
                                 style={inputStyle}
-                              />
+                      />
                             </td>
                           ))}
                         </tr>
@@ -1057,7 +1058,7 @@ const Dashboard4 = (props) => {
                       }}
                       onBlur={() => handleUpdate(person)}
                       className="w-full border px-3 py-2 rounded"
-                    />
+                      />
                   </td>
                 </tr>
 
@@ -1077,7 +1078,7 @@ const Dashboard4 = (props) => {
                       }}
                       onBlur={() => handleUpdate(person)}
                       className="w-full border px-3 py-2 rounded"
-                    />
+                      />
                   </td>
                 </tr>
 
@@ -1097,7 +1098,7 @@ const Dashboard4 = (props) => {
                       }}
                       onBlur={() => handleUpdate(person)}
                       className="w-full border px-3 py-2 rounded"
-                    />
+                      />
                   </td>
                 </tr>
 
@@ -1117,7 +1118,7 @@ const Dashboard4 = (props) => {
                       }}
                       onBlur={() => handleUpdate(person)}
                       className="w-full border px-3 py-2 rounded"
-                    />
+                      />
                   </td>
                 </tr>
               </tbody>
@@ -1170,7 +1171,7 @@ const Dashboard4 = (props) => {
                               handleUpdate(updatedPerson);
                             }}
                             onBlur={() => handleUpdate(person)}
-                          />
+                      />
                           <span style={{ fontSize: "15px", fontFamily: "Arial" }}>Physically Fit</span>
                         </div>
 
@@ -1188,7 +1189,7 @@ const Dashboard4 = (props) => {
                               handleUpdate(updatedPerson);
                             }}
                             onBlur={() => handleUpdate(person)}
-                          />
+                      />
                           <span style={{ fontSize: "15px", fontFamily: "Arial" }}>For Compliance</span>
                         </div>
                       </div>
@@ -1300,7 +1301,7 @@ const Dashboard4 = (props) => {
                       color: "#000",
                       transition: "color 0.3s",
                     }}
-                  />
+                      />
                 }
                 sx={{
                   backgroundColor: subButtonColor,
@@ -1331,7 +1332,7 @@ const Dashboard4 = (props) => {
                       color: "#fff",
                       transition: "color 0.3s",
                     }}
-                  />
+                      />
                 }
                 sx={{
                   backgroundColor: mainButtonColor,

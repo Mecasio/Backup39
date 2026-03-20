@@ -30,6 +30,7 @@ import ScheduleIcon from "@mui/icons-material/Schedule";
 import PeopleIcon from "@mui/icons-material/People";
 import CampaignIcon from "@mui/icons-material/Campaign";
 import PersonSearchIcon from "@mui/icons-material/PersonSearch";
+import DateField from "../components/DateField";
 
 
 const ScheduleHoverTile = () => {
@@ -456,25 +457,23 @@ const ScheduleHoverTile = () => {
                         {/* From Date */}
                         <Box sx={{ display: "flex", flexDirection: "column" }}>
                             <Typography fontSize={13} sx={{ mb: 1 }}>From Date</Typography>
-                            <TextField
-                                type="date"
+                            <DateField
                                 size="small"
                                 value={person.fromDate}
                                 onChange={(e) => setPerson(prev => ({ ...prev, fromDate: e.target.value }))}
                                 sx={{ minWidth: 150 }}
-                            />
+                             />
                         </Box>
 
                         {/* To Date */}
                         <Box sx={{ display: "flex", flexDirection: "column" }}>
                             <Typography fontSize={13} sx={{ mb: 1 }}>To Date</Typography>
-                            <TextField
-                                type="date"
+                            <DateField
                                 size="small"
                                 value={person.toDate}
                                 onChange={(e) => setPerson(prev => ({ ...prev, toDate: e.target.value }))}
                                 sx={{ minWidth: 150 }}
-                            />
+                             />
                         </Box>
                     </Box>
                 </Box>

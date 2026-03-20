@@ -40,6 +40,7 @@ import ExamPermit from "../applicant/ExamPermit";
 import { Snackbar, Alert } from "@mui/material";
 import API_BASE_URL from "../apiConfig";
 import WarningAmberIcon from "@mui/icons-material/WarningAmber";
+import DateField from "../components/DateField";
 
 const Dashboard1 = (props) => {
   const settings = useContext(SettingsContext);
@@ -2184,12 +2185,11 @@ const Dashboard1 = (props) => {
                 <Typography mb={1} fontWeight="medium">
                   Birth of Date<span style={{ color: "red" }}> *</span>
                 </Typography>
-                <TextField
+                <DateField
                   fullWidth
                   InputProps={{ readOnly: true }}
 
                   size="small"
-                  type="date"
                   name="birthOfDate"
                   required
                   value={person.birthOfDate || ""}
@@ -2199,7 +2199,7 @@ const Dashboard1 = (props) => {
                   helperText={
                     errors.birthOfDate ? "This field is required." : ""
                   }
-                />
+                 />
               </Box>
 
               {/* 👤 Age (auto-filled, read-only) */}

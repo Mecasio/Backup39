@@ -34,6 +34,7 @@ import { SettingsContext } from "../App"; // ✅ Access settings from context
 import API_BASE_URL from "../apiConfig";
 import AnnouncementSlider from "../components/AnnouncementSlider";
 import RedirectLoading from "../components/RedirectLoading";
+import DateField from "./DateField";
 
 const Register = () => {
   const settings = useContext(SettingsContext);
@@ -450,7 +451,7 @@ const Register = () => {
                         : Logo
                     }
                     alt="Logo"
-                  />
+                      />
                 </div>
               </div>
               <div className="HeaderBody">
@@ -510,7 +511,7 @@ const Register = () => {
                     paddingLeft: "2.5rem",
                     border: `2px solid ${borderColor}`,
                   }}
-                />
+                      />
                 <BadgeIcon
                   style={{
                     position: "absolute",
@@ -518,7 +519,7 @@ const Register = () => {
                     left: "0.7rem",
                     color: "rgba(0,0,0,0.4)",
                   }}
-                />
+                      />
               </div>
 
               <div className="TextField" style={{ position: "relative" }}>
@@ -536,7 +537,7 @@ const Register = () => {
                     paddingLeft: "2.5rem",
                     border: `2px solid ${borderColor}`,
                   }}
-                />
+                      />
                 <PersonIcon
                   style={{
                     position: "absolute",
@@ -544,7 +545,7 @@ const Register = () => {
                     left: "0.7rem",
                     color: "rgba(0,0,0,0.4)",
                   }}
-                />
+                      />
               </div>
 
               <div className="TextField" style={{ position: "relative" }}>
@@ -561,7 +562,7 @@ const Register = () => {
                     paddingLeft: "2.5rem",
                     border: `2px solid ${borderColor}`,
                   }}
-                />
+                      />
                 <PersonIcon
                   style={{
                     position: "absolute",
@@ -569,14 +570,14 @@ const Register = () => {
                     left: "0.7rem",
                     color: "rgba(0,0,0,0.4)",
                   }}
-                />
+                      />
               </div>
 
               <div className="TextField" style={{ position: "relative" }}>
                 <label>Birthday</label>
-                <input
-                  type="date"
-                  required
+                <DateField
+                    size="small"
+                        required
                   value={birthday}
                   disabled={fieldDisabled}
                   onChange={(e) => setBirthday(e.target.value)}
@@ -586,7 +587,7 @@ const Register = () => {
                     paddingLeft: "2.5rem",
                     border: `2px solid ${borderColor}`,
                   }}
-                />
+                      />
                 <CakeIcon
                   style={{
                     position: "absolute",
@@ -594,7 +595,7 @@ const Register = () => {
                     left: "0.7rem",
                     color: "rgba(0,0,0,0.4)",
                   }}
-                />
+                      />
               </div>
 
 
@@ -665,7 +666,7 @@ const Register = () => {
                   onChange={handleChanges}
                   onKeyDown={handleKeyDownRegister}
                   style={{ paddingLeft: "2.5rem", border: `2px solid ${borderColor}` }}
-                />
+                      />
                 <EmailIcon
                   style={{
                     position: "absolute",
@@ -673,7 +674,7 @@ const Register = () => {
                     left: "0.7rem",
                     color: "rgba(0,0,0,0.4)"
                   }}
-                />
+                      />
               </div>
 
               <div className="TextField" style={{ position: "relative" }}>
@@ -690,7 +691,7 @@ const Register = () => {
                   onKeyDown={handleKeyDownRegister}
                   required
                   style={{ paddingLeft: "2.5rem", border: `2px solid ${borderColor}` }}
-                />
+                      />
                 <LockIcon
                   style={{
                     position: "absolute",
@@ -698,7 +699,7 @@ const Register = () => {
                     left: "0.7rem",
                     color: "rgba(0,0,0,0.4)"
                   }}
-                />
+                      />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
@@ -737,7 +738,7 @@ const Register = () => {
                     backgroundColor: !usersData.password ? "#f0f0f0" : "white", // Optional: gray background when disabled
                     cursor: !usersData.password ? "not-allowed" : "text",
                   }}
-                />
+                      />
                 <LockIcon
                   style={{
                     position: "absolute",
@@ -745,7 +746,7 @@ const Register = () => {
                     left: "0.7rem",
                     color: "rgba(0,0,0,0.4)"
                   }}
-                />
+                      />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
@@ -770,7 +771,7 @@ const Register = () => {
                 <ReCAPTCHA
                   sitekey="6Lfem44rAAAAAEeAexdQxvN0Lpm1V4KPu1bBxaGy"
                   onChange={(val) => setCapVal(val)}
-                />
+                      />
               </Box> */}
 
               {/* Register Button — disabled until CAPTCHA is solved */}
@@ -894,7 +895,7 @@ const Register = () => {
                 style: { textAlign: "center", fontSize: "18px" },
               }}
               sx={{ mb: 2 }}
-            />
+                      />
 
             <button
               onClick={verifyOtp}
@@ -983,10 +984,10 @@ const Register = () => {
                   <Checkbox
                     checked={agreeChecked}
                     onChange={(e) => setAgreeChecked(e.target.checked)}
-                  />
+                      />
                 }
                 label={<Typography sx={{ fontSize: "15px" }}>I understand and agree to submit only one application.</Typography>}
-              />
+                      />
             </Box>
           </DialogContent>
 
