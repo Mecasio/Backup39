@@ -1,16 +1,17 @@
-const express = require('express')
+const express = require("express");
 const webtoken = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 const nodemailer = require("nodemailer");
 const path = require("path");
 const fs = require("fs");
 const QRCode = require("qrcode");
-const { db, db3 } = require('../database/database');
-const router = express.Router()
+const { db, db3 } = require("../database/database");
+const router = express.Router();
 
 let otpStore = {};
 let loginAttempts = {};
-const generateOTP = () => Math.floor(100000 + Math.random() * 900000).toString();
+const generateOTP = () =>
+  Math.floor(100000 + Math.random() * 900000).toString();
 const calculateAge = (birthDate) => {
   const date = new Date(birthDate);
   if (Number.isNaN(date.getTime())) return null;
@@ -64,12 +65,14 @@ async function insertAuditLog({
   messageOverride,
 }) {
   try {
-    const message = messageOverride || buildAuthMessage({
-      outcome,
-      role,
-      actorId,
-      reason,
-    });
+    const message =
+      messageOverride ||
+      buildAuthMessage({
+        outcome,
+        role,
+        actorId,
+        reason,
+      });
 
     await db.query(
       `INSERT INTO audit_logs
@@ -102,13 +105,11 @@ router.post("/register", async (req, res) => {
     lastName,
     birthday,
     academicProgram,
-    applyingAs
+    applyingAs,
   } = req.body;
   const normalizedEmail = email?.trim().toLowerCase();
 
   // 🔍 Check if applicant already exists by name + birthday
-
-
 
   const [existingPerson] = await db.query(
     `SELECT person_id 
@@ -117,11 +118,10 @@ router.post("/register", async (req, res) => {
    AND last_name = ?
    AND birthOfDate = ?
    LIMIT 1`,
-    [firstName.trim(), lastName.trim(), birthday]
+    [firstName.trim(), lastName.trim(), birthday],
   );
 
   if (existingPerson.length > 0) {
-
     const personId = existingPerson[0].person_id;
 
     // Get applicant_number
@@ -130,11 +130,10 @@ router.post("/register", async (req, res) => {
      FROM applicant_numbering_table 
      WHERE person_id = ? 
      LIMIT 1`,
-      [personId]
+      [personId],
     );
 
     if (applicant.length > 0) {
-
       const applicantNumber = applicant[0].applicant_number;
 
       // 🔍 Check exam_applicants
@@ -143,12 +142,11 @@ router.post("/register", async (req, res) => {
        FROM exam_applicants
        WHERE applicant_id = ?
        LIMIT 1`,
-        [applicantNumber]
+        [applicantNumber],
       );
 
       // 🚫 If email already sent → block registration
       if (exam.length > 0 && exam[0].email_sent === 1) {
-
         await insertAuditLog({
           actorId: normalizedEmail || "unknown",
           role: "applicant",
@@ -164,11 +162,8 @@ router.post("/register", async (req, res) => {
             "This applicant has already been processed for the examination. Multiple applications are not allowed.",
         });
       }
-
     }
   }
-
-
 
   if (existingPerson.length > 0) {
     await insertAuditLog({
@@ -182,29 +177,34 @@ router.post("/register", async (req, res) => {
     });
     return res.status(400).json({
       success: false,
-      message: "This applicant already exists in the system."
+      message: "This applicant already exists in the system.",
     });
   }
 
   if (!normalizedEmail || !password) {
-    return res.json({ success: false, message: "Please fill up all required fields" });
-  }
-
-  // ✅ CHECK BRANCH REGISTRATION FIRST
-  const [branchCheck] = await db.query(
-    "SELECT registration_open, start_date, end_date FROM branches WHERE branch_id = ?",
-    [campus]
-  );
-
-  if (branchCheck.length === 0) {
-    return res.status(400).json({
+    return res.json({
       success: false,
-      message: "Invalid branch selected"
+      message: "Please fill up all required fields",
     });
   }
 
-  const branch = branchCheck[0];
-  const nowDate = new Date(); // ⚠️ rename (you already used "now" later)
+  // ✅ CHECK BRANCH REGISTRATION FIRST
+  const [[row]] = await db.query(
+    "SELECT branches FROM company_settings WHERE id = 1",
+  );
+
+  const branches = JSON.parse(row.branches || "[]");
+
+  const branch = branches.find((b) => b.id == campus);
+
+  if (!branch) {
+    return res.status(400).json({
+      success: false,
+      message: "Invalid branch selected",
+    });
+  }
+
+  const nowDate = new Date();
 
   let isOpen = branch.registration_open;
 
@@ -217,7 +217,7 @@ router.post("/register", async (req, res) => {
   if (!isOpen) {
     return res.status(400).json({
       success: false,
-      message: "Registration is closed for this branch"
+      message: "Registration is closed for this branch",
     });
   }
 
@@ -235,7 +235,10 @@ router.post("/register", async (req, res) => {
       messageOverride: `REGISTER FAILED - ${normalizedEmail || "unknown"}`,
       reason: "Missing required fields",
     });
-    return res.json({ success: false, message: "Please fill up all required fields" });
+    return res.json({
+      success: false,
+      message: "Please fill up all required fields",
+    });
   }
 
   if (!stored) {
@@ -248,7 +251,9 @@ router.post("/register", async (req, res) => {
       messageOverride: `REGISTER FAILED - ${normalizedEmail || "unknown"}`,
       reason: "No OTP request found",
     });
-    return res.status(400).json({ success: false, message: "No OTP request found for this email" });
+    return res
+      .status(400)
+      .json({ success: false, message: "No OTP request found for this email" });
   }
 
   if (stored.expiresAt < now) {
@@ -262,7 +267,12 @@ router.post("/register", async (req, res) => {
       messageOverride: `REGISTER FAILED - ${normalizedEmail || "unknown"}`,
       reason: "OTP expired",
     });
-    return res.status(400).json({ success: false, message: "OTP has expired. Please request a new one." });
+    return res
+      .status(400)
+      .json({
+        success: false,
+        message: "OTP has expired. Please request a new one.",
+      });
   }
 
   if (stored.otp !== otp.trim()) {
@@ -280,12 +290,11 @@ router.post("/register", async (req, res) => {
 
   delete otpStore[normalizedEmail];
 
-
   let person_id = null;
 
   try {
     const [[company]] = await db.query(
-      "SELECT company_name FROM company_settings WHERE id = 1"
+      "SELECT company_name FROM company_settings WHERE id = 1",
     );
     const companyName = company?.company_name || "Main Campus";
 
@@ -293,7 +302,7 @@ router.post("/register", async (req, res) => {
 
     const [existingUser] = await db.query(
       "SELECT * FROM user_accounts WHERE email = ?",
-      [normalizedEmail]
+      [normalizedEmail],
     );
 
     if (existingUser.length > 0) {
@@ -306,7 +315,10 @@ router.post("/register", async (req, res) => {
         messageOverride: `REGISTER FAILED - ${normalizedEmail || "unknown"}`,
         reason: "Email already registered",
       });
-      return res.json({ success: false, message: "Email is already registered" });
+      return res.json({
+        success: false,
+        message: "Email is already registered",
+      });
     }
 
     // ⭐⭐⭐ FIX: STORE EMAIL INTO person_table.emailAddress ⭐⭐⭐
@@ -325,10 +337,10 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         birthday,
         age,
         academicProgram,
-        applyingAs,   // ✅ NOW MATCHES
-        0,            // termsOfAgreement
-        1             // current_step
-      ]
+        applyingAs, // ✅ NOW MATCHES
+        0, // termsOfAgreement
+        1, // current_step
+      ],
     );
 
     person_id = personResult.insertId;
@@ -336,7 +348,7 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     await db.query(
       `INSERT INTO user_accounts (person_id, email, password, role, status)
        VALUES (?, ?, ?, 'applicant', ?)`,
-      [person_id, normalizedEmail, hashedPassword, 1]
+      [person_id, normalizedEmail, hashedPassword, 1],
     );
 
     // ------------------
@@ -359,7 +371,7 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     const semCode = activeYearResult[0].semester_code;
 
     const [countRes] = await db.query(
-      "SELECT COUNT(*) AS count FROM applicant_numbering_table"
+      "SELECT COUNT(*) AS count FROM applicant_numbering_table",
     );
 
     const padded = String(countRes[0].count + 1).padStart(5, "0");
@@ -367,7 +379,7 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 
     await db.query(
       "INSERT INTO applicant_numbering_table (applicant_number, person_id) VALUES (?, ?)",
-      [applicant_number, person_id]
+      [applicant_number, person_id],
     );
 
     // QR Codes
@@ -375,8 +387,16 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     const qrData2 = `${process.env.DB_HOST_LOCAL}:5173/applicant_profile/${applicant_number}`;
     const qrFilename = `${applicant_number}_qrcode.png`;
     const qrFilename2 = `${applicant_number}_qrcode2.png`;
-    const qrPath = path.join(__dirname, "../../uploads/QrCodeGenerated", qrFilename);
-    const qrPath2 = path.join(__dirname, "../../uploads/QrCodeGenerated", qrFilename2);
+    const qrPath = path.join(
+      __dirname,
+      "../../uploads/QrCodeGenerated",
+      qrFilename,
+    );
+    const qrPath2 = path.join(
+      __dirname,
+      "../../uploads/QrCodeGenerated",
+      qrFilename2,
+    );
 
     await QRCode.toFile(qrPath, qrData, {
       color: { dark: "#000", light: "#FFF" },
@@ -390,20 +410,20 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 
     await db.query(
       "UPDATE applicant_numbering_table SET qr_code = ? WHERE applicant_number = ?",
-      [qrFilename, applicant_number]
+      [qrFilename, applicant_number],
     );
 
     await db.query(
       `INSERT INTO person_status_table 
        (person_id, applicant_id, exam_status, requirements, residency, student_registration_status, exam_result, hs_ave, qualifying_result, interview_result)
        VALUES (?, ?, 0, 0, 0, 0, 0, 0, 0, 0)`,
-      [person_id, applicant_number]
+      [person_id, applicant_number],
     );
 
     await db.query(
       `INSERT INTO interview_applicants (schedule_id, applicant_id, email_sent, status)
        VALUES (?, ?, 0, 'Waiting List')`,
-      [null, applicant_number]
+      [null, applicant_number],
     );
 
     res.status(201).json({
@@ -422,10 +442,11 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       outcome: "SUCCESS",
       messageOverride: `REGISTER SUCCESS - ${normalizedEmail || "unknown"}`,
     });
-
   } catch (error) {
     if (person_id) {
-      await db.query("DELETE FROM person_table WHERE person_id = ?", [person_id]);
+      await db.query("DELETE FROM person_table WHERE person_id = ?", [
+        person_id,
+      ]);
     }
     console.log(error);
     await insertAuditLog({
@@ -440,73 +461,8 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     res.json({
       success: false,
       message: "Internal Server Error",
-      error: error.message
+      error: error.message,
     });
-  }
-});
-
-router.get("/branches", async (req, res) => {
-  try {
-    const [branches] = await db.query(`
-      SELECT branch_id, branch_name, registration_open, start_date, end_date
-      FROM branches
-    `);
-
-    res.json(branches);
-  } catch (err) {
-    res.status(500).json({ message: "Error fetching branches" });
-  }
-});
-
-router.put("/branches/:id", async (req, res) => {
-  const { id } = req.params;
-  const { registration_open, start_date, end_date } = req.body;
-
-  try {
-    await db.query(
-      `UPDATE branches 
-       SET registration_open = ?, start_date = ?, end_date = ?
-       WHERE branch_id = ?`,
-      [registration_open, start_date, end_date, id]
-    );
-
-    res.json({ success: true });
-  } catch (err) {
-    res.status(500).json({ message: "Update failed" });
-  }
-});
-
-router.get("/registration-status/:branch_id", async (req, res) => {
-  const { branch_id } = req.params;
-
-  try {
-    const [rows] = await db.query(
-      `SELECT registration_open, start_date, end_date 
-       FROM branches 
-       WHERE branch_id = ?`,
-      [branch_id]
-    );
-
-    if (rows.length === 0) {
-      return res.status(404).json({ message: "Branch not found" });
-    }
-
-    const branch = rows[0];
-    const now = new Date();
-
-    let isOpen = branch.registration_open;
-
-    // OPTIONAL: apply schedule restriction
-    if (branch.start_date && branch.end_date) {
-      isOpen = now >= new Date(branch.start_date) && now <= new Date(branch.end_date);
-    }
-
-    res.json({
-      registration_open: isOpen
-    });
-
-  } catch (err) {
-    res.status(500).json({ message: "Error checking registration" });
   }
 });
 
@@ -519,7 +475,10 @@ router.post("/login", async (req, res) => {
   }
 
   const now = Date.now();
-  const record = loginAttempts[loginCredentials] || { count: 0, lockUntil: null };
+  const record = loginAttempts[loginCredentials] || {
+    count: 0,
+    lockUntil: null,
+  };
 
   if (record.lockUntil && record.lockUntil > now) {
     const sec = Math.ceil((record.lockUntil - now) / 1000);
@@ -531,7 +490,10 @@ router.post("/login", async (req, res) => {
       outcome: "LOCKED",
       reason: `Account locked (Attempt ${record.count || 3} out of 3)`,
     });
-    return res.json({ success: false, message: `Too many failed attempts. Try again in ${sec}s.` });
+    return res.json({
+      success: false,
+      message: `Too many failed attempts. Try again in ${sec}s.`,
+    });
   }
 
   try {
@@ -602,7 +564,10 @@ router.post("/login", async (req, res) => {
           outcome: "LOCKED",
           reason: `Invalid email or student number (Attempt ${record.count} out of 3)`,
         });
-        return res.json({ success: false, message: "Too many failed attempts. Locked for 3 minutes." });
+        return res.json({
+          success: false,
+          message: "Too many failed attempts. Locked for 3 minutes.",
+        });
       }
       loginAttempts[loginCredentials] = record;
       await insertAuditLog({
@@ -613,13 +578,18 @@ router.post("/login", async (req, res) => {
         outcome: "FAILED",
         reason: `Invalid email or student number (Attempt ${record.count} out of 3)`,
       });
-      return res.json({ success: false, message: "Invalid email or student number" });
+      return res.json({
+        success: false,
+        message: "Invalid email or student number",
+      });
     }
 
     const user = results[0];
-    const actorId = user.employee_id || user.student_number || user.person_id || user.email;
+    const actorId =
+      user.employee_id || user.student_number || user.person_id || user.email;
     const resourceType = user.employee_id ? "employee" : "student";
-    const resource = user.employee_id || user.student_number || user.person_id || user.email;
+    const resource =
+      user.employee_id || user.student_number || user.person_id || user.email;
 
     // ======================================
     // 🔥 FIX: normalize require_otp properly
@@ -643,7 +613,10 @@ router.post("/login", async (req, res) => {
           outcome: "LOCKED",
           reason: `Invalid password (Attempt ${record.count} out of 3)`,
         });
-        return res.json({ success: false, message: "Too many failed attempts. Locked for 3 minutes." });
+        return res.json({
+          success: false,
+          message: "Too many failed attempts. Locked for 3 minutes.",
+        });
       }
 
       loginAttempts[loginCredentials] = record;
@@ -672,15 +645,18 @@ router.post("/login", async (req, res) => {
         outcome: "FAILED",
         reason: "Inactive account",
       });
-      return res.json({ success: false, message: "The user didn't exist or account is inactive" });
+      return res.json({
+        success: false,
+        message: "The user didn't exist or account is inactive",
+      });
     }
 
     const [rows] = await db3.query(
-      "SELECT * FROM page_access WHERE user_id = ?"
-      , [user.employee_id])
+      "SELECT * FROM page_access WHERE user_id = ?",
+      [user.employee_id],
+    );
 
-
-    const accessList = rows.map(r => Number(r.page_id));
+    const accessList = rows.map((r) => Number(r.page_id));
     const failureCount = record.count || 0;
 
     // JWT
@@ -694,7 +670,7 @@ router.post("/login", async (req, res) => {
         accessList,
       },
       process.env.JWT_SECRET,
-      { expiresIn: "24h" }
+      { expiresIn: "24h" },
     );
 
     // ======================================
@@ -718,7 +694,9 @@ router.post("/login", async (req, res) => {
       delete loginAttempts[loginCredentials];
 
       try {
-        const [companyResult] = await db.query("SELECT short_term FROM company_settings WHERE id = 1");
+        const [companyResult] = await db.query(
+          "SELECT short_term FROM company_settings WHERE id = 1",
+        );
         const shortTerm = companyResult?.[0]?.short_term || "School";
 
         const transporter = nodemailer.createTransport({
@@ -742,10 +720,11 @@ router.post("/login", async (req, res) => {
       }
 
       const [rows] = await db3.query(
-        "SELECT * FROM page_access WHERE user_id = ?"
-        , [user.employee_id])
+        "SELECT * FROM page_access WHERE user_id = ?",
+        [user.employee_id],
+      );
 
-      const accessList = rows.map(r => Number(r.page_id));
+      const accessList = rows.map((r) => Number(r.page_id));
 
       return res.json({
         success: true,
@@ -762,7 +741,8 @@ router.post("/login", async (req, res) => {
     }
 
     // NO OTP REQUIRED
-    const successOutcome = failureCount >= 2 ? "SUCCESS_AFTER_FAILURES" : "SUCCESS";
+    const successOutcome =
+      failureCount >= 2 ? "SUCCESS_AFTER_FAILURES" : "SUCCESS";
     await insertAuditLog({
       actorId,
       role: user.role,
@@ -783,7 +763,6 @@ router.post("/login", async (req, res) => {
       department: user.dprtmnt_id,
       accessList,
     });
-
   } catch (error) {
     console.error("Login error:", error);
     return res.status(500).json({ message: "Server error during login" });
@@ -811,7 +790,10 @@ router.post("/login_applicant", async (req, res) => {
       outcome: "LOCKED",
       reason: `Account locked (Attempt ${record.count || 3} out of 3)`,
     });
-    return res.json({ success: false, message: `Too many failed attempts. Try again in ${sec}s.` });
+    return res.json({
+      success: false,
+      message: `Too many failed attempts. Try again in ${sec}s.`,
+    });
   }
 
   try {
@@ -837,7 +819,10 @@ router.post("/login_applicant", async (req, res) => {
           outcome: "LOCKED",
           reason: `Invalid email or password (Attempt ${record.count} out of 3)`,
         });
-        return res.json({ success: false, message: "Too many failed attempts. Locked for 3 minutes." });
+        return res.json({
+          success: false,
+          message: "Too many failed attempts. Locked for 3 minutes.",
+        });
       }
       loginAttempts[loginKey] = record;
       await insertAuditLog({
@@ -852,7 +837,9 @@ router.post("/login_applicant", async (req, res) => {
     }
 
     const user = results[0];
-    const existingApplicantNumber = await getApplicantNumberByPersonId(user.person_id);
+    const existingApplicantNumber = await getApplicantNumberByPersonId(
+      user.person_id,
+    );
     const applicantActor = existingApplicantNumber || loginKey;
     const isMatch = await bcrypt.compare(password, user.password);
 
@@ -869,7 +856,10 @@ router.post("/login_applicant", async (req, res) => {
           outcome: "LOCKED",
           reason: `Invalid password (Attempt ${record.count} out of 3)`,
         });
-        return res.json({ success: false, message: "Too many failed attempts. Locked for 3 minutes." });
+        return res.json({
+          success: false,
+          message: "Too many failed attempts. Locked for 3 minutes.",
+        });
       }
       loginAttempts[loginKey] = record;
       await insertAuditLog({
@@ -891,7 +881,10 @@ router.post("/login_applicant", async (req, res) => {
         outcome: "FAILED",
         reason: "Inactive account",
       });
-      return res.json({ success: false, message: "The user didn't exist or is inactive" });
+      return res.json({
+        success: false,
+        message: "The user didn't exist or is inactive",
+      });
     }
 
     const person_id = user.person_id;
@@ -899,7 +892,7 @@ router.post("/login_applicant", async (req, res) => {
     // ✅ Check if applicant_number already exists
     const [existing] = await db.query(
       "SELECT applicant_number, qr_code FROM applicant_numbering_table WHERE person_id = ?",
-      [person_id]
+      [person_id],
     );
 
     let applicantNumber, qrFilename;
@@ -922,14 +915,16 @@ router.post("/login_applicant", async (req, res) => {
       const year = String(activeYear[0].year_description).split("-")[0];
       const semCode = activeYear[0].semester_code;
 
-      const [countRes] = await db.query("SELECT COUNT(*) AS count FROM applicant_numbering_table");
+      const [countRes] = await db.query(
+        "SELECT COUNT(*) AS count FROM applicant_numbering_table",
+      );
       const padded = String(countRes[0].count + 1).padStart(5, "0");
       applicantNumber = `${year}${semCode}${padded}`;
 
       // Insert applicant_number
       await db.query(
         "INSERT INTO applicant_numbering_table (applicant_number, person_id) VALUES (?, ?)",
-        [applicantNumber, person_id]
+        [applicantNumber, person_id],
       );
 
       // Generate QR code
@@ -939,13 +934,13 @@ router.post("/login_applicant", async (req, res) => {
 
       await QRCode.toFile(qrPath, qrData, {
         color: { dark: "#000", light: "#FFF" },
-        width: 300
+        width: 300,
       });
 
       // Save QR in DB
       await db.query(
         "UPDATE applicant_numbering_table SET qr_code = ? WHERE applicant_number = ?",
-        [qrFilename, applicantNumber]
+        [qrFilename, applicantNumber],
       );
     } else {
       // ✅ Already has applicant_number + QR
@@ -957,10 +952,11 @@ router.post("/login_applicant", async (req, res) => {
     const token = webtoken.sign(
       { person_id: user.person_id, email: user.email, role: user.role },
       process.env.JWT_SECRET,
-      { expiresIn: "1h" }
+      { expiresIn: "1h" },
     );
 
-    const successOutcome = record.count >= 2 ? "SUCCESS_AFTER_FAILURES" : "SUCCESS";
+    const successOutcome =
+      record.count >= 2 ? "SUCCESS_AFTER_FAILURES" : "SUCCESS";
     await insertAuditLog({
       actorId: applicantNumber,
       role: user.role,
@@ -986,7 +982,7 @@ router.post("/login_applicant", async (req, res) => {
       role: user.role,
       person_id: user.person_id,
       applicant_number: applicantNumber,
-      qr_code: qrFilename
+      qr_code: qrFilename,
     });
   } catch (error) {
     console.error("Login error:", error);
@@ -1012,12 +1008,16 @@ router.post("/verify-otp", async (req, res) => {
   }
 
   if (!stored) {
-    return res.status(400).json({ message: "No OTP request found for this email" });
+    return res
+      .status(400)
+      .json({ message: "No OTP request found for this email" });
   }
 
   if (stored.expiresAt < now) {
     delete otpStore[email];
-    return res.status(400).json({ message: "OTP has expired. Please request a new one." });
+    return res
+      .status(400)
+      .json({ message: "OTP has expired. Please request a new one." });
   }
 
   if (stored.otp !== otp.trim()) {
@@ -1035,7 +1035,8 @@ router.post("/verify-otp", async (req, res) => {
 
   const failureCount = stored?.authFailureCount || 0;
   const auditContext = stored?.auditContext || {};
-  const successOutcome = failureCount >= 2 ? "SUCCESS_AFTER_FAILURES" : "SUCCESS";
+  const successOutcome =
+    failureCount >= 2 ? "SUCCESS_AFTER_FAILURES" : "SUCCESS";
   await insertAuditLog({
     actorId: auditContext.actorId || email,
     role: auditContext.role || "unknown",
@@ -1050,7 +1051,7 @@ router.post("/verify-otp", async (req, res) => {
   res.json({ message: "OTP verified successfully" });
 });
 
-// POST REQUEST OTP 
+// POST REQUEST OTP
 router.post("/request-otp", async (req, res) => {
   const { email } = req.body;
   const normalizedEmail = email?.trim().toLowerCase();
@@ -1061,11 +1062,15 @@ router.post("/request-otp", async (req, res) => {
   // ❌ Prevent already registered emails
   const [existingUser] = await db.query(
     "SELECT * FROM user_accounts WHERE email = ?",
-    [normalizedEmail]
+    [normalizedEmail],
   );
 
   if (existingUser.length > 0) {
-    return res.status(400).json({ message: "This Account is already registered and cannot be used again." });
+    return res
+      .status(400)
+      .json({
+        message: "This Account is already registered and cannot be used again.",
+      });
   }
 
   const now = Date.now();
@@ -1073,7 +1078,9 @@ router.post("/request-otp", async (req, res) => {
 
   if (existing && existing.cooldownUntil > now) {
     const secondsLeft = Math.ceil((existing.cooldownUntil - now) / 1000);
-    return res.status(429).json({ message: `OTP already sent. Please wait ${secondsLeft}s.` });
+    return res
+      .status(429)
+      .json({ message: `OTP already sent. Please wait ${secondsLeft}s.` });
   }
 
   const otp = generateOTP();
@@ -1084,7 +1091,9 @@ router.post("/request-otp", async (req, res) => {
   };
 
   try {
-    const [settings] = await db.query("SELECT short_term FROM company_settings LIMIT 1");
+    const [settings] = await db.query(
+      "SELECT short_term FROM company_settings LIMIT 1",
+    );
     const shortTerm = settings?.[0]?.short_term || "School";
 
     const transporter = nodemailer.createTransport({
@@ -1104,7 +1113,6 @@ router.post("/request-otp", async (req, res) => {
 
     console.log(`✅ OTP sent to ${normalizedEmail}: ${otp}`);
     res.json({ message: `${shortTerm} OTP sent to your email` });
-
   } catch (err) {
     console.error("⚠️ OTP email error:", err);
     delete otpStore[email];
@@ -1121,7 +1129,7 @@ router.get("/get-otp-setting/:person_id", async (req, res) => {
   try {
     const [rows] = await db3.query(
       "SELECT require_otp FROM user_accounts WHERE person_id = ?",
-      [person_id]
+      [person_id],
     );
 
     if (rows.length === 0) {
@@ -1139,7 +1147,8 @@ router.get("/get-otp-setting/:person_id", async (req, res) => {
 router.get("/get-otp-setting/:type/:person_id", async (req, res) => {
   const { type, person_id } = req.params;
 
-  if (!person_id || !type) return res.status(400).json({ message: "Missing parameters" });
+  if (!person_id || !type)
+    return res.status(400).json({ message: "Missing parameters" });
 
   let table;
   if (type === "user") table = "user_accounts";
@@ -1149,7 +1158,7 @@ router.get("/get-otp-setting/:type/:person_id", async (req, res) => {
   try {
     const [rows] = await db3.query(
       `SELECT require_otp FROM ${table} WHERE person_id = ? LIMIT 1`,
-      [person_id]
+      [person_id],
     );
 
     if (rows.length === 0) return res.json({ require_otp: 0 });
@@ -1165,9 +1174,10 @@ router.get("/get-otp-setting/:type/:person_id", async (req, res) => {
 router.post("/update-otp-setting", async (req, res) => {
   const { type, person_id, require_otp } = req.body;
 
-  console.log("Role Types: ", type)
+  console.log("Role Types: ", type);
 
-  if (!person_id || !type) return res.status(400).json({ message: "Missing parameters" });
+  if (!person_id || !type)
+    return res.status(400).json({ message: "Missing parameters" });
 
   let table;
   if (type === "user") table = "user_accounts";
@@ -1177,16 +1187,18 @@ router.post("/update-otp-setting", async (req, res) => {
   try {
     const [result] = await db3.query(
       `UPDATE ${table} SET require_otp = ? WHERE person_id = ?`,
-      [require_otp, person_id]
+      [require_otp, person_id],
     );
 
-    if (result.affectedRows === 0) return res.status(404).json({ message: "User not found" });
+    if (result.affectedRows === 0)
+      return res.status(404).json({ message: "User not found" });
 
     res.json({
       success: true,
-      message: require_otp == 1
-        ? "OTP has been enabled for your account."
-        : "OTP has been disabled for your account."
+      message:
+        require_otp == 1
+          ? "OTP has been enabled for your account."
+          : "OTP has been disabled for your account.",
     });
   } catch (err) {
     console.error("Failed to update OTP:", err);

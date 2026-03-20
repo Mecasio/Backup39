@@ -1,0 +1,427 @@
+import React, { useState, useEffect, useContext, useRef } from "react";
+import { SettingsContext } from "../App";
+import axios from "axios";
+import API_BASE_URL from "../apiConfig";
+
+import {
+  Box,
+  Typography,
+  Card,
+  CardContent,
+  Switch,
+  TextField,
+  Button,
+  Grid,
+  Snackbar,
+  Alert,
+  Stack,
+  Divider,
+  Chip,
+  TableContainer,
+  Table,
+  TableHead,
+  TableRow,
+  TableCell,
+  Paper
+} from "@mui/material";
+
+import BusinessIcon from "@mui/icons-material/Business";
+import SaveIcon from "@mui/icons-material/Save";
+import EventIcon from "@mui/icons-material/Event";
+import DeleteIcon from "@mui/icons-material/Delete";
+import AddIcon from "@mui/icons-material/Add";
+import Unauthorized from "../components/Unauthorized";
+import LoadingOverlay from "../components/LoadingOverlay";
+
+const AdminBranches = () => {
+  const settings = useContext(SettingsContext);
+
+  const [titleColor, setTitleColor] = useState("#000000");
+  const [subtitleColor, setSubtitleColor] = useState("#555555");
+  const [borderColor, setBorderColor] = useState("#000000");
+  const [mainButtonColor, setMainButtonColor] = useState("#1976d2");
+  const [subButtonColor, setSubButtonColor] = useState("#ffffff"); // ✅ NEW
+  const [stepperColor, setStepperColor] = useState("#000000"); // ✅ NEW
+
+  const [fetchedLogo, setFetchedLogo] = useState(null);
+  const [companyName, setCompanyName] = useState("");
+  const [shortTerm, setShortTerm] = useState("");
+  const [campusAddress, setCampusAddress] = useState("");
+  const [branches, setBranches] = useState([]);
+
+  useEffect(() => {
+    if (!settings) return;
+
+    // 🎨 Colors
+    if (settings.title_color) setTitleColor(settings.title_color);
+    if (settings.subtitle_color) setSubtitleColor(settings.subtitle_color);
+    if (settings.border_color) setBorderColor(settings.border_color);
+    if (settings.main_button_color)
+      setMainButtonColor(settings.main_button_color);
+    if (settings.sub_button_color) setSubButtonColor(settings.sub_button_color);
+    if (settings.stepper_color) setStepperColor(settings.stepper_color);
+
+    // 🏫 Logo
+    if (settings.logo_url) {
+      setFetchedLogo(`${API_BASE_URL}${settings.logo_url}`);
+    } else {
+      setFetchedLogo(EaristLogo);
+    }
+
+    // 🏷️ School Info
+    if (settings.company_name) setCompanyName(settings.company_name);
+    if (settings.short_term) setShortTerm(settings.short_term);
+    if (settings.campus_address) setCampusAddress(settings.campus_address);
+
+    // ✅ Branches (JSON stored in DB)
+    if (settings?.branches) {
+      try {
+        const parsed =
+          typeof settings.branches === "string"
+            ? JSON.parse(settings.branches)
+            : settings.branches;
+
+        setBranches(parsed);
+      } catch (err) {
+        console.error("Failed to parse branches:", err);
+        setBranches([]);
+      }
+    }
+  }, [settings]);
+
+
+
+  const [userID, setUserID] = useState("");
+  const [user, setUser] = useState("");
+  const [userRole, setUserRole] = useState("");
+  const [hasAccess, setHasAccess] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const pageId = 138;
+
+  const [employeeID, setEmployeeID] = useState("");
+
+  useEffect(() => {
+
+    const storedUser = localStorage.getItem("email");
+    const storedRole = localStorage.getItem("role");
+    const storedID = localStorage.getItem("person_id");
+    const storedEmployeeID = localStorage.getItem("employee_id");
+
+    if (storedUser && storedRole && storedID) {
+      setUser(storedUser);
+      setUserRole(storedRole);
+      setUserID(storedID);
+      setEmployeeID(storedEmployeeID);
+
+      if (storedRole === "registrar") {
+        checkAccess(storedEmployeeID);
+      } else {
+        window.location.href = "/login";
+      }
+    } else {
+      window.location.href = "/login";
+    }
+  }, []);
+
+  const checkAccess = async (employeeID) => {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/api/page_access/${employeeID}/${pageId}`);
+      if (response.data && response.data.page_privilege === 1) {
+        setHasAccess(true);
+      } else {
+        setHasAccess(false);
+      }
+    } catch (error) {
+      console.error('Error checking access:', error);
+      setHasAccess(false);
+      if (error.response && error.response.data.message) {
+        console.log(error.response.data.message);
+      } else {
+        console.log("An unexpected error occurred.");
+      }
+      setLoading(false);
+    }
+  };
+
+
+
+  const [newBranch, setNewBranch] = useState("");
+  const [newAddress, setNewAddress] = useState("");
+  const [isEditing, setIsEditing] = useState(false);
+
+  const [snack, setSnack] = useState({
+    open: false,
+    message: "",
+    severity: "success"
+  });
+
+  useEffect(() => {
+    fetchBranches();
+  }, []);
+
+  const fetchBranches = async () => {
+    try {
+      const res = await axios.get(`${API_BASE_URL}/api/branches`);
+      setBranches(res.data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleChange = (index, field, value) => {
+    setIsEditing(true);
+    const updated = [...branches];
+    updated[index][field] = value;
+    setBranches(updated);
+  };
+
+  const handleUpdate = async (branch) => {
+    try {
+      await axios.put(`${API_BASE_URL}/api/branches/${branch.id}`, branch);
+      setIsEditing(false);
+      setSnack({ open: true, message: "Saved successfully", severity: "success" });
+      fetchBranches();
+    } catch {
+      setSnack({ open: true, message: "Update failed", severity: "error" });
+    }
+  };
+
+  const handleDelete = async (id) => {
+    try {
+      await axios.delete(`${API_BASE_URL}/api/branches/${id}`);
+      setSnack({ open: true, message: "Deleted", severity: "success" });
+      fetchBranches();
+    } catch {
+      setSnack({ open: true, message: "Delete failed", severity: "error" });
+    }
+  };
+
+  const handleAddBranch = async () => {
+    if (!newBranch || !newAddress) return;
+
+    try {
+      await axios.post(`${API_BASE_URL}/api/branches`, {
+        branch: newBranch,
+        address: newAddress
+      });
+
+      setSnack({ open: true, message: "Branch added", severity: "success" });
+      setNewBranch("");
+      setNewAddress("");
+      fetchBranches();
+    } catch {
+      setSnack({ open: true, message: "Add failed", severity: "error" });
+    }
+  };
+
+  const formatLocal = (date) => {
+    if (!date) return "";
+    const d = new Date(date);
+    return new Date(d.toLocaleString("en-US", { timeZone: "Asia/Manila" }))
+      .toISOString()
+      .slice(0, 16);
+  };
+
+  if (loading || hasAccess === null) {
+    return <LoadingOverlay open={loading} message="Loading..." />;
+  }
+
+  if (!hasAccess) {
+    return <Unauthorized />;
+  }
+
+
+  return (
+    <Box sx={{ height: "calc(100vh - 150px)", overflowY: "auto", paddingRight: 1, backgroundColor: "transparent", mt: 1, padding: 2 }}>
+      <Typography
+        variant="h4"
+        sx={{
+          fontWeight: "bold",
+          color: titleColor,
+          fontSize: "36px",
+          background: "white",
+          display: "flex",
+          alignItems: "center",
+          mb: 2,
+        }}
+      >
+        BRANCH MANAGEMENT
+      </Typography>
+
+      <hr style={{ border: "1px solid #ccc", width: "100%" }} />
+      <br />
+      <br />
+
+      <TableContainer component={Paper} sx={{ width: '100%', border: `2px solid ${borderColor}`, }}>
+        <Table>
+          <TableHead sx={{ backgroundColor: settings?.header_color || "#1976d2", }}>
+            <TableRow>
+              <TableCell sx={{ color: 'white', textAlign: "Center" }}>Existing Branch</TableCell>
+            </TableRow>
+          </TableHead>
+        </Table>
+      </TableContainer>
+
+
+      {/* ADD FORM */}
+      <Card sx={{ mb: 4, border: `2px solid ${borderColor}` }}>
+        <CardContent>
+          <Typography fontWeight={600} mb={2}>
+            Add New Branch
+          </Typography>
+
+          <Grid container spacing={2}>
+            <Grid item xs={12} md={4}>
+              <TextField
+                fullWidth
+                label="Branch Name"
+                value={newBranch}
+                onChange={(e) => setNewBranch(e.target.value)}
+              />
+            </Grid>
+
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="Address"
+                value={newAddress}
+                onChange={(e) => setNewAddress(e.target.value)}
+              />
+            </Grid>
+
+            <Grid item xs={12} md={2}>
+              <Button
+                fullWidth
+                variant="contained"
+                startIcon={<AddIcon />}
+                sx={{ height: "100%", borderRadius: 2 }}
+                onClick={handleAddBranch}
+              >
+                Add
+              </Button>
+            </Grid>
+          </Grid>
+        </CardContent>
+      </Card>
+
+      {/* LIST */}
+      <Grid container spacing={3}>
+        {branches.map((b, index) => (
+          <Grid item xs={12} md={6} key={b.id}>
+            <Card sx={{ border: `2px solid ${borderColor}`, boxShadow: 4 }}>
+              <CardContent>
+                <Stack spacing={2}>
+                  {/* HEADER */}
+                  <Stack direction="row" justifyContent="space-between" alignItems="center">
+                    <Typography fontWeight={600} variant="subtitle1">
+                    {b.branch}  Branch #{b.id} 
+                    </Typography>
+                    <Chip
+                      label={b.registration_open ? "Open" : "Closed"}
+                      size="small"
+                      sx={{
+                        backgroundColor: b.registration_open ? "green" : "red",
+                        color: "white",
+                        fontWeight: "bold",
+                      }}
+                    />
+                  </Stack>
+
+                  <Divider />
+
+                  {/* INPUTS */}
+                  <TextField
+                    label="Branch Name"
+                    value={b.branch}
+                    onChange={(e) => handleChange(index, "branch", e.target.value)}
+                    fullWidth
+                  />
+
+                  <TextField
+                    label="Address"
+                    value={b.address}
+                    onChange={(e) => handleChange(index, "address", e.target.value)}
+                    fullWidth
+                  />
+
+                  {/* TOGGLE */}
+                  <Stack direction="row" alignItems="center" spacing={2}>
+                    <Typography>Registration</Typography>
+                    <Switch
+                      checked={b.registration_open === 1}
+                      onChange={(e) =>
+                        handleChange(index, "registration_open", e.target.checked ? 1 : 0)
+                      }
+                    />
+                  </Stack>
+
+                  {/* DATES */}
+                  <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
+                    <TextField
+                      type="datetime-local"
+                      label="Start Date"
+                      InputLabelProps={{ shrink: true }}
+                      value={formatLocal(b.start_date)}
+                      onChange={(e) => handleChange(index, "start_date", e.target.value)}
+                      fullWidth
+                    />
+
+                    <TextField
+                      type="datetime-local"
+                      label="End Date"
+                      InputLabelProps={{ shrink: true }}
+                      value={formatLocal(b.end_date)}
+                      onChange={(e) => handleChange(index, "end_date", e.target.value)}
+                      fullWidth
+                    />
+                  </Stack>
+
+                  {/* ACTIONS */}
+                  <Stack direction="row" spacing={2}>
+                    <Button
+                      fullWidth
+                      variant="contained"
+                      startIcon={<SaveIcon />}
+                      sx={{ borderRadius: 2 }}
+                      onClick={() => handleUpdate(b)}
+                    >
+                      Save
+                    </Button>
+
+                    <Button
+                      fullWidth
+                      variant="outlined"
+                      color="error"
+                      startIcon={<DeleteIcon />}
+                      sx={{
+                        borderRadius: 2, backgroundColor: "#9E0000",
+                        color: "white",
+                      }}
+                      onClick={() => handleDelete(b.id)}
+                    >
+                      Delete
+                    </Button>
+                  </Stack>
+                </Stack>
+              </CardContent>
+            </Card>
+          </Grid>
+        ))}
+      </Grid>
+
+      {/* SNACK */}
+      <Snackbar
+        open={snack.open}
+        autoHideDuration={3000}
+        onClose={() => setSnack({ ...snack, open: false })}
+        anchorOrigin={{ vertical: "top", horizontal: "center" }}
+      >
+        <Alert severity={snack.severity} sx={{ borderRadius: 2 }}>
+          {snack.message}
+        </Alert>
+      </Snackbar>
+    </Box>
+  );
+};
+
+export default AdminBranches;

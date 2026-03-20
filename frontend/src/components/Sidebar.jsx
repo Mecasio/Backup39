@@ -428,13 +428,14 @@ const SideBar = ({ setIsAuthenticated, profileImage, setProfileImage }) => {
         { title: "Applicant Online Requirements", link: "/registrar_requirements", icon: FolderCopy, page_id: 49 },
         { title: "Qualifying / Interview Scores", link: "/qualifying_interview_exam_scores", icon: Assessment, page_id: 37 },
         { title: "Student Numbering", link: "/student_numbering_per_college", icon: FormatListNumbered, page_id: 60 },
-       
+
         { title: "Student List", link: "/student_list_for_enrollment", icon: ListAlt, page_id: 104 },
         { title: "Student Profile", link: "/official_student_dashboard1", icon: AccountCircle, page_id: 43 },
         { title: "Student Online Requirements", link: "/student_official_requirements", icon: FolderCopy, page_id: 124 },
         { title: "Course Tagging", link: "/course_tagging_for_college", icon: Class, page_id: 124 },
         { title: "Search COR", link: "/search_cor_for_college", icon: Search, page_id: 125 },
-        {title: "Class List", link: classRosterEnrollmentLink, icon: Class, page_id: 15, activeCheck: () => isClassRosterActive(classRosterEnrollmentLink)
+        {
+          title: "Class List", link: classRosterEnrollmentLink, icon: Class, page_id: 15, activeCheck: () => isClassRosterActive(classRosterEnrollmentLink)
         },
 
 
@@ -520,6 +521,7 @@ const SideBar = ({ setIsAuthenticated, profileImage, setProfileImage }) => {
     {
       key: "settingsCommunication", label: "Settings & Communication", icon: Campaign, items: [
         { title: `${shortTerm} Profile`, link: "/settings", icon: Settings, page_id: 74 },
+        { title: "Branch Management", link: "/admin_branches", icon: Settings, page_id: 138 },
         { title: "Email Sender", link: "/email_template_manager", icon: Email, page_id: 67 },
         { title: "Announcement", link: "/announcement", icon: Campaign, page_id: 66 },
         { title: "Signature Upload", link: "/signature_upload", icon: Settings, page_id: 114 },
@@ -559,7 +561,9 @@ const SideBar = ({ setIsAuthenticated, profileImage, setProfileImage }) => {
         { title: "Settings", link: "/registrar_reset_password", icon: Settings, page_id: 73 },
         { title: "Student Grade File", link: "/student_grade_file", icon: Settings, page_id: 126 },
         { title: "Migration Data Panel", link: "/migration_data_panel", icon: Settings, page_id: 114 },
+
       ]
+
     },
     {
       key: "accountCreation", label: "Account Creation", icon: PersonAdd, items: [

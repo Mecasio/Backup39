@@ -102,10 +102,12 @@ const Register = () => {
   const [branchId, setBranchId] = useState("");
 
   useEffect(() => {
-    axios.get(`${API_BASE_URL}/auth/branches`)
+    axios.get(`${API_BASE_URL}/api/branches`)
       .then(res => setBranches(res.data))
       .catch(err => console.error(err));
   }, []);
+
+
 
   const handleRegister = async () => {
     if (isSubmitting) return;
@@ -118,6 +120,15 @@ const Register = () => {
         open: true,
         message: "Please complete all personal information fields!",
         severity: "warning",
+      });
+      return;
+    }
+
+    if (!branchId || !checkBranchStatus(branchId)) {
+      setSnack({
+        open: true,
+        message: "Registration is closed for this campus.",
+        severity: "error",
       });
       return;
     }
@@ -145,8 +156,7 @@ const Register = () => {
     setIsSubmitting(true);
     try {
       await axios.post(`${API_BASE_URL}/auth/request-otp`, {
-        email: usersData.email,
-        campus: branchId
+        email: usersData.email, // ✅ FIX
       });
 
       setTempEmail(usersData.email);
@@ -162,6 +172,8 @@ const Register = () => {
       setIsSubmitting(false);
       return;
 
+
+
     } catch (error) {
       setSnack({
         open: true,
@@ -176,9 +188,9 @@ const Register = () => {
   };
 
 
-
   const startResendTimer = () => {
     setResendTimer(60);
+
     const interval = setInterval(() => {
       setResendTimer((prev) => {
         if (prev <= 1) {
@@ -264,36 +276,42 @@ const Register = () => {
 
   const handleBranchSelect = (e) => {
     const selectedId = e.target.value;
-
-    const selectedBranch = branches.find(
-      (b) => b.branch_id.toString() === selectedId
-    );
-
-    if (!selectedBranch) return;
-
-    let isOpen = selectedBranch.registration_open === 1;
-
-    if (selectedBranch.start_date && selectedBranch.end_date) {
-      const now = new Date();
-      isOpen =
-        now >= new Date(selectedBranch.start_date) &&
-        now <= new Date(selectedBranch.end_date);
-    }
-
-    // ✅ ALWAYS set branch first
     setBranchId(selectedId);
 
-    // ❌ THEN check
-    if (!isOpen) {
-      setOpenBranchDialog(true);
-    }
+    checkBranchStatus(selectedId);
   };
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setBranches(prev =>
+        prev.map(b => {
+          if (b.start_date && b.end_date) {
+            const now = new Date();
+            const isOpen =
+              now >= new Date(b.start_date) &&
+              now <= new Date(b.end_date);
+
+            return { ...b, is_open: isOpen }; // 👈 sets `is_open`, NOT `registration_open`
+          }
+          return b;
+        })
+      );
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  const isDisabled = !registrationOpen;
 
 
   useEffect(() => {
+    if (!branchId) return;
+
     const fetchRegistrationStatus = async () => {
       try {
-        const res = await axios.get(`${API_BASE_URL}/auth/registration-status`);
+        const res = await axios.get(
+          `${API_BASE_URL}/auth/registration-status/${branchId}`
+        );
 
         setRegistrationOpen(res.data.registration_open);
 
@@ -306,11 +324,38 @@ const Register = () => {
     };
 
     fetchRegistrationStatus();
-  }, []);
+  }, [branchId]);
+
+  const branchSelected = !!branchId;
+
+  const fieldDisabled = !branchSelected || !registrationOpen;
+
+  const checkBranchStatus = (branchIdToCheck) => {
+    if (!branchIdToCheck) return false;
+
+    const branch = branches.find(b => b.id.toString() === branchIdToCheck);
+    if (!branch) return false;
+
+    let isOpen = branch.registration_open === 1;
+
+    if (branch.start_date && branch.end_date) {
+      const now = new Date();
+      isOpen = now >= new Date(branch.start_date) && now <= new Date(branch.end_date);
+    }
+
+    setRegistrationOpen(isOpen);
+
+    if (!isOpen) {
+      setOpenBranchDialog(true);
+    }
+
+    return isOpen;
+  };
+
+
 
   const handleKeyDownRegister = (e) => {
     if (e.key === "Enter" && !isSubmitting) {
-      handleRegister();
 
       if (!branchId) {
         setSnack({
@@ -320,6 +365,16 @@ const Register = () => {
         });
         return;
       }
+
+      if (!registrationOpen) {
+        setSnack({
+          open: true,
+          message: "Registration is closed for this campus.",
+          severity: "error",
+        });
+        return;
+      }
+      handleRegister();
     }
   };
 
@@ -329,6 +384,15 @@ const Register = () => {
     }
   };
 
+
+  {/* Unified Dialog Style */ }
+  const dialogStyles = {
+    title: { textAlign: "center", fontWeight: "bold", fontSize: "18px" },
+    contentText: { fontSize: "16px", textAlign: "justify", mt: 1 },
+    contentTextCenter: { fontSize: "16px", textAlign: "center", mt: 2, fontWeight: "bold" },
+    actions: { justifyContent: "center", pb: 2 },
+    button: { fontWeight: "bold", textTransform: "none", minWidth: "220px" }
+  };
 
   // ✅ Use background from settings or fallback image
   const backgroundImage = settings?.bg_image
@@ -415,6 +479,7 @@ const Register = () => {
                   onChange={handleBranchSelect}
                   className="border"
                   required
+
                   style={{
                     height: "45px",
                     border: `2px solid ${borderColor}`,
@@ -423,8 +488,8 @@ const Register = () => {
                 >
                   <option value="">Select Branch</option>
                   {branches.map((b) => (
-                    <option key={b.branch_id} value={b.branch_id}>
-                      {b.branch_name} {b.registration_open === 0 ? " (Closed)" : ""}
+                    <option key={b.id} value={b.id}>
+                      {b.branch} {b.is_open === false ? " (Closed)" : ""}
                     </option>
                   ))}
                 </select>
@@ -436,6 +501,7 @@ const Register = () => {
                   type="text"
                   placeholder="Enter your last name"
                   required
+                  disabled={fieldDisabled}
                   value={lastName}
                   onChange={(e) => setLastName(e.target.value.toUpperCase())}
                   onKeyDown={handleKeyDownRegister}
@@ -462,6 +528,7 @@ const Register = () => {
                   required
                   placeholder="Enter your first name"
                   value={firstName}
+                  disabled={fieldDisabled}
                   onChange={(e) => setFirstName(e.target.value.toUpperCase())}
                   onKeyDown={handleKeyDownRegister}
                   className="border"
@@ -486,6 +553,7 @@ const Register = () => {
                   type="text"
                   placeholder="Enter your middle name"
                   value={middleName}
+                  disabled={fieldDisabled}
                   onChange={(e) => setMiddleName(e.target.value.toUpperCase())}
                   onKeyDown={handleKeyDownRegister}
                   className="border"
@@ -510,6 +578,7 @@ const Register = () => {
                   type="date"
                   required
                   value={birthday}
+                  disabled={fieldDisabled}
                   onChange={(e) => setBirthday(e.target.value)}
                   onKeyDown={handleKeyDownRegister}
                   className="border"
@@ -535,6 +604,7 @@ const Register = () => {
                 <select
                   required
                   value={academicProgram}
+                  disabled={fieldDisabled}
                   onChange={(e) => setAcademicProgram(e.target.value)}
                   className="border"
                   style={{
@@ -557,6 +627,7 @@ const Register = () => {
                 <select
                   required
                   value={applyingAs}
+                  disabled={fieldDisabled}
                   onChange={(e) => setApplyingAs(e.target.value)}
                   className="border"
                   style={{
@@ -585,6 +656,7 @@ const Register = () => {
                 <input
                   required
                   type="email"
+                  disabled={fieldDisabled}
                   className="border"
                   id="email"
                   name="email"
@@ -610,6 +682,7 @@ const Register = () => {
                   type={showPassword ? "text" : "password"}
                   className="border"
                   id="password"
+                  disabled={fieldDisabled}
                   name="password"
                   placeholder="Enter your password"
                   value={usersData.password}
@@ -651,6 +724,7 @@ const Register = () => {
                   className="border"
                   id="confirmPassword"
                   name="confirmPassword"
+
                   placeholder="Re-enter your password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
@@ -701,11 +775,32 @@ const Register = () => {
 
               {/* Register Button — disabled until CAPTCHA is solved */}
               <div
-                onClick={!isSubmitting && registrationOpen ? handleRegister : null}
+                onClick={() => {
+                  if (!branchSelected) {
+                    setSnack({
+                      open: true,
+                      message: "Please select a branch first!",
+                      severity: "warning",
+                    });
+                    return;
+                  }
+
+                  if (!registrationOpen) {
+                    setSnack({
+                      open: true,
+                      message: "Registration is currently closed for this campus.",
+                      severity: "error",
+                    });
+                    return;
+                  }
+
+                  if (!isSubmitting) {
+                    handleRegister();
+                  }
+                }}
                 style={{
-                  pointerEvents: (!isSubmitting && registrationOpen) ? "auto" : "none",
-                  opacity: registrationOpen ? 1 : 0.5,
-                  cursor: registrationOpen ? "pointer" : "not-allowed",
+                  opacity: registrationOpen && branchSelected ? 1 : 0.7,
+                  cursor: "pointer",
                   marginTop: "40px",
                   backgroundColor: mainButtonColor,
                   height: "50px",
@@ -719,7 +814,11 @@ const Register = () => {
                   fontSize: "16px",
                 }}
               >
-                {!registrationOpen ? "Registration Closed" : (isSubmitting ? "Registering..." : "Register")}
+                {!registrationOpen
+                  ? "Registration Closed"
+                  : isSubmitting
+                    ? "Registering..."
+                    : "Register"}
               </div>
 
 
@@ -844,129 +943,122 @@ const Register = () => {
           </Alert>
         </Snackbar>
 
+
+
+        {/* Important Reminder Dialog */}
         <Dialog
           open={openReminder}
           onClose={() => setOpenReminder(false)}
           maxWidth="sm"
           fullWidth
         >
-          <DialogTitle sx={{ fontWeight: "bold", textAlign: "center" }}>
+          <DialogTitle sx={dialogStyles.title}>
             ⚠️ Important Reminder for Applicants
           </DialogTitle>
 
           <DialogContent>
-            <Typography sx={{ mt: 1, textAlign: "justify", fontSize: "16px" }}>
-              Please make sure that all information you provide in your application is
-              correct and complete before submitting.
+            <Typography sx={dialogStyles.contentText}>
+              Please make sure that all information you provide in your application is correct and complete before submitting.
             </Typography>
 
-            <Typography sx={{ mt: 2, textAlign: "justify", fontSize: "16px" }}>
-              Creating multiple accounts or submitting more than one application is
-              strictly not allowed. Each applicant should only register and apply once.
+            <Typography sx={{ ...dialogStyles.contentText, mt: 2 }}>
+              Creating multiple accounts or submitting more than one application is strictly not allowed. Each applicant should only register and apply once.
             </Typography>
 
-            <Typography sx={{ mt: 2, textAlign: "justify", fontSize: "16px" }}>
-              If multiple accounts or duplicate applications are detected, your
-              application may be rejected or automatically disqualified from the
-              admission process.
+            <Typography sx={{ ...dialogStyles.contentText, mt: 2 }}>
+              If multiple accounts or duplicate applications are detected, your application may be rejected or automatically disqualified from the admission process.
             </Typography>
 
-            <Typography sx={{ mt: 2, textAlign: "justify", fontSize: "16px" }}>
-              Please wait for the official announcement regarding the results of the
-              application screening.
+            <Typography sx={{ ...dialogStyles.contentText, mt: 2 }}>
+              Please wait for the official announcement regarding the results of the application screening.
             </Typography>
 
-            <Typography sx={{ mt: 2, textAlign: "center", fontWeight: "bold" }}>
+            <Typography sx={dialogStyles.contentTextCenter}>
               Thank you for your cooperation.
             </Typography>
 
-            {/* Checkbox */}
             <Box sx={{ display: "flex", justifyContent: "center", mt: 3 }}>
               <FormControlLabel
                 control={
                   <Checkbox
                     checked={agreeChecked}
                     onChange={(e) => setAgreeChecked(e.target.checked)}
-
                   />
                 }
-                label={
-                  <Typography sx={{ fontSize: "15px" }}>
-                    I understand and agree to submit only one application.
-                  </Typography>
-                }
+                label={<Typography sx={{ fontSize: "15px" }}>I understand and agree to submit only one application.</Typography>}
               />
             </Box>
           </DialogContent>
 
-          <DialogActions sx={{ justifyContent: "center", pb: 2 }}>
+          <DialogActions sx={dialogStyles.actions}>
             <Button
               variant="contained"
               disabled={!agreeChecked}
               onClick={() => setOpenReminder(false)}
-              sx={{
-                fontWeight: "bold",
-                textTransform: "none",
-                minWidth: "220px",
-              }}
+              sx={dialogStyles.button}
             >
               I Agree & Continue
             </Button>
           </DialogActions>
         </Dialog>
 
-
-        <Dialog open={openClosedDialog}>
-          <DialogTitle sx={{ textAlign: "center", fontWeight: "bold" }}>
+        {/* Registration Closed Dialog */}
+        <Dialog open={openClosedDialog} maxWidth="sm" fullWidth>
+          <DialogTitle sx={dialogStyles.title}>
             🚫 Registration Closed
           </DialogTitle>
 
           <DialogContent>
-            <Typography sx={{ textAlign: "center" }}>
-              Registration is currently closed.
-              Please wait for the official announcement.
+            <Typography sx={{ fontSize: "16px", textAlign: "center" }}>
+              Registration is currently closed. Please wait for the official announcement.
             </Typography>
           </DialogContent>
 
-          <DialogActions sx={{ justifyContent: "center" }}>
+          <DialogActions sx={dialogStyles.actions}>
             <Button
               variant="contained"
               onClick={() => navigate("/login_applicant")}
+              sx={dialogStyles.button}
             >
               Go to Login
             </Button>
           </DialogActions>
         </Dialog>
 
+        {/* Branch Admissions Closed Dialog */}
         <Dialog
           open={openBranchDialog}
           onClose={() => setOpenBranchDialog(false)}
-          maxWidth="xs"
+          maxWidth="sm"
           fullWidth
         >
-          <DialogTitle sx={{ textAlign: "center", fontWeight: "bold" }}>
-            📢 Admissions Not Yet Open
+          <DialogTitle sx={dialogStyles.title}>
+            📢 Admissions Currently Closed
           </DialogTitle>
 
           <DialogContent>
-            <Typography sx={{ textAlign: "center", mt: 1 }}>
-              This branch is currently not accepting applications.
+            <Typography sx={dialogStyles.contentText}>
+              This campus is currently not accepting applications. The admissions period has either not yet begun or has already concluded for the current intake.
             </Typography>
 
-            <Typography sx={{ textAlign: "center", mt: 2 }}>
-              Please stay tuned and wait for the official announcement on our
-              <strong> Facebook Admissions Page.</strong>
+            <Typography sx={{ ...dialogStyles.contentText, mt: 2 }}>
+              Please check for updates and official announcements regarding the reopening of admissions. Important information, including schedules and requirements, will be posted through official channels.
             </Typography>
 
-            <Typography sx={{ textAlign: "center", mt: 2, fontWeight: "bold" }}>
-              Thank you for your patience!
+            <Typography sx={{ ...dialogStyles.contentText, mt: 2 }}>
+              For the latest updates, please visit and follow our <strong>Facebook Admissions Page</strong>.
+            </Typography>
+
+            <Typography sx={dialogStyles.contentTextCenter}>
+              Thank you for your interest and patience.
             </Typography>
           </DialogContent>
 
-          <DialogActions sx={{ justifyContent: "center", pb: 2 }}>
+          <DialogActions sx={dialogStyles.actions}>
             <Button
               variant="contained"
               onClick={() => setOpenBranchDialog(false)}
+              sx={dialogStyles.button}
             >
               Okay
             </Button>

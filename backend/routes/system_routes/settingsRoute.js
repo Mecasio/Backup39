@@ -252,79 +252,248 @@ router.post(
   },
 );
 
-/* ===================== GET BRANCHES ===================== */
 router.get("/branches", async (req, res) => {
   try {
     const [rows] = await db.query(
-      "SELECT * FROM company_branches ORDER BY branch_name",
+      "SELECT branches FROM company_settings WHERE id = 1",
     );
-    res.json(rows);
+
+    if (rows.length === 0) {
+      return res.json([]);
+    }
+
+    let branches = [];
+
+    try {
+      branches = rows[0].branches ? JSON.parse(rows[0].branches) : [];
+    } catch (err) {
+      console.error("JSON PARSE ERROR:", err);
+      branches = [];
+    }
+
+    res.json(branches);
   } catch (err) {
-    console.error("❌ Fetch branches error:", err);
-    res.status(500).json({ error: err.message });
+    console.error("GET ERROR:", err);
+    res.status(500).json({ message: err.message });
   }
 });
 
-/* ===================== ADD BRANCH ===================== */
 router.post("/branches", async (req, res) => {
+  const { branch, address } = req.body;
+
+  if (!branch || !address) {
+    return res.status(400).json({ message: "Branch and address required" });
+  }
+
   try {
-    const { branch_name } = req.body;
-
-    if (!branch_name) {
-      return res.status(400).json({ message: "Branch name required" });
-    }
-
-    const [exists] = await db.query(
-      "SELECT branch_id FROM company_branches WHERE branch_name = ?",
-      [branch_name],
+    const [rows] = await db.query(
+      "SELECT branches FROM company_settings WHERE id = 1",
     );
 
-    if (exists.length > 0) {
-      return res.status(400).json({ message: "Branch already exists" });
+    let branches = [];
+
+    if (rows.length > 0 && rows[0].branches) {
+      branches = JSON.parse(rows[0].branches);
     }
 
-    await db.query(
-      "INSERT INTO company_branches (branch_name) VALUES (?)",
-      [branch_name],
-    );
+    const maxId =
+      branches.length > 0 ? Math.max(...branches.map((b) => Number(b.id))) : 0;
 
-    res.json({ success: true, message: "Branch added" });
+    const newBranch = {
+      id: maxId + 1,
+      branch,
+      address,
+      registration_open: 0,
+      start_date: null,
+      end_date: null,
+    };
+
+    branches.push(newBranch);
+
+    // 🔥 ALSO handle case where row does NOT exist
+    if (rows.length === 0) {
+      await db.query(
+        "INSERT INTO company_settings (id, branches) VALUES (1, ?)",
+        [JSON.stringify(branches)],
+      );
+    } else {
+      await db.query("UPDATE company_settings SET branches = ? WHERE id = 1", [
+        JSON.stringify(branches),
+      ]);
+    }
+
+    res.json({ success: true, message: "Branch added", data: newBranch });
   } catch (err) {
-    console.error("❌ Add branch error:", err);
-    res.status(500).json({ error: err.message });
+    console.error("ADD ERROR:", err);
+    res.status(500).json({ message: err.message });
   }
 });
 
-/* ===================== UPDATE BRANCH ===================== */
 router.put("/branches/:id", async (req, res) => {
-  try {
-    const { branch_name } = req.body;
-    const { id } = req.params;
+  const { id } = req.params;
+  const { branch, address, registration_open, start_date, end_date } = req.body;
 
-    await db.query(
-      "UPDATE company_branches SET branch_name = ? WHERE branch_id = ?",
-      [branch_name, id],
+  try {
+    const [rows] = await db.query(
+      "SELECT branches FROM company_settings WHERE id = 1",
     );
 
-    res.json({ success: true, message: "Branch updated" });
+    if (rows.length === 0) {
+      return res.status(404).json({ message: "No settings found" });
+    }
+
+    let branches = JSON.parse(rows[0].branches || "[]");
+
+    let found = false;
+
+    if (start_date && end_date) {
+      const start = new Date(start_date);
+      const end = new Date(end_date);
+
+      if (start > end) {
+        return res.status(400).json({
+          message: "Start date cannot be later than end date",
+        });
+      }
+    }
+
+    branches = branches.map((b) => {
+      if (b.id == id) {
+        found = true;
+
+        return {
+          ...b,
+          branch: branch ?? b.branch,
+          address: address ?? b.address,
+          registration_open:
+            typeof registration_open !== "undefined"
+              ? registration_open
+              : b.registration_open,
+
+          // ✅ STORE RAW STRING (NO Date conversion)
+          start_date:
+            typeof start_date !== "undefined"
+              ? start_date || null
+              : b.start_date,
+
+          end_date:
+            typeof end_date !== "undefined" ? end_date || null : b.end_date,
+        };
+      }
+      return b;
+    });
+
+    if (!found) {
+      return res.status(404).json({ message: "Branch not found" });
+    }
+
+    await db.query("UPDATE company_settings SET branches = ? WHERE id = 1", [
+      JSON.stringify(branches),
+    ]);
+
+    res.json({ success: true, message: "Updated successfully" });
   } catch (err) {
-    console.error("❌ Update branch error:", err);
-    res.status(500).json({ error: err.message });
+    console.error("UPDATE ERROR:", err);
+    res.status(500).json({ message: err.message });
   }
 });
 
-/* ===================== DELETE BRANCH ===================== */
 router.delete("/branches/:id", async (req, res) => {
+  const { id } = req.params;
+
   try {
-    await db.query(
-      "DELETE FROM company_branches WHERE branch_id = ?",
-      [req.params.id],
+    const [rows] = await db.query(
+      "SELECT branches FROM company_settings WHERE id = 1",
     );
 
-    res.json({ success: true, message: "Branch deleted" });
+    if (rows.length === 0) {
+      return res.status(404).json({ message: "No settings found" });
+    }
+
+    let branches = JSON.parse(rows[0].branches || "[]");
+
+    branches = branches.filter((b) => b.id != id);
+
+    await db.query("UPDATE company_settings SET branches = ? WHERE id = 1", [
+      JSON.stringify(branches),
+    ]);
+
+    res.json({ success: true });
   } catch (err) {
-    console.error("❌ Delete branch error:", err);
-    res.status(500).json({ error: err.message });
+    console.error("DELETE ERROR:", err);
+    res.status(500).json({ message: err.message });
+  }
+});
+
+router.get("/registration-status/:branch_id", async (req, res) => {
+  const { branch_id } = req.params;
+
+  try {
+    const [rows] = await db.query(
+      "SELECT branches FROM company_settings WHERE id = 1",
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({ message: "No settings found" });
+    }
+
+    let branches = JSON.parse(rows[0].branches || "[]");
+
+    const now = new Date();
+
+    let updated = false;
+
+    const updatedBranches = branches.map((b) => {
+      if (b.id == branch_id) {
+        const parseManilaDate = (dateStr) => {
+          if (!dateStr) return null;
+
+          // Treat stored string as Manila time
+          const local = new Date(dateStr);
+
+          return new Date(
+            local.toLocaleString("en-US", { timeZone: "Asia/Manila" }),
+          );
+        };
+
+        const start = parseManilaDate(b.start_date);
+        const end = parseManilaDate(b.end_date);
+
+        if (end && now > end) {
+          updated = true;
+          return {
+            ...b,
+            registration_open: 0, // ✅ just close
+            // ❌ DO NOT DELETE DATES
+          };
+        }
+
+        // WITHIN RANGE
+        if (start && end) {
+          return {
+            ...b,
+            registration_open: now >= start && now <= end ? 1 : 0,
+          };
+        }
+      }
+
+      return b;
+    });
+
+    if (updated) {
+      await db.query("UPDATE company_settings SET branches = ? WHERE id = 1", [
+        JSON.stringify(updatedBranches),
+      ]);
+    }
+
+    const branch = updatedBranches.find((b) => b.id == branch_id);
+
+    res.json({
+      registration_open: branch?.registration_open || 0,
+    });
+  } catch (err) {
+    console.error("STATUS ERROR:", err);
+    res.status(500).json({ message: err.message });
   }
 });
 
