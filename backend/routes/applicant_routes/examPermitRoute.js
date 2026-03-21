@@ -25,18 +25,30 @@ router.get("/verification-status/:applicant_number", async (req, res) => {
   try {
     // ✅ Step 1: Get person_id from applicant_number
     const [personRows] = await db.query(
-      "SELECT person_id FROM applicant_numbering_table WHERE applicant_number = ?",
+      `
+      SELECT pt.person_id, pt.applyingAs
+      FROM applicant_numbering_table ant
+      INNER JOIN person_table pt
+        ON ant.person_id = pt.person_id
+      WHERE ant.applicant_number = ?
+      `,
       [applicant_number]
     );
     if (personRows.length === 0) {
       return res.json({ verified: false, reason: "Applicant not found" });
     }
 
-    const personId = personRows[0].person_id;
+    const { person_id: personId, applyingAs } = personRows[0];
 
     // ✅ Step 2: Count how many verifiable requirements exist
     const [requirements] = await db.query(
-      "SELECT COUNT(*) AS total_required FROM requirements_table WHERE is_verifiable = 1"
+      `
+      SELECT COUNT(*) AS total_required
+      FROM requirements_table
+      WHERE is_verifiable = 1
+        AND applicant_type = ?
+      `,
+      [applyingAs]
     );
     const totalRequired = requirements[0]?.total_required || 0;
 
@@ -81,25 +93,6 @@ router.get("/verification-status/:applicant_number", async (req, res) => {
 
 router.get("/verified-exam-applicants", async (req, res) => {
   try {
-    // 1️⃣ Get all verifiable Regular requirement IDs dynamically
-    const [reqRows] = await db.query(`
-      SELECT id 
-      FROM requirements_table 
-      WHERE category = 'Regular' 
-      AND is_verifiable = 1
-    `);
-
-    // 2️⃣ Convert the list of IDs into an array
-    const requirementIds = reqRows.map(r => r.id);
-
-    if (requirementIds.length === 0) {
-      return res.status(400).json({ error: "No verifiable Regular requirements found." });
-    }
-
-    // 3️⃣ Construct placeholders for the IN clause dynamically
-    const placeholders = requirementIds.map(() => "?").join(",");
-
-    // 4️⃣ Use those IDs in the main query
     const [rows] = await db.query(
       `
       SELECT 
@@ -118,16 +111,26 @@ router.get("/verified-exam-applicants", async (req, res) => {
       JOIN person_table p 
           ON ant.person_id = p.person_id
       WHERE ant.person_id IN (
-          SELECT person_id
-          FROM requirement_uploads
-          WHERE document_status = 'Documents Verified & ECAT'
-            AND requirements_id IN (${placeholders})
-          GROUP BY person_id
-          HAVING COUNT(DISTINCT requirements_id) = ?
+          SELECT ru.person_id
+          FROM requirement_uploads ru
+          INNER JOIN requirements_table rt
+            ON ru.requirements_id = rt.id
+          WHERE ru.document_status = 'Documents Verified & ECAT'
+            AND rt.category = 'Main'
+            AND rt.is_verifiable = 1
+          GROUP BY ru.person_id
+          HAVING COUNT(DISTINCT ru.requirements_id) >= (
+            SELECT COUNT(*)
+            FROM requirements_table rt2
+            INNER JOIN person_table p2
+              ON rt2.applicant_type = p2.applyingAs
+            WHERE rt2.category = 'Main'
+              AND rt2.is_verifiable = 1
+              AND p2.person_id = ru.person_id
+          )
       )
       ORDER BY p.last_name ASC, p.first_name ASC
-      `,
-      [...requirementIds, requirementIds.length]
+      `
     );
 
     res.json(rows);

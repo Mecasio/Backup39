@@ -13,7 +13,7 @@ router.post("/requirements", async (req, res) => {
         xerox_copies,
         requires_original,
         is_optional,
-        applicant_type // ✅ NEW
+        applicant_type 
     } = req.body;
 
     const query = `
@@ -126,17 +126,12 @@ router.get("/requirements/:person_id", async (req, res) => {
 
         const applying_as = applicantType[0].applyingAs;
 
-        let query = `
+        const query = `
             SELECT * 
             FROM requirements_table 
-            WHERE (applicant_type = ? OR applicant_type = 0)
+            WHERE applicant_type = ?
         `;
-        let params = [applying_as];
-
-        // ✅ Add condition when applicant_type = 2
-        if (applying_as === 2) {
-            query += " OR category = 'others'";
-        }
+        const params = [applying_as];
 
         const [results] = await db.execute(query, params);
 

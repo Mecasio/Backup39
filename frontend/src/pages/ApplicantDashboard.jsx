@@ -155,14 +155,6 @@ const ApplicantDashboard = (props) => {
     }
   };
 
-  useEffect(() => {
-    const id = localStorage.getItem("person_id");
-    if (id) {
-      checkRequirements(id);
-      fetchMedicalUploads(id); // 👈 fetch medical documents
-    }
-  }, []);
-
   // add these alongside your other useState declarations
   const [qualifyingExamScore, setQualifyingExamScore] = useState(null);
   const [qualifyingInterviewScore, setQualifyingInterviewScore] = useState(null);
@@ -184,49 +176,8 @@ const ApplicantDashboard = (props) => {
     localStorage.getItem("requirementsCompleted") === "1"
   );
 
-  useEffect(() => {
-    const checkRequirements = () => {
-      setRequirementsCompleted(localStorage.getItem("requirementsCompleted") === "1");
-    };
-
-    // Run on mount
-    checkRequirements();
-
-    // Optional: Listen for storage changes across tabs/components
-    window.addEventListener("storage", checkRequirements);
-
-    return () => window.removeEventListener("storage", checkRequirements);
-  }, []);
-
+ 
   const [allRequirementsCompleted, setAllRequirementsCompleted] = useState(false);
-
-  useEffect(() => {
-    const id = localStorage.getItem("person_id");
-    if (id) {
-      checkRequirements(id);
-    }
-  }, []);
-
-  const checkRequirements = async (personId) => {
-    try {
-      const res = await axios.get(
-        `${API_BASE_URL}/requirements/status/${personId}`
-      );
-
-      const completed = res.data.completed;
-
-      setAllRequirementsCompleted(completed);
-
-      localStorage.setItem(
-        "requirementsCompleted",
-        completed ? "1" : "0"
-      );
-
-    } catch (err) {
-      console.error("Failed to check requirements:", err);
-    }
-  };
-
   const fetchApplicantNumber = async (personID) => {
     try {
       const res = await axios.get(

@@ -686,10 +686,26 @@ Admission Office`;
 
     socket.current.once("send_schedule_emails_result", (res) => {
       if (res.success) {
-        setSnack({ open: true, message: "Schedule sent successfully!", severity: "success" });
+
+        // 🔥 REMOVE applicants that were emailed
+        setPersons(prev =>
+          prev.filter(p => !res.sent.includes(p.applicant_number))
+        );
+
+        setSnack({
+          open: true,
+          message: "Schedule sent successfully!",
+          severity: "success"
+        });
+
       } else {
-        setSnack({ open: true, message: res.error || "Failed to send schedule in emails.", severity: "error" });
+        setSnack({
+          open: true,
+          message: res.error || "Failed to send schedule in emails.",
+          severity: "error"
+        });
       }
+
       setLoading2(false);
     });
   };
