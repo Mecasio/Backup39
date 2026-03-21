@@ -39,7 +39,7 @@ const allowedOrigins = [
   "http://192.168.50.211:5173",
   "http://136.239.248.62:5173",
   "http://192.168.50.44:5173",
-  "http://192.168.50.46:5173",
+  "http://192.168.0.180:5173",
 ];
 
 app.use(
@@ -7849,10 +7849,10 @@ app.get("/api/requirements/status/:person_id", async (req, res) => {
   const { person_id } = req.params;
 
   try {
-    // 1️⃣ Get applicant type
+    // 1 Get applicant type from person_table.applyingAs
     const [[person]] = await db.query(
       `
-      SELECT applicant_type
+      SELECT applyingAs
       FROM person_table
       WHERE person_id = ?
       `,
@@ -7865,20 +7865,20 @@ app.get("/api/requirements/status/:person_id", async (req, res) => {
       });
     }
 
-    const applicantType = person.applicant_type;
+    const applyingAs = String(person.applyingAs);
 
-    // 2️⃣ Get required requirements
+    // 2 Get required requirements for this applicant type
     const [required] = await db.query(
       `
       SELECT id, description, category
       FROM requirements_table
-      WHERE applicant_type = ?
-      AND is_optional = 0
+      WHERE (applicant_type = ? OR applicant_type = '0' OR applicant_type = 0 OR applicant_type = 'All')
+        AND is_optional = 0
       `,
-      [applicantType]
+      [applyingAs]
     );
 
-    // 3️⃣ Get uploaded requirements
+    // 3 Get uploaded requirements
     const [uploaded] = await db.query(
       `
       SELECT requirements_id
@@ -7889,24 +7889,24 @@ app.get("/api/requirements/status/:person_id", async (req, res) => {
       [person_id]
     );
 
-    const uploadedIds = uploaded.map(r => r.requirements_id);
+    const uploadedIds = uploaded.map((r) => r.requirements_id);
 
-    // 4️⃣ Check missing requirements
+    // 4 Check missing requirements
     const missing = required.filter(
-      req => !uploadedIds.includes(req.id)
+      (req) => !uploadedIds.includes(req.id)
     );
 
     res.json({
       required_count: required.length,
       uploaded_count: uploaded.length,
       missing_requirements: missing,
-      completed: missing.length === 0
+      completed: missing.length === 0,
     });
 
   } catch (err) {
     console.error(err);
     res.status(500).json({
-      error: "Failed to check requirements"
+      error: "Failed to check requirements",
     });
   }
 });
@@ -8874,6 +8874,12 @@ app.put("/api/document_status/:applicant_number", async (req, res) => {
   const { applicant_number } = req.params;
   const { document_status, user_id } = req.body;
 
+  if (!document_status || !user_id) {
+    return res
+      .status(400)
+      .json({ message: "document_status and user_id are required." });
+  }
+
   try {
     const [personRows] = await db.query(
       `
@@ -8898,7 +8904,12 @@ app.put("/api/document_status/:applicant_number", async (req, res) => {
       SELECT id
       FROM requirements_table
       WHERE is_verifiable = 1
-        AND applicant_type = ?
+        AND (
+          applicant_type = ?
+          OR applicant_type = '0'
+          OR applicant_type = 0
+          OR applicant_type = 'All'
+        )
       `,
       [applyingAs],
     );
@@ -8958,8 +8969,13 @@ app.get("/api/document_status/check/:applicant_number", async (req, res) => {
       SELECT id
       FROM requirements_table
       WHERE category = 'Main'
-      AND is_verifiable = 1
-      AND applicant_type = ?
+        AND is_verifiable = 1
+        AND (
+          applicant_type = ?
+          OR applicant_type = '0'
+          OR applicant_type = 0
+          OR applicant_type = 'All'
+        )
     `, [applyingAs]);
 
     if (reqRows.length === 0) {
@@ -9150,7 +9166,7 @@ app.put("/api/submitted-medical/:upload_id", async (req, res) => {
 app.get("/api/requirements", async (req, res) => {
   try {
     const [rows] = await db.query(
-      `SELECT id, description, short_label, is_optional, applicant_type, category
+      `SELECT id, description, short_label, label, category, is_verifiable, xerox_copies, requires_original, is_optional, applicant_type
        FROM requirements_table
        ORDER BY id ASC`,
     );

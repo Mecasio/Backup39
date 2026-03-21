@@ -121,10 +121,15 @@ const SuperAdminApplicantList = () => {
     const fetchRequirements = async () => {
       try {
         const res = await axios.get(`${API_BASE_URL}/requirements`);
-        // Transform to match your previous structure
         const formatted = res.data.map((r) => ({
-          label: r.description,
-          key: r.short_label || r.description.replace(/\s+/g, ""),
+          applicant_type: String(r.applicant_type ?? 0),
+          category: r.category ?? "Regular",
+          is_optional: Number(r.is_optional) === 1,
+          label: r.label || r.description,
+          key:
+            r.short_label ||
+            r.label ||
+            r.description?.replace(/\s+/g, ""),
         }));
         setDocumentOptions(formatted);
       } catch (err) {
@@ -308,9 +313,13 @@ const SuperAdminApplicantList = () => {
   // Helper to compute applicant status
   const getApplicantStatus = (personData) => {
     const status = (personData.document_status ?? "").trim().toLowerCase();
+    const totalRequiredDocs = Number(personData.total_required_docs ?? 0);
+    const requiredDocsVerified = Number(personData.required_docs_verified ?? 0);
 
-    // If all 4 required docs are verified → ECAT ready
-    if (personData.required_docs_verified === 4) {
+    if (
+      totalRequiredDocs > 0 &&
+      requiredDocsVerified >= totalRequiredDocs
+    ) {
       return "Documents Verified & ECAT";
     }
 
@@ -736,6 +745,22 @@ const SuperAdminApplicantList = () => {
     }
   }, [activePerson]);
 
+  const getDocumentOptionsForPerson = (personData) => {
+    if (!personData) return [];
+
+    const applyingAs = String(personData.applyingAs ?? "");
+
+    return documentOptions.filter((doc) => {
+      const applicantType = String(doc.applicant_type ?? 0);
+      const matchesApplicantType =
+        applicantType === applyingAs ||
+        applicantType === "0" ||
+        applicantType.toLowerCase() === "all";
+
+      return matchesApplicantType && doc.category === "Main" && !doc.is_optional;
+    });
+  };
+
   const handleOpenDialog = (person) => {
     setActivePerson(person);
     setOpenDialog(true);
@@ -773,6 +798,8 @@ const SuperAdminApplicantList = () => {
     if (reason === "clickaway") return;
     setSnack((prev) => ({ ...prev, open: false }));
   };
+
+  const activeDocumentOptions = getDocumentOptionsForPerson(activePerson);
 
   useEffect(() => {
     axios.get(`${API_BASE_URL}/api/applied_program`).then((res) => {
@@ -2212,7 +2239,7 @@ th {
                 p: 2,
               }}
             >
-              {documentOptions.length === 0 ? (
+              {activeDocumentOptions.length === 0 ? (
                 <Typography sx={{ textAlign: "center", color: "gray", mt: 2 }}>
                   No requirements found in database.
                 </Typography>
@@ -2225,7 +2252,7 @@ th {
                     alignItems: "center",
                   }}
                 >
-                  {documentOptions.map((doc) => {
+                  {activeDocumentOptions.map((doc) => {
                     const selectedArray = Array.isArray(
                       activePerson?.missing_documents,
                     )
