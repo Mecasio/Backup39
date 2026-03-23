@@ -502,7 +502,7 @@ const SuperAdminStudentDashboard1 = () => {
 
         try {
             const response = await axios.post(
-                `${API_BASE_URL}/api/upload-profile-picture`,
+                `${API_BASE_URL}/api/enrollment/upload-profile-picture`,
                 formData,
                 {
                     headers: { "Content-Type": "multipart/form-data" },
@@ -892,31 +892,6 @@ const SuperAdminStudentDashboard1 = () => {
         setExamPermitModalOpen(false);
         setExamPermitError("");
     };
-
-    const handleExamPermitClick = async () => {
-        try {
-            const res = await axios.get(`${API_BASE_URL}/api/verified-exam-applicants`);
-            const verified = res.data.some(a => a.person_id === parseInt(userID));
-
-            if (!verified) {
-                setExamPermitError("❌ You cannot print the Exam Permit until all required documents are verified.");
-                setExamPermitModalOpen(true);
-                return;
-            }
-
-            // ✅ Render permit and print
-            setShowPrintView(true);
-            setTimeout(() => {
-                printDiv();
-                setShowPrintView(false);
-            }, 500);
-        } catch (err) {
-            console.error("Error verifying exam permit eligibility:", err);
-            setExamPermitError("⚠️ Unable to check document verification status right now.");
-            setExamPermitModalOpen(true);
-        }
-    };
-
 
 
 
@@ -1547,33 +1522,33 @@ const SuperAdminStudentDashboard1 = () => {
                                     onChange={handleChange}
                                     onBlur={handleBlur}
                                 >
-                                       <MenuItem value="">
-                                                       <em>Select Applying</em>
-                                                     </MenuItem>
-                                                     <MenuItem value="1">
-                                                       Senior High School Graduate
-                                                     </MenuItem>
-                                                     <MenuItem value="2">
-                                                       Senior High School Graduating Student
-                                                     </MenuItem>
-                                                     <MenuItem value="3">
-                                                       ALS (Alternative Learning System) Passer
-                                                     </MenuItem>
-                                                     <MenuItem value="4">
-                                                       Transferee from other University/College
-                                                     </MenuItem>
-                                                     <MenuItem value="5">
-                                                       Cross Enrolee Student
-                                                     </MenuItem>
-                                                     <MenuItem value="6">
-                                                       Foreign Applicant/Student
-                                                     </MenuItem>
-                                                     <MenuItem value="7">
-                                                       Baccalaureate Graduate
-                                                     </MenuItem>
-                                                     <MenuItem value="8">
-                                                       Master Degree Graduate
-                                                     </MenuItem>
+                                    <MenuItem value="">
+                                        <em>Select Applying</em>
+                                    </MenuItem>
+                                    <MenuItem value="1">
+                                        Senior High School Graduate
+                                    </MenuItem>
+                                    <MenuItem value="2">
+                                        Senior High School Graduating Student
+                                    </MenuItem>
+                                    <MenuItem value="3">
+                                        ALS (Alternative Learning System) Passer
+                                    </MenuItem>
+                                    <MenuItem value="4">
+                                        Transferee from other University/College
+                                    </MenuItem>
+                                    <MenuItem value="5">
+                                        Cross Enrolee Student
+                                    </MenuItem>
+                                    <MenuItem value="6">
+                                        Foreign Applicant/Student
+                                    </MenuItem>
+                                    <MenuItem value="7">
+                                        Baccalaureate Graduate
+                                    </MenuItem>
+                                    <MenuItem value="8">
+                                        Master Degree Graduate
+                                    </MenuItem>
                                 </Select>
                                 {errors.applyingAs && (
                                     <FormHelperText>This field is required.</FormHelperText>
@@ -1752,7 +1727,7 @@ const SuperAdminStudentDashboard1 = () => {
                             >
                                 {person.profile_img && person.profile_img !== "" ? (
                                     <img
-                                        src={`${API_BASE_URL}/uploads/${person.profile_img}?t=${Date.now()}`}
+                                        src={`${API_BASE_URL}/uploads/Student1by1/${person.profile_img}?t=${Date.now()}`}
                                         alt="Profile"
                                         style={{
                                             width: "100%",
@@ -2132,7 +2107,7 @@ const SuperAdminStudentDashboard1 = () => {
                                     onBlur={handleBlur}
                                     error={!!errors.birthOfDate}
                                     helperText={errors.birthOfDate ? "This field is required." : ""}
-                                 />
+                                />
                             </Box>
 
                             {/* 👤 Age (auto-filled, read-only) */}
@@ -3087,64 +3062,64 @@ const SuperAdminStudentDashboard1 = () => {
                                     </Box>
 
                                     {/* Preview Image */}
-                             {(preview || person.profile_img) && (
-  <Box
-    sx={{
-      display: "flex",
-      justifyContent: "center",
-      my: 2,
-      position: "relative",
-    }}
-  >
-    <Box
-      component="img"
-      src={
-        preview
-          ? preview
-          : `${API_BASE_URL}/uploads/Applicant1by1/${person.profile_img}`
-      }
-      alt="Preview"
-      sx={{
-        width: "192px",
-        height: "192px",
-        objectFit: "cover",
-        border: "2px solid #6D2323",
-        borderRadius: 2,
-      }}
-    />
+                                    {(preview || person.profile_img) && (
+                                        <Box
+                                            sx={{
+                                                display: "flex",
+                                                justifyContent: "center",
+                                                my: 2,
+                                                position: "relative",
+                                            }}
+                                        >
+                                            <Box
+                                                component="img"
+                                                src={
+                                                    preview
+                                                        ? preview
+                                                        : `${API_BASE_URL}/uploads/Student1by1/${person.profile_img}`
+                                                }
+                                                alt="Preview"
+                                                sx={{
+                                                    width: "192px",
+                                                    height: "192px",
+                                                    objectFit: "cover",
+                                                    border: "2px solid #6D2323",
+                                                    borderRadius: 2,
+                                                }}
+                                            />
 
-    {/* ❌ REMOVE BUTTON */}
-    <Button
-      size="small"
-      onClick={() => {
-        setSelectedFile(null);
-        setPreview(null);
+                                            {/* ❌ REMOVE BUTTON */}
+                                            <Button
+                                                size="small"
+                                                onClick={() => {
+                                                    setSelectedFile(null);
+                                                    setPreview(null);
 
-        // ✅ IMPORTANT: remove existing image
-        setPerson((prev) => ({
-          ...prev,
-          profile_img: "",
-        }));
-      }}
-      sx={{
-        position: "absolute",
-        top: -8,
-        right: "calc(50% - 96px)",
-        minWidth: 0,
-        width: 28,
-        height: 28,
-        fontSize: "18px",
-        p: 0,
-        color: "#fff",
-        bgcolor: "#d32f2f",
-        borderRadius: "50%",
-        "&:hover": { bgcolor: "#b71c1c" },
-      }}
-    >
-      ×
-    </Button>
-  </Box>
-)}
+                                                    // ✅ IMPORTANT: remove existing image
+                                                    setPerson((prev) => ({
+                                                        ...prev,
+                                                        profile_img: "",
+                                                    }));
+                                                }}
+                                                sx={{
+                                                    position: "absolute",
+                                                    top: -8,
+                                                    right: "calc(50% - 96px)",
+                                                    minWidth: 0,
+                                                    width: 28,
+                                                    height: 28,
+                                                    fontSize: "18px",
+                                                    p: 0,
+                                                    color: "#fff",
+                                                    bgcolor: "#d32f2f",
+                                                    borderRadius: "50%",
+                                                    "&:hover": { bgcolor: "#b71c1c" },
+                                                }}
+                                            >
+                                                ×
+                                            </Button>
+                                        </Box>
+                                    )}
                                     {/* Guidelines Section */}
                                     <Box
                                         sx={{

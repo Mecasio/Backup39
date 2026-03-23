@@ -509,12 +509,22 @@ const Dashboard1 = (props) => {
     reader.readAsDataURL(file);
   };
 
+  const MAX_SIZE = 2 * 1024 * 1024;
+
   const handleUpload = async () => {
     if (!selectedFile) {
       setSnackbar({
         open: true,
         message: "Please select a file first.",
         severity: "warning",
+      });
+      return;
+    }
+    if (selectedFile.size > MAX_SIZE) {
+      setSnackbar({
+        open: true,
+        message: "File must be 2MB or less.",
+        severity: "error",
       });
       return;
     }
@@ -552,7 +562,16 @@ const Dashboard1 = (props) => {
       handleClose();
     } catch (error) {
       console.error("Upload failed:", error);
-      setSnackbar({ open: true, message: "Upload failed.", severity: "error" });
+      const errorMessage =
+        error.response?.data?.error ||
+        error.response?.data?.message ||
+        "Upload failed.";
+
+      setSnackbar({
+        open: true,
+        message: errorMessage,
+        severity: "error",
+      });
     }
   };
 

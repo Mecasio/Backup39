@@ -410,7 +410,42 @@ const announcementStorage = multer.diskStorage({
 const announcementUpload = multer({ storage: announcementStorage });
 
 // Ito
-const upload = multer({ storage: multer.memoryStorage() });
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 4 * 1024 * 1024 // ✅ 4MB
+  },
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = [
+      "image/jpeg",
+      "image/png",
+      "image/jpg",
+      "application/pdf"
+    ];
+
+    if (!allowedTypes.includes(file.mimetype)) {
+      return cb(new Error("Only JPG, JPEG, PNG, PDF allowed"));
+    }
+
+    cb(null, true);
+  }
+});
+
+app.use((err, req, res, next) => {
+  if (err.code === "LIMIT_FILE_SIZE") {
+    return res.status(400).json({
+      error: "File exceeds 4MB limit"
+    });
+  }
+
+  if (err.message === "Only JPG, JPEG, PNG, PDF allowed") {
+    return res.status(400).json({
+      error: err.message
+    });
+  }
+
+  next(err);
+});
 
 const nodemailer = require("nodemailer");
 const { error } = require("console");
@@ -2987,6 +3022,69 @@ app.put("/api/enrollment/person/:person_id", async (req, res) => {
     res.status(500).json({ error: "Failed to update person in ENROLLMENT DB" });
   }
 });
+
+app.post(
+  "/api/enrollment/upload-profile-picture",
+  upload.single("profile_picture"),
+  async (req, res) => {
+    const { person_id } = req.body;
+
+    if (!person_id || !req.file) {
+      return res.status(400).json({ message: "Missing person_id or file." });
+    }
+
+    try {
+      // ✅ Get applicant_number FROM DB3
+      const [rows] = await db3.query(
+        "SELECT student_number FROM student_numbering_table WHERE person_id = ?",
+        [person_id]
+      );
+
+      if (!rows.length) {
+        return res.status(404).json({
+          message: "Student number not found for person_id " + person_id,
+        });
+      }
+
+      const student_number = rows[0].student_number;
+
+      const ext = path.extname(req.file.originalname).toLowerCase();
+      const year = new Date().getFullYear();
+      const filename = `${student_number}_1by1_${year}${ext}`;
+
+      const uploadDir = path.join(__dirname, "uploads/Student1by1");
+      const finalPath = path.join(uploadDir, filename);
+
+      // ✅ delete old file
+      const files = await fs.promises.readdir(uploadDir);
+      for (const file of files) {
+        if (file.startsWith(`${student_number}_1by1_`)) {
+          await fs.promises.unlink(path.join(uploadDir, file));
+        }
+      }
+
+      // ✅ save new file
+      await fs.promises.writeFile(finalPath, req.file.buffer);
+
+      // ✅ UPDATE USING DB3
+      await db3.query(
+        "UPDATE person_table SET profile_img = ? WHERE person_id = ?",
+        [filename, person_id]
+      );
+
+      res.status(200).json({
+        message: "Uploaded successfully",
+        filename,
+      });
+    } catch (err) {
+      console.error("Upload error:", err);
+      res.status(500).json({
+        message: "Failed to upload image.",
+        error: err.message,
+      });
+    }
+  }
+);
 
 // ===========================================================
 //  STUDENT  can update ONLY their own personal information

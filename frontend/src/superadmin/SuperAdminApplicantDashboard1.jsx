@@ -648,45 +648,73 @@ const SuperAdminApplicantDashboard1 = () => {
         reader.readAsDataURL(file);
     };
 
-    const handleUpload = async () => {
-        if (!selectedFile) {
-            setSnackbar({ open: true, message: "Please select a file first.", severity: "warning" });
-            return;
-        }
+   const MAX_SIZE = 2 * 1024 * 1024;
 
-        const formData = new FormData();
-        formData.append("profile_picture", selectedFile);
-        formData.append("person_id", userID);
+  const handleUpload = async () => {
+    if (!selectedFile) {
+      setSnackbar({
+        open: true,
+        message: "Please select a file first.",
+        severity: "warning",
+      });
+      return;
+    }
+    if (selectedFile.size > MAX_SIZE) {
+      setSnackbar({
+        open: true,
+        message: "File must be 2MB or less.",
+        severity: "error",
+      });
+      return;
+    }
 
-        try {
-            const response = await axios.post(
-                `${API_BASE_URL}/api/upload-profile-picture`,
-                formData,
-                {
-                    headers: { "Content-Type": "multipart/form-data" },
-                }
-            );
+    const formData = new FormData();
+    formData.append("profile_picture", selectedFile);
+    formData.append("person_id", userID);
 
-            const fileName = response.data.filename || response.data.profile_img;
+    try {
+      const response = await axios.post(
+        `${API_BASE_URL}/form/upload-profile-picture`,
+        formData,
+        {
+          headers: { "Content-Type": "multipart/form-data" },
+        },
+      );
 
-            // ✅ Set image AND trigger auto-save
-            const updatedPerson = {
-                ...person,
-                profile_img: fileName,
-            };
+      const fileName = response.data.filename || response.data.profile_img;
 
-            setPerson(updatedPerson);
-            await handleUpdate(updatedPerson); // ✅ this pushes the profile_img change into DB
+      // ✅ Set image AND trigger auto-save
+      const updatedPerson = {
+        ...person,
+        profile_img: fileName,
+      };
 
-            setUploadedImage(`${API_BASE_URL}/uploads/${fileName}`);
-            setSnackbar({ open: true, message: "Upload successful!", severity: "success" });
-            handleClose();
-        } catch (error) {
-            console.error("Upload failed:", error);
-            setSnackbar({ open: true, message: "Upload failed.", severity: "error" });
-        }
-    };
+      setPerson(updatedPerson);
+      await handleUpdate(updatedPerson); // ✅ this pushes the profile_img change into DB
 
+      setUploadedImage(`${API_BASE_URL}/uploads/${fileName}`);
+      setSnackbar({
+        open: true,
+        message: "Upload successful!",
+        severity: "success",
+      });
+      handleClose();
+    } catch (error) {
+      console.error("Upload failed:", error);
+      const errorMessage =
+        error.response?.data?.error ||
+        error.response?.data?.message ||
+        "Upload failed.";
+
+      setSnackbar({
+        open: true,
+        message: errorMessage,
+        severity: "error",
+      });
+    }
+  };
+
+  
     const [isLrnNA, setIsLrnNA] = useState(false);
 
     const handlePwdCheck = (event) => {

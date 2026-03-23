@@ -8,6 +8,20 @@ const router = express.Router();
 const QRCode = require("qrcode");
 const upload = multer({ storage: multer.memoryStorage() });
 
+const uploadProfile = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 2 * 1024 * 1024, // ✅ 2MB max
+  },
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = ["image/jpeg", "image/png", "image/jpg"];
+    if (!allowedTypes.includes(file.mimetype)) {
+      return cb(new Error("Only JPG, JPEG, PNG allowed"));
+    }
+    cb(null, true);
+  },
+});
+
 const allowedFields = new Set([
   "profile_img", "campus", "academicProgram", "classifiedAs", "applyingAs",
   "program", "program2", "program3", "yearLevel", "last_name", "first_name",
@@ -111,7 +125,7 @@ router.put("/person/:id", async (req, res) => {
   }
 });
 
-router.post("/upload-profile-picture", upload.single("profile_picture"), async (req, res) => {
+router.post("/upload-profile-picture", uploadProfile.single("profile_picture"), async (req, res) => {
   const { person_id } = req.body;
   if (!person_id || !req.file) {
     return res.status(400).send("Missing person_id or file.");
@@ -150,6 +164,22 @@ router.post("/upload-profile-picture", upload.single("profile_picture"), async (
     console.error("Upload error:", err);
     res.status(500).send("Failed to upload image.");
   }
+});
+
+router.use((err, req, res, next) => {
+  if (err.code === "LIMIT_FILE_SIZE") {
+    return res.status(400).json({
+      error: "Profile picture must be 2MB or less.",
+    });
+  }
+
+  if (err.message === "Only JPG, JPEG, PNG allowed") {
+    return res.status(400).json({
+      error: err.message,
+    });
+  }
+
+  next(err);
 });
 
 router.post("/add-applicant", async (req, res) => {

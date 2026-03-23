@@ -7,14 +7,6 @@ const router = express.Router();
 router.post("/program", async (req, res) => {
   const { name, code, major, components, academic_program } = req.body;
 
-
-  if (!["1", "2"].includes(String(components))) {
-
-    return res.status(400).json({
-      message: "Invalid campus value",
-    });
-  }
-
   try {
     await db3.query(
       `INSERT INTO program_table 
@@ -45,16 +37,7 @@ router.get("/get_program", async (req, res) => {
 // -------------------- UPDATE PROGRAM --------------------
 router.put("/program/:id", async (req, res) => {
   const { id } = req.params;
-  const { name, code, major, components, academic_program } = req.body;
-
-
-
-  if (!["1", "2"].includes(String(components))) {
-
-    return res.status(400).json({
-      message: "Invalid campus value",
-    });
-  }
+  const { name, code, major, components, academic_program } = req.body
 
   try {
     const [result] = await db3.query(
@@ -105,14 +88,6 @@ router.delete("/program/:id", async (req, res) => {
 router.put("/update_program/:id", async (req, res) => {
   const { id } = req.params;
   const { name, code, major, components, academic_program } = req.body;
-
-
-  if (!["1", "2"].includes(String(components))) {
-
-    return res.status(400).json({
-      message: "Invalid campus value",
-    });
-  }
 
   try {
     const [result] = await db3.query(

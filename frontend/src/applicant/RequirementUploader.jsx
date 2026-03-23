@@ -187,31 +187,42 @@ const RequirementUploader = () => {
   }, []);
 
 
-
   const handleUpload = async (key, file) => {
     if (!file) return;
 
-    setSelectedFiles((prev) => ({ ...prev, [key]: file.name }));
+    // ✅ 4MB check
+    const maxSize = 4 * 1024 * 1024;
 
-    const requirementId = key;
-    if (!requirementId) return alert('Requirement not found.');
+    if (file.size > maxSize) {
+      setSnack({
+        open: true,
+        severity: "error",
+        message: "File must not exceed 4MB"
+      });
+      return; // ❌ STOP upload
+    }
+
+    setSelectedFiles((prev) => ({ ...prev, [key]: file.name }));
 
     const formData = new FormData();
     formData.append('file', file);
-    formData.append('requirements_id', key); // ✅ key is already the doc.id
+    formData.append('requirements_id', key);
     formData.append('person_id', userID);
 
     try {
       await axios.post(`${API_BASE_URL}/api/upload`, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
+        headers: { 'Content-Type': 'multipart/form-data' }
       });
 
       fetchUploads(userID);
     } catch (err) {
       console.error('Upload error:', err);
-      alert('Failed to upload. Please try again.');
+
+      setSnack({
+        open: true,
+        severity: "error",
+        message: err.response?.data?.error || "Upload failed",
+      });
     }
   };
 
@@ -747,7 +758,7 @@ const RequirementUploader = () => {
         ))}
       </Box>
 
-  
+
 
     </Box>
   );

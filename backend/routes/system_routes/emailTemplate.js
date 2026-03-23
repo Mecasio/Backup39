@@ -23,14 +23,14 @@ router.get("/api/email-templates", async (req, res) => {
 // CREATE template
 router.post("/api/email-templates", async (req, res) => {
   try {
-    const { sender_name, department_id, is_active = 1 } = req.body;
+    const { sender_name, department_id, employee_id, is_active = 1 } = req.body;
     if (!sender_name || !department_id)
       return res
         .status(400)
         .json({ error: "Sender name and department are required" });
 
     const [result] = await db.query(
-      "INSERT INTO email_templates (sender_name, department_id, is_active) VALUES (?, ?, ?)",
+      "INSERT INTO email_templates (sender_name, department_id, employee_id, is_active) VALUES (?,  ?, ?, ?)",
       [sender_name, department_id, is_active ? 1 : 0],
     );
     res.status(201).json({ template_id: result.insertId });
@@ -43,15 +43,16 @@ router.post("/api/email-templates", async (req, res) => {
 // UPDATE template
 router.put("/api/email-templates/:id", async (req, res) => {
   try {
-    const { sender_name, department_id, is_active } = req.body;
+    const { sender_name, department_id, employee_id, is_active } = req.body;
 
     const [result] = await db.query(
       `UPDATE email_templates
        SET sender_name = COALESCE(?, sender_name),
            department_id = COALESCE(?, department_id),
+           employee_id = COALESCE(?, employee_id),
            is_active = COALESCE(?, is_active)
        WHERE template_id = ?`,
-      [sender_name, department_id, is_active, req.params.id],
+      [sender_name, department_id, employee_id, is_active, req.params.id],
     );
 
     if (result.affectedRows === 0)

@@ -31,9 +31,6 @@ router.post("/adding_course", async (req, res) => {
   } = req.body;
 
   try {
-
-    // Uncomment this block to enable course code normalization and validation
-    // // Allow letters, numbers, dash (-), underscore (_)
     const normalizeCode = (code) =>
       (code || "").replace(/[^A-Za-z0-9-_\.]/g, "").toUpperCase();
 
@@ -42,21 +39,43 @@ router.post("/adding_course", async (req, res) => {
     const normalized_code = normalizeCode(course_code);
     const normalized_desc = normalizeDescription(course_description);
 
+    const unit = parseFloat(course_unit) || 0;
+    const lec = parseFloat(lec_unit) || 0;
+    const lab = parseFloat(lab_unit) || 0;
+
     if (!normalized_code) {
       return res.status(400).json({ message: "Course code is required" });
     }
 
     if (!normalized_desc) {
-      return res.status(400).json({ message: "Course code is required" });
+      return res.status(400).json({ message: "Course description is required" });
     }
 
+    // 🔥 CHECK: Reject only if EVERYTHING is identical
     const [rows] = await db3.query(
-      "SELECT course_id FROM course_table WHERE course_code = ? AND course_description = ?",
-      [normalized_code, normalized_desc]
+      `SELECT course_id FROM course_table 
+       WHERE course_code = ?
+       AND course_description = ?
+       AND course_unit = ?
+       AND lec_unit = ?
+       AND lab_unit = ?
+       AND (prereq <=> ?)   -- NULL-safe comparison
+       AND (corequisite <=> ?)`,
+      [
+        normalized_code,
+        normalized_desc,
+        unit,
+        lec,
+        lab,
+        prereq || null,
+        corequisite || null,
+      ]
     );
 
     if (rows.length > 0) {
-      return res.status(400).json({ message: "The course already exists" });
+      return res.status(400).json({
+        message: "❌ Exact duplicate course already exists",
+      });
     }
 
     await db3.query(
@@ -64,23 +83,23 @@ router.post("/adding_course", async (req, res) => {
        (course_code, course_description, course_unit, lec_unit, lab_unit, prereq, corequisite)
        VALUES (?, ?, ?, ?, ?, ?, ?)`,
       [
-        course_code,
-        course_description || null,
-        parseFloat(course_unit) || 0,
-        parseFloat(lec_unit) || 0,
-        parseFloat(lab_unit) || 0,
+        normalized_code,
+        normalized_desc,
+        unit,
+        lec,
+        lab,
         prereq || null,
         corequisite || null,
       ]
     );
 
     res.status(200).json({ message: "✅ Course added successfully" });
+
   } catch (error) {
     console.error("❌ Error adding course:", error);
     res.status(500).json({ message: "Failed to add course" });
   }
 });
-
 
 router.put("/update_course/:id", async (req, res) => {
   const { id } = req.params;
