@@ -45,7 +45,6 @@ const ECATApplicationForm = () => {
     // 🏷️ School Info
     if (settings.company_name) setCompanyName(settings.company_name);
     if (settings.short_term) setShortTerm(settings.short_term);
-    if (settings.campus_address) setCampusAddress(settings.campus_address);
 
     // ✅ Branches (JSON stored in DB)
     if (settings?.branches) {
@@ -137,6 +136,27 @@ const ECATApplicationForm = () => {
     yearGraduated1: "",
     strand: "",
   });
+
+  useEffect(() => {
+    if (!settings) return;
+
+    const branchId = person?.campus;
+    const matchedBranch = branches.find(
+      (branch) => String(branch?.id) === String(branchId)
+    );
+
+    if (matchedBranch?.address) {
+      setCampusAddress(matchedBranch.address);
+      return;
+    }
+
+    if (settings.campus_address) {
+      setCampusAddress(settings.campus_address);
+      return;
+    }
+
+    setCampusAddress(settings.address || "");
+  }, [settings, branches, person?.campus]);
 
 
 

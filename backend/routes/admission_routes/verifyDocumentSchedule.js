@@ -363,6 +363,7 @@ router.get("/verify_schedules_with_count", async (req, res) => {
     const [rows] = await db.query(`
       SELECT 
         s.schedule_id,
+        s.branch,
         s.schedule_date,
         s.building_description,
         s.room_description,
@@ -395,17 +396,29 @@ router.get("/verify_schedules_with_count", async (req, res) => {
 });
 
 router.get("/evaluator-applicants", async (req, res) => {
-  const { query, schedule_id } = req.query;
+  const { query, schedule_id, branch } = req.query;
+
+  const scheduleFilters = ["evaluator LIKE ?"];
+  const scheduleParams = [`%${query || ""}%`];
+
+  if (schedule_id) {
+    scheduleFilters.push("schedule_id = ?");
+    scheduleParams.push(schedule_id);
+  }
+
+  if (branch) {
+    scheduleFilters.push("branch = ?");
+    scheduleParams.push(branch);
+  }
 
   try {
     const [schedules] = await db.query(
       `
       SELECT *
       FROM verify_document_schedule
-      WHERE evaluator LIKE ?
-      ${schedule_id ? "AND schedule_id = ?" : ""}
+      WHERE ${scheduleFilters.join(" AND ")}
       `,
-      schedule_id ? [`%${query}%`, schedule_id] : [`%${query}%`]
+      scheduleParams
     );
 
     if (schedules.length === 0) return res.json([]);
@@ -481,6 +494,7 @@ router.get("/verify_schedules", async (req, res) => {
     const [rows] = await db.query(`
       SELECT 
         s.schedule_id,
+        s.branch,
         s.schedule_date,
         s.building_description,
         s.room_description,
@@ -505,6 +519,15 @@ router.get("/verify_schedules", async (req, res) => {
 
 router.get("/verify_schedules_with_count/:yearId/:semesterId", async (req, res) => {
   const { yearId, semesterId } = req.params;
+  const { branch } = req.query;
+
+  const queryParams = [yearId, semesterId];
+  let branchClause = "";
+
+  if (branch) {
+    branchClause = " AND s.branch = ?";
+    queryParams.push(branch);
+  }
 
   try {
     const [rows] = await db.query(
@@ -527,11 +550,11 @@ router.get("/verify_schedules_with_count/:yearId/:semesterId", async (req, res) 
       JOIN enrollment.active_school_year_table sy ON s.active_school_year_id = sy.id
       LEFT JOIN verify_applicants a
         ON s.schedule_id = a.schedule_id
-      WHERE sy.year_id = ? AND sy.semester_id = ?
+      WHERE sy.year_id = ? AND sy.semester_id = ?${branchClause}
       GROUP BY s.schedule_id
       ORDER BY s.schedule_date, s.start_time
     `,
-      [yearId, semesterId]
+      queryParams
     );
 
     res.json(rows);

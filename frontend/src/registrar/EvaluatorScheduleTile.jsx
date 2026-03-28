@@ -506,7 +506,7 @@ const ScheduleHoverTile = () => {
                                 >
                                     <MenuItem value="">All Branches</MenuItem>
                                     {branches.map((b) => (
-                                        <MenuItem key={b.id} value={b.id}>
+                                        <MenuItem key={b.id} value={b.branch}>
                                             {b.branch}
                                         </MenuItem>
                                     ))}
