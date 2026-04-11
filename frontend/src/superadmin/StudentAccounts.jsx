@@ -947,7 +947,7 @@ export default function StudentAccounts() {
                                             border: `1px solid ${borderColor}`
                                         }}>
                                         {row.emailAddress ? (
-                                            <Typography color="green" fontWeight="bold">
+                                            <Typography color="green">
                                                 {row.emailAddress}
                                             </Typography>
                                         ) : (

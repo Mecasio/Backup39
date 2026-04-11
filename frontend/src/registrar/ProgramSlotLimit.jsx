@@ -81,6 +81,28 @@ const ProgramSlotLimit = () => {
   const [confirmAllOpen, setConfirmAllOpen] = useState(false);
   const [confirmAllProgramsOpen, setConfirmAllProgramsOpen] = useState(false);
 
+  const branches = Array.isArray(settings?.branches)
+    ? settings.branches
+    : typeof settings?.branches === "string"
+      ? JSON.parse(settings.branches)
+      : [];
+  
+  const getDefaultBranch = (branchesInput) => {
+    try {
+      const branches = Array.isArray(branchesInput)
+        ? branchesInput
+        : typeof branchesInput === "string"
+          ? JSON.parse(branchesInput)
+          : [];
+
+      return branches[0]?.id || "";
+    } catch (error) {
+      return "";
+    }
+  };
+
+  const defaultBranch = getDefaultBranch(settings?.branches);
+  const [selectedBranch, setSelectedBranch] = useState(defaultBranch);
   const pageId = 110;
 
   useEffect(() => {
@@ -90,8 +112,7 @@ const ProgramSlotLimit = () => {
     if (settings.title_color) setTitleColor(settings.title_color);
     if (settings.subtitle_color) setSubtitleColor(settings.subtitle_color);
     if (settings.border_color) setBorderColor(settings.border_color);
-    if (settings.main_button_color)
-      setMainButtonColor(settings.main_button_color);
+    if (settings.main_button_color) setMainButtonColor(settings.main_button_color);
     if (settings.sub_button_color) setSubButtonColor(settings.sub_button_color); // ✅ NEW
     if (settings.stepper_color) setStepperColor(settings.stepper_color); // ✅ NEW
 
@@ -316,9 +337,37 @@ const ProgramSlotLimit = () => {
 
   const filteredSlots = slots.filter(
     (row) =>
-      !selectedDepartmentFilter ||
-      row.dprtmnt_id === Number(selectedDepartmentFilter),
+      (!selectedDepartmentFilter ||
+      row.dprtmnt_id === Number(selectedDepartmentFilter)) &&
+      (!selectedBranch || 
+      row.components === Number(selectedBranch))
   );
+  
+  const filteredDepartments = department.filter((dep) => {
+    return slots.some(
+      (row) =>
+        row.dprtmnt_id === dep.dprtmnt_id &&
+        (!selectedBranch || row.components === Number(selectedBranch))
+    );
+  });
+
+  useEffect(() => {
+    if (filteredDepartments.length > 0) {
+      const exists = filteredDepartments.some(
+        (dep) => dep.dprtmnt_id === Number(selectedDepartmentFilter)
+      );
+
+      // ✅ if no selected OR invalid → pick first
+      if (!selectedDepartmentFilter || !exists) {
+        const firstDeptId = filteredDepartments[0].dprtmnt_id;
+        setSelectedDepartmentFilter(firstDeptId);
+        fetchPrograms(firstDeptId);
+      }
+    } else {
+      setSelectedDepartmentFilter("");
+      setPrograms([]);
+    }
+  }, [filteredDepartments]);
 
   if (loading || hasAccess === null) {
     return <LoadingOverlay open={loading} message="Loading..." />;
@@ -341,6 +390,14 @@ const ProgramSlotLimit = () => {
   const selectedDepartmentName = selectedDepartmentItem
     ? selectedDepartmentItem.dprtmnt_name
     : "selected department";
+
+  const handleSelectBranch = (e) => {
+    const branchId = e.target.value;
+    setSelectedBranch(branchId);
+
+    setSelectedProgram("");
+    setSelectedDepartmentFilter(""); 
+  };
 
   return (
     <Box
@@ -411,8 +468,8 @@ const ProgramSlotLimit = () => {
         <Box display="flex" gap={2}>
           <FormControl fullWidth>
             <Select
-              value={campusFilter}
-              onChange={(e) => setCampusFilter(e.target.value)}
+              value={selectedBranch}
+              onChange={handleSelectBranch}
               MenuProps={{
                 PaperProps: {
                   sx: {
@@ -421,8 +478,12 @@ const ProgramSlotLimit = () => {
                 },
               }}
             >
-              <MenuItem value={1}>Manila</MenuItem>
-              <MenuItem value={2}>Cavite</MenuItem>
+              <MenuItem value="">All Branches</MenuItem>
+              {branches.map((b) => (
+                <MenuItem key={b.id} value={b.id}>
+                  {b.branch}
+                </MenuItem>
+              ))}
             </Select>
           </FormControl>
 
@@ -481,7 +542,7 @@ const ProgramSlotLimit = () => {
                 },
               }}
             >
-              {department.map((dep) => (
+              {filteredDepartments.map((dep) => (
                 <MenuItem key={dep.dprtmnt_id} value={dep.dprtmnt_id}>
                   {dep.dprtmnt_name}
                 </MenuItem>
@@ -529,9 +590,7 @@ const ProgramSlotLimit = () => {
               inputProps={{ min: 1 }}
             />
           </FormControl>
-
         </Box>
-
 
         <Box width="100%" display="flex" gap={2} sx={{ mt: 3 }}>
           <Button
@@ -586,7 +645,8 @@ const ProgramSlotLimit = () => {
           <Button
             color="error"
             variant="outlined"
-            onClick={() => setConfirmOpen(false)} >
+            onClick={() => setConfirmOpen(false)}
+          >
             Cancel
           </Button>
           <Button
@@ -620,7 +680,8 @@ const ProgramSlotLimit = () => {
           <Button
             color="error"
             variant="outlined"
-            onClick={() => setConfirmAllOpen(false)}>
+            onClick={() => setConfirmAllOpen(false)}
+          >
             Cancel
           </Button>
           <Button

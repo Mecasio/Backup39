@@ -35,7 +35,8 @@ router.get("/programs/availability", async (req, res) => {
         ct.lock_status,
         p.program_description,
         p.program_code,
-        p.major
+        p.major,
+        p.components
       FROM dprtmnt_curriculum_table AS dc
       INNER JOIN dprtmnt_table AS dt 
         ON dc.dprtmnt_id = dt.dprtmnt_id
@@ -110,6 +111,7 @@ router.get("/programs/availability", async (req, res) => {
     res.status(500).json({ message: "Failed to fetch program availability" });
   }
 });
+
 
 router.post("/apply", async (req, res) => {
   console.log("apply route body:", req.body);
