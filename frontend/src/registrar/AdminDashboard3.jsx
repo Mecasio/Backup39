@@ -667,7 +667,7 @@ const AdminDashboard3 = () => {
             fontSize: '36px',
           }}
         >
-          ADMISSION SHIFTING FORM - EDUCATIONAL ATTAINMENT
+           EDUCATIONAL ATTAINMENT
         </Typography>
       </Box>
       <hr style={{ border: "1px solid #ccc", width: "100%" }} />

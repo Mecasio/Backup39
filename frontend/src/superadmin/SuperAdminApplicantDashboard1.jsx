@@ -1195,7 +1195,7 @@ const SuperAdminApplicantDashboard1 = () => {
                         fontSize: "36px",
                     }}
                 >
-                    APPLICANT - PERSONAL INFORMATION
+                     PERSONAL INFORMATION
                 </Typography>
                 <TextField
                     size="small"

@@ -588,7 +588,7 @@ const AdminDashboard5 = () => {
             fontSize: '36px',
           }}
         >
-          ADMISSION SHIFTING FORM - OTHER INFORMATION
+         OTHER INFORMATION
         </Typography>
       </Box>
       <hr style={{ border: "1px solid #ccc", width: "100%" }} />

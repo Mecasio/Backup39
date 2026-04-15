@@ -565,7 +565,7 @@ const MedicalDashboard5 = () => {
             fontSize: '36px',
           }}
         >
-          APPLICANT FORM - OTHER INFORMATION
+           OTHER INFORMATION
         </Typography>
 
 

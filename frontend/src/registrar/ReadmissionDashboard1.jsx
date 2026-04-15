@@ -1294,7 +1294,7 @@ const ReadmissionDashboard1 = () => {
             fontSize: "36px",
           }}
         >
-          APPLICANT FORM - PERSONAL INFORMATION
+           PERSONAL INFORMATION
         </Typography>
 
         {/* ✅ Right side: Search + Excel Import side by side */}

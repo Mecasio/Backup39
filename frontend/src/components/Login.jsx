@@ -71,16 +71,17 @@ const Login = ({ setIsAuthenticated }) => {
     return age;
   };
 
+  const [errors, setErrors] = useState({});
+
   const handleLogin = async () => {
-    if (!email || !password) {
+    if (!isFormValid()) {
       setSnack({
         open: true,
-        message: "Please fill in all fields",
+        message: "Please fill in all required fields",
         severity: "warning",
       });
       return;
     }
-
     try {
       const apiUrl =
         loginType === "applicant"
@@ -139,6 +140,24 @@ const Login = ({ setIsAuthenticated }) => {
         severity: "error",
       });
     }
+  };
+
+  const isFormValid = () => {
+    let newErrors = {};
+    let isValid = true;
+
+    if (!email) {
+      newErrors.email = true;
+      isValid = false;
+    }
+
+    if (!password) {
+      newErrors.password = true;
+      isValid = false;
+    }
+
+    setErrors(newErrors);
+    return isValid;
   };
 
   const handleClose = (_, reason) => {
@@ -268,7 +287,8 @@ const Login = ({ setIsAuthenticated }) => {
                   position: "absolute",
                   top: "2.75rem",
                   right: "0.7rem",
-                  color: "rgba(0,0,0,0.4)",
+                  fontSize: "30px", // 👈 BIGGER icon
+                  color: "black",
                   pointerEvents: "none",
                 }}
               />
@@ -289,10 +309,15 @@ const Login = ({ setIsAuthenticated }) => {
                 style={{
                   paddingLeft: "2.5rem",
                   height: "55px",
-                  border: "2px solid black",
+                  border: errors.password ? "2px solid red" : "2px solid black",
                   borderRadius: "10px",
                 }}
               />
+              {errors.email && (
+                <span style={{ color: "red", fontSize: "12px" }}>
+                  Email is required
+                </span>
+              )}
               <EmailIcon
                 style={{
                   position: "absolute",
@@ -301,6 +326,7 @@ const Login = ({ setIsAuthenticated }) => {
                   color: "rgba(0,0,0,0.4)",
                 }}
               />
+
             </div>
 
             {/* Password */}
@@ -318,10 +344,15 @@ const Login = ({ setIsAuthenticated }) => {
                 style={{
                   paddingLeft: "2.5rem",
                   height: "55px",
-                  border: "2px solid black",
+                  border: errors.password ? "2px solid red" : "2px solid black",
                   borderRadius: "10px",
                 }}
               />
+              {errors.password && (
+                <span style={{ color: "red", fontSize: "12px" }}>
+                  Password is required
+                </span>
+              )}
               <LockIcon
                 style={{
                   position: "absolute",
@@ -394,18 +425,24 @@ const Login = ({ setIsAuthenticated }) => {
               <Button
                 component={RouterLink}
                 to="/register"
-                variant="outlined"
-
+                variant="contained"
                 sx={{
                   textTransform: "none",
                   fontWeight: "bold",
                   px: 3,
-                  py: 1,
-                  borderRadius: 2,
+                  py: 1.2,
+                  borderRadius: "10px",
+                  border: "2px solid black",
+
+                  
+                  color: "#fff",
+
+                  boxShadow: "none",
+
 
                 }}
               >
-               Register Now
+                Register Now
               </Button>
             </Box>
           </div>

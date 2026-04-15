@@ -1262,7 +1262,7 @@ const RegistrarDashboard1 = () => {
                         fontSize: '36px',
                     }}
                 >
-                    APPLICANT FORM - PERSONAL INFORMATION
+                     PERSONAL INFORMATION
                 </Typography>
 
                 <TextField

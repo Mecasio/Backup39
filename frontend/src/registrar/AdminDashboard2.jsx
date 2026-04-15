@@ -785,7 +785,7 @@ const AdminDashboard2 = () => {
             fontSize: '36px',
           }}
         >
-          ADMISSION SHIFTING FORM - FAMILY BACKGROUND
+        FAMILY BACKGROUND
         </Typography>
       </Box>
       <hr style={{ border: "1px solid #ccc", width: "100%" }} />

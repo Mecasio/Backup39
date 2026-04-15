@@ -477,6 +477,8 @@ const PersonalDataForm = () => {
                                 </div>
                             </div>
                         </div>
+                        <br />
+
 
                     </Container>
 
@@ -487,7 +489,7 @@ const PersonalDataForm = () => {
 
                         <table
                             style={{
-                                marginTop: "-23px",
+
                                 border: "1px solid black",
                                 borderCollapse: "collapse",
                                 fontFamily: "Arial",
@@ -1316,7 +1318,7 @@ const PersonalDataForm = () => {
                                                 fontSize: "12px",
                                             }}
                                         >
-                                            <div style={{ fontWeight: "bold" }}>HOUSEHOLD</div>
+                                            <div style={{ fontWeight: "bold" }}>HOUSEHOLD #</div>
                                             <input
                                                 readOnly
                                                 type="text"
@@ -2266,6 +2268,61 @@ const PersonalDataForm = () => {
 
 
                                     {/* PERMANENT CONTACT NUMBER */}
+                                    {/* MIDDLE NAME */}
+                                    <td colSpan={10} style={{
+                                        border: "1px solid black",
+                                        textAlign: "left",
+                                        padding: "2px",  // Reduced padding to fit in 10px height
+                                        fontWeight: "bold",
+                                        fontSize: "12px"
+                                    }}>
+
+
+                                    </td>
+
+                                </tr>
+
+
+                                <tr style={{ height: "5px" }}>
+
+                                    <td colSpan={7} style={{
+                                        border: "1px solid black",
+                                        textAlign: "right",
+                                        fontFamily: "Arial",
+                                        padding: "2px",  // Reduced padding to fit in 10px height
+                                        fontWeight: "bold",
+                                        fontSize: "15px"
+                                    }}>
+                               
+                                    </td>
+
+
+                                    {/* GIVEN NAME */}
+                                    <td colSpan={13} style={{
+                                        border: "1px solid black",
+                                        textAlign: "left",
+                                        padding: "2px",  // Reduced padding to fit in 10px height
+                                        fontWeight: "bold",
+                                        fontSize: "12px"
+                                    }}>
+
+
+                                    </td>
+
+                                    {/* MIDDLE NAME */}
+                                    <td colSpan={10} style={{
+                                        border: "1px solid black",
+                                        textAlign: "left",
+                                        padding: "2px",  // Reduced padding to fit in 10px height
+                                        fontWeight: "bold",
+                                        fontSize: "12px"
+                                    }}>
+
+
+                                    </td>
+
+
+                                    {/* PERMANENT CONTACT NUMBER */}
                                     <td colSpan={10} style={{
                                         border: "1px solid black",
                                         textAlign: "left",
@@ -2280,8 +2337,6 @@ const PersonalDataForm = () => {
                                         })}
                                     </td>
                                 </tr>
-
-
 
 
 

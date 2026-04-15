@@ -462,7 +462,7 @@ const SuperAdminStudentDashboard5 = () => {
                         fontSize: '36px',
                     }}
                 >
-                    STUDENT - OTHER INFORMATION
+                     OTHER INFORMATION
                 </Typography>
 
 

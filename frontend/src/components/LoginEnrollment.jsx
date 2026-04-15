@@ -107,8 +107,10 @@ const LoginEnrollment = ({ setIsAuthenticated }) => {
     ? `${API_BASE_URL}${settings.logo_url}`
     : Logo;
 
+  const [errors, setErrors] = useState({});
+
   const handleLogin = async () => {
-    if (!email || !password) {
+    if (!isFormValid()) {
       setSnack({
         open: true,
         message: "Please fill in all fields",
@@ -116,7 +118,6 @@ const LoginEnrollment = ({ setIsAuthenticated }) => {
       });
       return;
     }
-
     try {
       setLoading(true);
 
@@ -210,6 +211,24 @@ const LoginEnrollment = ({ setIsAuthenticated }) => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const isFormValid = () => {
+    let newErrors = {};
+    let isValid = true;
+
+    if (!email) {
+      newErrors.email = true;
+      isValid = false;
+    }
+
+    if (!password) {
+      newErrors.password = true;
+      isValid = false;
+    }
+
+    setErrors(newErrors);
+    return isValid;
   };
 
   const verifyOtp = async () => {
@@ -398,7 +417,7 @@ const LoginEnrollment = ({ setIsAuthenticated }) => {
                   sx={{
                     position: "absolute",
                     right: "10px", // 👈 like margin-right
-                    top: "75%",
+                    top: "70%",
                     transform: "translateY(-50%)",
                     fontSize: "30px", // 👈 BIGGER icon
                     color: "black",
@@ -423,9 +442,14 @@ const LoginEnrollment = ({ setIsAuthenticated }) => {
                     className="border"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    style={{ paddingLeft: "2.5rem", height: "55px", border: "2px solid black", }}
+                    style={{ paddingLeft: "2.5rem", height: "55px", border: errors.email ? "2px solid red" : "2px solid black", }}
                     autoFocus
                   />
+                  {errors.email && (
+                    <span style={{ color: "red", fontSize: "12px" }}>
+                      Email is required
+                    </span>
+                  )}
                   <EmailIcon
                     style={{
                       position: "absolute",
@@ -446,8 +470,13 @@ const LoginEnrollment = ({ setIsAuthenticated }) => {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     className="border"
-                    style={{ paddingLeft: "2.5rem", height: "55px", border: "2px solid black", }}
+                    style={{ paddingLeft: "2.5rem", height: "55px", border: errors.password ? "2px solid red" : "2px solid black", }}
                   />
+                  {errors.password && (
+                    <span style={{ color: "red", fontSize: "12px" }}>
+                      Password is required
+                    </span>
+                  )}
                   <LockIcon
                     style={{
                       position: "absolute",

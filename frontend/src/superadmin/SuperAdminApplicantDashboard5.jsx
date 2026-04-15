@@ -524,7 +524,7 @@ const SuperAdminApplicantDashboard5 = () => {
                         fontSize: '36px',
                     }}
                 >
-                    APPLICANT - OTHER INFORMATION
+                     OTHER INFORMATION
                 </Typography>
 
 

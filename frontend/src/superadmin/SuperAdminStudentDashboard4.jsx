@@ -454,7 +454,7 @@ const SuperAdminStudentDashboard4 = () => {
                         fontSize: '36px',
                     }}
                 >
-                    STUDENT - HEALTH MEDICAL RECORDS
+                     HEALTH MEDICAL RECORDS
                 </Typography>
 
 

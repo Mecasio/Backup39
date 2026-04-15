@@ -1972,10 +1972,9 @@ router.post("/api/person/import", upload.single("file"), async (req, res) => {
 
       const val = sn.toString().trim();
 
-      // OPTIONAL normalize (won’t block anything)
       if (/^\d{2}-\d{4}$/.test(val)) {
         const year = "20" + val.slice(0, 2);
-        const num = val.slice(3).padStart(5, "0");
+        const num = val.slice(3); // ✅ FIXED
         return `${year}-${num}C`;
       }
 
@@ -2218,8 +2217,9 @@ router.post("/api/person/import", upload.single("file"), async (req, res) => {
 
       totalRows++;
 
-      const rawStudentNumber = row[0]?.toString().trim();
 
+      const rawStudentNumber = row[0]?.toString().trim();
+      const normalizedStudentNumber = normalizeStudentNumber(rawStudentNumber);
       // ❗ SKIP header / non-student rows
       if (
         !rawStudentNumber ||
@@ -2236,22 +2236,52 @@ router.post("/api/person/import", upload.single("file"), async (req, res) => {
 
       totalValid++;
 
-      const [studentRows] = await db3.query(
+      let [studentRows] = await db3.query(
         `
-        SELECT person_id
-        FROM student_numbering_table
-        WHERE student_number = ?
-        LIMIT 1
-        `,
-        [studentNumber],
+  SELECT 
+    s.person_id,
+    p.last_name,
+    p.first_name,
+    p.middle_name
+  FROM student_numbering_table s
+  LEFT JOIN person_table p
+    ON p.person_id = s.person_id
+  WHERE s.student_number = ?
+  LIMIT 1
+  `,
+        [rawStudentNumber]
       );
 
-      if (studentRows.length === 0) {
+      // fallback
+      if (!studentRows.length) {
+        [studentRows] = await db3.query(
+          `
+    SELECT 
+      s.person_id,
+      p.last_name,
+      p.first_name,
+      p.middle_name
+    FROM student_numbering_table s
+    LEFT JOIN person_table p
+      ON p.person_id = s.person_id
+    WHERE s.student_number = ?
+    LIMIT 1
+    `,
+          [normalizedStudentNumber]
+        );
+      }
+
+      if (!studentRows.length || !studentRows[0].person_id) {
         totalNotFound++;
         totalSkipped++;
 
-        // ✅ store instead of spamming logs
-        missingStudents.push(studentNumber);
+        // ❌ ONLY missing students go here
+        missingStudents.push({
+          studentNumber,
+          last_name: "",
+          first_name: "",
+          middle_name: "",
+        });
 
         continue;
       }
@@ -2424,7 +2454,7 @@ router.post("/api/person/import", upload.single("file"), async (req, res) => {
           dbToExcelMap[value] = Number(key);
         }
 
-        if (col === "student_number") return studentNumber;
+        if (col === "student_number") return rawStudentNumber;
         if (col === "program") return resolvedProgram;
         if (col === "campus") return resolvedCampus;
         if (col === "academicProgram") return resolvedAcademicProgram;

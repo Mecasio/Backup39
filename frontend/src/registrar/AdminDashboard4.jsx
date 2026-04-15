@@ -636,7 +636,7 @@ const AdminDashboard4 = () => {
             fontSize: '36px',
           }}
         >
-          ADMISSION SHIFTING FORM - HEALTH MEDICAL RECORDS
+      HEALTH MEDICAL RECORDS
         </Typography>
       </Box>
       <hr style={{ border: "1px solid #ccc", width: "100%" }} />

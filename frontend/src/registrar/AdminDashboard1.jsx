@@ -1267,7 +1267,7 @@ const AdminDashboard1 = () => {
             fontSize: '36px',
           }}
         >
-          ADMISSION SHIFTING FORM - PERSONAL INFORMATION
+           PERSONAL INFORMATION
         </Typography>
 
         <TextField

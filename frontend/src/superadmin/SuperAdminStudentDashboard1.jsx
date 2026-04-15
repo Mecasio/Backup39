@@ -969,11 +969,7 @@ const SuperAdminStudentDashboard1 = () => {
 
         // ✅ NEW: use missingStudents directly
         setSkippedNotFoundCount(res.data.missingStudents?.length || 0);
-        setSkippedNotFoundStudents(
-          (res.data.missingStudents || []).map((sn) => ({
-            studentNumber: sn,
-          })),
-        );
+        setSkippedNotFoundStudents(res.data.missingStudents || []);
 
         // ✅ CLEAN TERMINAL OUTPUT (FINAL ONLY)
         if (res.data.missingStudents?.length) {
@@ -1166,7 +1162,7 @@ const SuperAdminStudentDashboard1 = () => {
             fontSize: "36px",
           }}
         >
-          STUDENT - PERSONAL INFORMATION
+          PERSONAL INFORMATION
         </Typography>
 
         {/* ✅ Right side: Search + Excel Import side by side */}
@@ -1323,12 +1319,15 @@ const SuperAdminStudentDashboard1 = () => {
             <Table size="small">
               <TableHead sx={{ backgroundColor: settings?.header_color || "#1976d2" }}>
                 <TableRow>
-                  <TableCell sx={{ color: "white", fontWeight: "bold", border: `1px solid ${borderColor}`  }}>
+                  <TableCell sx={{ color: "white", fontWeight: "bold", border: `1px solid ${borderColor}` }}>
                     #
                   </TableCell>
 
-                  <TableCell sx={{ color: "white", fontWeight: "bold", border: `1px solid ${borderColor}`  }}>
+                  <TableCell sx={{ color: "white", fontWeight: "bold", border: `1px solid ${borderColor}` }}>
                     Student Number
+                  </TableCell>
+                  <TableCell sx={{ color: "white", fontWeight: "bold", border: `1px solid ${borderColor}` }}>
+                    Student Name
                   </TableCell>
                 </TableRow>
               </TableHead>
@@ -1336,12 +1335,16 @@ const SuperAdminStudentDashboard1 = () => {
               <TableBody>
                 {skippedNotFoundStudents.map((student, index) => (
                   <TableRow key={index}>
-                    <TableCell sx={{ color: "black", fontWeight: "bold", border: `1px solid ${borderColor}`  }}>
+                    <TableCell sx={{ color: "black", fontWeight: "bold", border: `1px solid ${borderColor}` }}>
                       {index + 1}
                     </TableCell>
 
-                    <TableCell  sx={{ color: "black", fontWeight: "bold", border: `1px solid ${borderColor}`  }}>
+                    <TableCell sx={{ color: "black", fontWeight: "bold", border: `1px solid ${borderColor}` }}>
                       {student.studentNumber}
+                    </TableCell>
+
+                    <TableCell sx={{ color: "black", fontWeight: "bold", border: `1px solid ${borderColor}` }}>
+                      {student.last_name}, {student.first_name} {student.middle_name}
                     </TableCell>
                   </TableRow>
                 ))}
@@ -1939,7 +1942,7 @@ const SuperAdminStudentDashboard1 = () => {
                         </MenuItem>
                         {filteredCurriculum.map((item, index) => (
                           <MenuItem key={index} value={item.curriculum_id}>
-                            {`(${item.program_code}): ${item.program_description}${item.major ? ` (${item.major})` : "" 
+                            {`(${item.program_code}): ${item.program_description}${item.major ? ` (${item.major})` : ""
                               } (${item.current_year}-${item.next_year}) (${getBranchLabel(item.components)})`}
                           </MenuItem>
                         ))}

@@ -718,8 +718,8 @@ const RegisterProf = () => {
                 >
                   <Box display="flex" justifyContent="space-between" alignItems="center" >
                     {/* Left: Applicant List Count */}
-                    <Typography fontSize="14px" fontWeight="bold" color="white" >
-                      Professor's List:
+                    <Typography fontSize="14px" fontWeight="bold" color="white">
+                      Faculty Account's: {filteredProfessors.length} 
                     </Typography>
 
                     {/* Right: Pagination Controls */}

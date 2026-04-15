@@ -614,7 +614,7 @@ const handleGuardianChange = (e) => {
                         fontSize: '36px',
                     }}
                 >
-                    APPLICANT FORM - FAMILY BACKGROUND
+                     FAMILY BACKGROUND
                 </Typography>
 
 

@@ -453,7 +453,7 @@ const SuperAdminStudentDashboard3 = () => {
                         fontSize: '36px',
                     }}
                 >
-                    STUDENT - EDUCATIONAL ATTAINMENT
+                     EDUCATIONAL ATTAINMENT
                 </Typography>
 
 

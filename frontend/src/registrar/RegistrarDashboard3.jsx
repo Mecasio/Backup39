@@ -626,7 +626,7 @@ const RegistrarDashboard3 = () => {
                         fontSize: '36px',
                     }}
                 >
-                    APPLICANT FORM -  EDUCATIONAL ATTAINMENT
+                      EDUCATIONAL ATTAINMENT
                 </Typography>
             </Box>
              <hr style={{ border: "1px solid #ccc", width: "100%" }} />

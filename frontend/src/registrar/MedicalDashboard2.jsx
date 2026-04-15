@@ -660,7 +660,7 @@ const MedicalDashboard2 = () => {
                     }}
                 >
 
-                    APPLICANT FORM - FAMILY BACKGROUND
+                     FAMILY BACKGROUND
                 </Typography>
 
 

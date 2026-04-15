@@ -764,7 +764,7 @@ const RegistrarDashboard2 = () => {
             fontSize: '36px',
           }}
         >
-          APPLICANT FORM -  FAMILY BACKGROUND
+            FAMILY BACKGROUND
         </Typography>
       </Box>
         <hr style={{ border: "1px solid #ccc", width: "100%" }} />

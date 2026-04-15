@@ -616,7 +616,7 @@ const OfficialStudentDashboard2 = () => {
                         fontSize: '36px',
                     }}
                 >
-                    APPLICANT FORM - FAMILY BACKGROUND
+                     FAMILY BACKGROUND
                 </Typography>
 
 

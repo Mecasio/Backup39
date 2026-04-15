@@ -62,11 +62,11 @@ const Register = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [confirmPassword, setConfirmPassword] = useState("");
   const [snack, setSnack] = useState({ open: false, message: '', severity: 'info' });
-  const [otp, setOtp] = useState("");
+  const [otp, setOtp] = useState(["", "", "", "", "", ""]);
+  const otpRefs = useRef([]);
   const [showOtpModal, setShowOtpModal] = useState(false);
   const [resendTimer, setResendTimer] = useState(180);
   const [loadingOtp, setLoadingOtp] = useState(false);
-  const otpInputRef = useRef(null);
   const [tempEmail, setTempEmail] = useState("");
   const navigate = useNavigate();
 
@@ -107,22 +107,60 @@ const Register = () => {
       .catch(err => console.error(err));
   }, []);
 
+  const handleOtpChange = (value, index) => {
+    if (!/^\d?$/.test(value)) return;
 
+    const newOtp = [...otp];
+    newOtp[index] = value;
+    setOtp(newOtp);
+
+    if (value && index < 5) {
+      otpRefs.current[index + 1]?.focus();
+    }
+
+    if (
+      newOtp.every((digit) => digit !== "") &&
+      !loadingOtp
+    ) {
+      setTimeout(() => {
+        verifyOtp();
+      }, 200);
+    }
+  };
+
+
+  const handleOtpKeyDown = (e, index) => {
+    if (e.key === "Backspace") {
+      if (otp[index]) {
+        const newOtp = [...otp];
+        newOtp[index] = "";
+        setOtp(newOtp);
+      } else if (index > 0) {
+        otpRefs.current[index - 1]?.focus();
+      }
+    }
+
+    if (e.key === "Enter" && !loadingOtp) {
+      verifyOtp();
+    }
+  };
+
+  const [errors, setErrors] = useState({});
 
   const handleRegister = async () => {
     if (isSubmitting) return;
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-    if (!lastName || !firstName || !birthday || !academicProgram || !applyingAs) {
-
+    if (!isFormValid()) {
       setSnack({
         open: true,
-        message: "Please complete all personal information fields!",
+        message: "Please fill up all required fields!",
         severity: "warning",
       });
       return;
     }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 
     if (!branchId || !checkBranchStatus(branchId)) {
       setSnack({
@@ -163,6 +201,7 @@ const Register = () => {
       setShowOtpModal(true);
       startResendTimer();
 
+
       setSnack({
         open: true,
         message: "OTP sent to your email",
@@ -187,6 +226,63 @@ const Register = () => {
 
   };
 
+
+  const isFormValid = () => {
+    let newErrors = {};
+    let isValid = true;
+
+    if (!branchId) {
+      newErrors.campus = true;
+      isValid = false;
+    }
+
+    if (!lastName) {
+      newErrors.lastName = true;
+      isValid = false;
+    }
+
+    if (!firstName) {
+      newErrors.firstName = true;
+      isValid = false;
+    }
+
+    if (!birthday) {
+      newErrors.birthday = true;
+      isValid = false;
+    }
+
+    if (!academicProgram) {
+      newErrors.academicProgram = true;
+      isValid = false;
+    }
+
+    if (!applyingAs) {
+      newErrors.applyingAs = true;
+      isValid = false;
+    }
+
+    if (!usersData.email) {
+      newErrors.email = true;
+      isValid = false;
+    }
+
+    if (!usersData.password) {
+      newErrors.password = true;
+      isValid = false;
+    }
+
+    if (!confirmPassword) {
+      newErrors.confirmPassword = true;
+      isValid = false;
+    }
+
+    setErrors(newErrors);
+    return isValid;
+  };
+
+  const getIconTop = (hasError) => {
+    return hasError ? "55%" : "70%";
+  };
 
   const startResendTimer = () => {
     setResendTimer(60);
@@ -237,7 +333,7 @@ const Register = () => {
         birthday,
         academicProgram,
         applyingAs,
-        otp,
+        otp: otp.join(""),
       });
 
       if (!response.data.success) {
@@ -288,7 +384,7 @@ const Register = () => {
     const fetchRegistrationStatus = async () => {
       try {
         const res = await axios.get(
-          `${API_BASE_URL}/auth/registration-status/${branchId}`
+          `${API_BASE_URL}/api/registration-status/${branchId}`
         );
 
         setRegistrationOpen(res.data.registration_open);
@@ -532,7 +628,7 @@ const Register = () => {
                   required
                   style={{
                     height: "45px",
-                    border: "2px solid black",
+                    border: errors.campus ? "2px solid red" : "2px solid black",
                     width: "100%",
                     appearance: "none",   // 👈 remove default arrow
                     WebkitAppearance: "none",
@@ -595,7 +691,7 @@ const Register = () => {
                   className="border"
                   style={{
                     paddingLeft: "2.5rem",
-                    border: "2px solid black",
+                    border: errors.lastName ? "2px solid red" : "2px solid black",
                   }}
                 />
                 <BadgeIcon
@@ -606,6 +702,11 @@ const Register = () => {
                     color: "rgba(0,0,0,0.4)",
                   }}
                 />
+                {errors.lastName && (
+                  <span style={{ color: "red", fontSize: "12px" }}>
+                    This field is required
+                  </span>
+                )}
               </div>
 
               <div className="TextField" style={{ position: "relative" }}>
@@ -621,7 +722,7 @@ const Register = () => {
                   className="border"
                   style={{
                     paddingLeft: "2.5rem",
-                    border: "2px solid black",
+                    border: errors.firstName ? "2px solid red" : "2px solid black",
                   }}
                 />
                 <PersonIcon
@@ -632,6 +733,11 @@ const Register = () => {
                     color: "rgba(0,0,0,0.4)",
                   }}
                 />
+                {errors.firstName && (
+                  <span style={{ color: "red", fontSize: "12px" }}>
+                    This field is required
+                  </span>
+                )}
               </div>
 
               <div className="TextField" style={{ position: "relative" }}>
@@ -671,7 +777,7 @@ const Register = () => {
                   className="border"
                   style={{
                     paddingLeft: "2.5rem",
-                    border: "2px solid black",
+                    border: errors.birthday ? "2px solid red" : "2px solid black",
                   }}
                 />
                 <CakeIcon
@@ -682,6 +788,11 @@ const Register = () => {
                     color: "rgba(0,0,0,0.4)",
                   }}
                 />
+                {errors.birthday && (
+                  <span style={{ color: "red", fontSize: "12px" }}>
+                    This field is required
+                  </span>
+                )}
               </div>
 
 
@@ -697,7 +808,7 @@ const Register = () => {
                   style={{
                     paddingLeft: "1rem",
                     height: "45px",
-                    border: "2px solid black",
+                    border: errors.academicProgram ? "2px solid red" : "2px solid black",
                     width: "100%",
                     appearance: "none",   // 👈 remove default arrow
                     WebkitAppearance: "none",
@@ -714,17 +825,24 @@ const Register = () => {
                       </option>
                     ))}
                 </select>
+                {errors.academicProgram && (
+                  <span style={{ color: "red", fontSize: "12px" }}>
+                    This field is required
+                  </span>
+                )}
                 <ArrowDropDownIcon
                   sx={{
                     position: "absolute",
                     right: "10px", // 👈 like margin-right
-                    top: "70%",
+                    top: getIconTop(errors.academicProgram),
                     transform: "translateY(-50%)",
                     fontSize: "30px", // 👈 BIGGER icon
                     color: "black",
                     pointerEvents: "none", // 👈 allow clicking select
                   }}
                 />
+
+
               </div>
 
 
@@ -739,7 +857,7 @@ const Register = () => {
                   style={{
                     paddingLeft: "1rem",
                     height: "45px",
-                    border: "2px solid black",
+                    border: errors.applyingAs ? "2px solid red" : "2px solid black",
                     width: "100%",
                     appearance: "none",   // 👈 remove default arrow
                     WebkitAppearance: "none",
@@ -757,18 +875,23 @@ const Register = () => {
                   <option value="7">Baccalaureate Graduate</option>
                   <option value="8">Master Degree Graduate</option>
                 </select>
-
+                {errors.applyingAs && (
+                  <span style={{ color: "red", fontSize: "12px" }}>
+                    This field is required
+                  </span>
+                )}
                 <ArrowDropDownIcon
                   sx={{
                     position: "absolute",
                     right: "10px", // 👈 like margin-right
-                    top: "70%",
+                    top: getIconTop(errors.applyingAs), // ✅ dynamic
                     transform: "translateY(-50%)",
                     fontSize: "30px", // 👈 BIGGER icon
                     color: "black",
                     pointerEvents: "none", // 👈 allow clicking select
                   }}
                 />
+
               </div>
 
 
@@ -786,7 +909,7 @@ const Register = () => {
                   value={usersData.email}
                   onChange={handleChanges}
                   onKeyDown={handleKeyDownRegister}
-                  style={{ paddingLeft: "2.5rem", border: "2px solid black" }}
+                  style={{ paddingLeft: "2.5rem", border: errors.email ? "2px solid red" : "2px solid black", }}
                 />
                 <EmailIcon
                   style={{
@@ -796,6 +919,11 @@ const Register = () => {
                     color: "rgba(0,0,0,0.4)"
                   }}
                 />
+                {errors.email && (
+                  <span style={{ color: "red", fontSize: "12px" }}>
+                    This field is required
+                  </span>
+                )}
               </div>
 
               <div className="TextField" style={{ position: "relative" }}>
@@ -811,7 +939,7 @@ const Register = () => {
                   onChange={handleChanges}
                   onKeyDown={handleKeyDownRegister}
                   required
-                  style={{ paddingLeft: "2.5rem", border: "2px solid black" }}
+                  style={{ paddingLeft: "2.5rem", border: errors.password ? "2px solid red" : "2px solid black", }}
                 />
                 <LockIcon
                   style={{
@@ -841,6 +969,11 @@ const Register = () => {
                   ) : (
                     <VisibilityOff sx={{ fontSize: "26px", color: "rgba(0,0,0,0.4)" }} />
                   )}
+                  {errors.password && (
+                    <span style={{ color: "red", fontSize: "12px" }}>
+                      This field is required
+                    </span>
+                  )}
                 </button>
               </div>
 
@@ -860,7 +993,7 @@ const Register = () => {
                   disabled={!usersData.password} // ✅ Disabled until password is filled
                   style={{
                     paddingLeft: "2.5rem",
-                    border: "2px solid black",
+                    border: errors.password ? "2px solid red" : "2px solid black",
                     backgroundColor: !usersData.password ? "#f0f0f0" : "white", // Optional: gray background when disabled
                     cursor: !usersData.password ? "not-allowed" : "text",
                   }}
@@ -892,6 +1025,11 @@ const Register = () => {
                     <Visibility sx={{ fontSize: "26px", color: "rgba(0,0,0,0.4)" }} />
                   ) : (
                     <VisibilityOff sx={{ fontSize: "26px", color: "rgba(0,0,0,0.4)" }} />
+                  )}
+                  {errors.password && (
+                    <span style={{ color: "red", fontSize: "12px" }}>
+                      This field is required
+                    </span>
                   )}
                 </button>
               </div>
@@ -977,88 +1115,158 @@ const Register = () => {
               top: "50%",
               left: "50%",
               transform: "translate(-50%, -50%)",
+              width: 440,
               bgcolor: "#fff",
+              borderRadius: "20px",
+              boxShadow: "0 20px 60px rgba(0,0,0,0.15)",
               p: 4,
-              border: "3px solid black",
-              borderRadius: "12px",
-              width: 350,
-              height: 350,
-              boxShadow: 24,
-              textAlign: "center",
-              position: "relative",
+              border: "1px solid #eee",
             }}
           >
+            {/* Close */}
             <button
               onClick={() => setShowOtpModal(false)}
               style={{
                 position: "absolute",
-                top: "8px",
-                right: "8px",
-                backgroundColor: "#6D2323",
+                top: "12px",
+                right: "12px",
+                backgroundColor: "black",
                 color: "white",
                 border: "none",
                 borderRadius: "50%",
-                width: "32px",
-                height: "32px",
+                width: "34px",
+                height: "34px",
                 cursor: "pointer",
+                fontSize: "16px",
+                fontWeight: "bold",
               }}
             >
               ✕
             </button>
 
-            <h2 style={{ color: "#6D2323", marginBottom: "10px", fontSize: "16px" }}>
-              Enter the 6-digit OTP<br />
-              <small style={{ color: "#555", fontWeight: "normal", fontSize: "16px" }}>
-                Note: This email can only be used to register once.
-              </small>
+
+
+
+            {/* Title */}
+            <h2
+              style={{
+                fontSize: "24px",
+                fontWeight: 700,
+                marginBottom: "8px",
+              }}
+            >
+              Verify your email
             </h2>
 
-
-            <TextField
-              fullWidth
-              value={otp}
-              onChange={(e) => setOtp(e.target.value)}
-              placeholder="Enter OTP"
-              inputRef={otpInputRef}
-              onKeyDown={handleKeyDownOtp}
-              inputProps={{
-                maxLength: 6,
-                style: { textAlign: "center", fontSize: "18px" },
+            {/* Description */}
+            <p
+              style={{
+                color: "#666",
+                fontSize: "14px",
+                lineHeight: 1.6,
+                marginBottom: "20px",
               }}
-              sx={{ mb: 2 }}
-            />
+            >
+              We sent a 6-digit verification code to your registered email
+              address.
+            </p>
 
+            {/* OTP */}
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "center",
+                gap: 1.5,
+                mb: 3,
+              }}
+            >
+              {otp.map((digit, index) => (
+                <input
+                  key={index}
+                  ref={(el) => (otpRefs.current[index] = el)}
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={1}
+                  value={digit}
+                  onChange={(e) => handleOtpChange(e.target.value, index)}
+                  onKeyDown={(e) => handleOtpKeyDown(e, index)}
+                  style={{
+                    width: "54px",
+                    height: "60px",
+                    fontSize: "24px",
+                    fontWeight: 700,
+                    textAlign: "center",
+                    borderRadius: "14px",
+                    border: "2px solid #ddd",
+                    outline: "none",
+                    transition: "all 0.2s ease",
+                  }}
+                />
+              ))}
+            </Box>
+
+            {/* Helper text */}
+            <p
+              style={{
+                fontSize: "13px",
+                color: "#777",
+                marginBottom: "18px",
+                textAlign: "center",
+              }}
+            >
+              This email can only be used once for admission verification.
+            </p>
+
+            {/* Verify */}
             <button
               onClick={verifyOtp}
               disabled={loadingOtp}
               style={{
                 width: "100%",
+                padding: "14px",
+                borderRadius: "12px",
+                border: "none",
                 backgroundColor: mainButtonColor,
                 color: "white",
-                padding: "10px",
-                borderRadius: "6px",
-                border: "none",
-                fontWeight: "bold",
+                fontWeight: 700,
+                fontSize: "15px",
+                cursor: loadingOtp ? "not-allowed" : "pointer",
               }}
             >
-              {loadingOtp ? "Verifying..." : "Verify OTP"}
+              {loadingOtp ? "Verifying..." : "Verify & Continue"}
             </button>
 
+            {/* Resend */}
             <button
               onClick={resendOtp}
               disabled={resendTimer > 0}
               style={{
-                marginTop: "10px",
                 width: "100%",
-                padding: "10px",
-                borderRadius: "6px",
-                border: "2px solid black",
-                background: "white",
-                cursor: resendTimer > 0 ? "not-allowed" : "pointer",
+                marginTop: "12px",
+                padding: "12px",
+                borderRadius: "12px",
+                border: "1px solid #ddd",
+                background: "#fff",
+                fontWeight: 600,
+                color: resendTimer > 0 ? "#999" : "#333",
               }}
             >
-              {resendTimer > 0 ? `Resend in ${resendTimer}s` : "Resend OTP"}
+              {resendTimer > 0
+                ? `Resend code in ${resendTimer}s`
+                : "Resend code"}
             </button>
+
+            {/* Support hint */}
+            <p
+              style={{
+                marginTop: "14px",
+                fontSize: "12px",
+                color: "#999",
+                textAlign: "center",
+              }}
+            >
+              Didn’t receive the code? Check your spam folder.
+            </p>
           </Box>
         </Modal>
 

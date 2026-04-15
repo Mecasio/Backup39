@@ -511,7 +511,7 @@ const SuperAdminStudentDashboard2 = () => {
                         fontSize: '36px',
                     }}
                 >
-                    STUDENT - FAMILY BACKGROUND
+                     FAMILY BACKGROUND
                 </Typography>
 
 

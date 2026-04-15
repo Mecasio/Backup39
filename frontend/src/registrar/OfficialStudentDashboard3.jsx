@@ -520,7 +520,7 @@ const OfficialStudentDashboard3 = () => {
                         fontSize: '36px',
                     }}
                 >
-                    APPLICANT FORM - EDUCATIONAL ATTAINMENT
+                     EDUCATIONAL ATTAINMENT
                 </Typography>
 
 

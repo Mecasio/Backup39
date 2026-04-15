@@ -81,18 +81,23 @@ router.get("/professors", async (req, res) => {
         pft.role,
         pft.status,
         pft.profile_image,
-        MIN(dpt.dprtmnt_name) AS dprtmnt_name,
-        MIN(dpt.dprtmnt_code) AS dprtmnt_code
-      FROM dprtmnt_profs_table AS dpft
-      INNER JOIN prof_table AS pft ON dpft.prof_id = pft.prof_id
-      INNER JOIN dprtmnt_table AS dpt ON dpft.dprtmnt_id = dpt.dprtmnt_id
-      GROUP BY pft.prof_id
+        dpt.dprtmnt_id,
+        dpt.dprtmnt_name,
+        dpt.dprtmnt_code
+      FROM prof_table AS pft
+      LEFT JOIN dprtmnt_profs_table AS dpft 
+        ON dpft.prof_id = pft.prof_id
+      LEFT JOIN dprtmnt_table AS dpt 
+        ON dpft.dprtmnt_id = dpt.dprtmnt_id
+      ORDER BY pft.prof_id ASC
     `);
+
     res.json(rows);
   } catch (err) {
-    res
-      .status(500)
-      .json({ error: "Failed to retrieve professors", details: err.message });
+    res.status(500).json({
+      error: "Failed to retrieve professors",
+      details: err.message
+    });
   }
 });
 

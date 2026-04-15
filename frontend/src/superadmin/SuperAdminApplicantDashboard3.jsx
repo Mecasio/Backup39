@@ -554,7 +554,7 @@ const SuperAdminApplicantDashboard3 = () => {
                         fontSize: '36px',
                     }}
                 >
-                    APPLICANT - EDUCATIONAL ATTAINMENT
+                     EDUCATIONAL ATTAINMENT
                 </Typography>
 
 

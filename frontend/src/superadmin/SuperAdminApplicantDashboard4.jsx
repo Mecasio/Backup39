@@ -555,7 +555,7 @@ const SuperAdminApplicantDashboard4 = () => {
                         fontSize: '36px',
                     }}
                 >
-                    APPLICANT - HEALTH MEDICAL RECORDS
+                     HEALTH MEDICAL RECORDS
                 </Typography>
 
 

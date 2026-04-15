@@ -588,7 +588,7 @@ const RegistrarDashboard4 = () => {
                         fontSize: '36px',
                     }}
                 >
-                    APPLICANT FORM -  HEALTH MEDICAL RECORDS
+                      HEALTH MEDICAL RECORDS
                 </Typography>
             </Box>
             <hr style={{ border: "1px solid #ccc", width: "100%" }} />

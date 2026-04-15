@@ -644,7 +644,7 @@ const handleGuardianChange = (e) => {
                         fontSize: '36px',
                     }}
                 >
-                    APPLICANT - FAMILY BACKGROUND
+                     FAMILY BACKGROUND
                 </Typography>
 
 
