@@ -526,6 +526,7 @@ const SideBar = ({ setIsAuthenticated, profileImage, setProfileImage }) => {
       key: "settingsCommunication", label: "Settings & Communication", icon: Campaign, items: [
         { title: `${shortTerm} Profile`, link: "/settings", icon: Settings, page_id: 74 },
         { title: "Branch Management", link: "/admin_branches", icon: Settings, page_id: 138 },
+        { title: "Grade Conversion Management", link: "/grade_conversion_admin", icon: Email, page_id: 144 },
         { title: "Email Sender", link: "/email_template_manager", icon: Email, page_id: 67 },
         { title: "Announcement", link: "/announcement", icon: Campaign, page_id: 66 },
         { title: "Signature Upload", link: "/signature_upload", icon: Settings, page_id: 114 },

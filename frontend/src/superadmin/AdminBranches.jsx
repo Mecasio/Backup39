@@ -216,24 +216,7 @@ const AdminBranches = () => {
     }
   };
 
-  const handleAddBranch = async () => {
-    if (!newBranch || !newAddress) return;
-
-    try {
-      await axios.post(`${API_BASE_URL}/api/branches`, {
-        branch: newBranch,
-        address: newAddress
-      });
-
-      setSnack({ open: true, message: "Branch added", severity: "success" });
-      setNewBranch("");
-      setNewAddress("");
-      fetchBranches();
-    } catch {
-      setSnack({ open: true, message: "Add failed", severity: "error" });
-    }
-  };
-
+ 
   const formatLocal = (date) => {
     if (!date) return "";
     return date.slice(0, 16); // ✅ NO conversion

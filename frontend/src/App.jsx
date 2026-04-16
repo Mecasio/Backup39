@@ -33,6 +33,7 @@ import StudentListForEnrollment from "./registrar/StudentListForEnrollment";
 import ApplicationProcessAdmin from "./superadmin/ApplicationProcessAdmin";
 import CourseTaggingForSummerCollege from "./registrar/CourseTaggingForSummerCollege";
 import StudentAccounts from "./superadmin/StudentAccounts";
+import GradeConversionAdmin from "./superadmin/GradeConversionAdmin";
 
 // ✅ Create a Context so all components can access settings
 export const SettingsContext = createContext(null);
@@ -718,7 +719,7 @@ function App() {
                         }
                       />
                       <Route path="/register" element={<Register />} />
-                      
+
 
                       <Route
                         path="/announcement_slider"
@@ -1114,7 +1115,7 @@ function App() {
                           </ProtectedRoute>
                         }
                       />
-                       <Route
+                      <Route
                         path="/course_tagging_for_summer"
                         element={
                           <ProtectedRoute>
@@ -1122,7 +1123,7 @@ function App() {
                           </ProtectedRoute>
                         }
                       />
-                       <Route
+                      <Route
                         path="/summer_tagging_for_college"
                         element={
                           <ProtectedRoute>
@@ -1418,7 +1419,7 @@ function App() {
                           </ProtectedRoute>
                         }
                       />
-                        <Route
+                      <Route
                         path="/application_process_admin"
                         element={
                           <ProtectedRoute>
@@ -1426,11 +1427,19 @@ function App() {
                           </ProtectedRoute>
                         }
                       />
-                        <Route
+                      <Route
                         path="/archived"
                         element={
                           <ProtectedRoute>
                             <Archived />
+                          </ProtectedRoute>
+                        }
+                      />
+                      <Route
+                        path="/grade_conversion_admin"
+                        element={
+                          <ProtectedRoute>
+                            <GradeConversionAdmin />
                           </ProtectedRoute>
                         }
                       />
@@ -1822,7 +1831,7 @@ function App() {
                           </ProtectedRoute>
                         }
                       />
-                       <Route
+                      <Route
                         path="/student_accounts"
                         element={
                           <ProtectedRoute>
@@ -2082,7 +2091,7 @@ function App() {
                           </ProtectedRoute>
                         }
                       />
-                 
+
                       <Route
                         path="/program_payment"
                         element={
@@ -2136,7 +2145,7 @@ function App() {
                         path="/exam-permit/:applicant_number"
                         element={<ExamPermit />}
                       />
-             
+
 
                       <Route
                         path="/student_ecat_application_form"

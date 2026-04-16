@@ -81,6 +81,21 @@ const Dashboard3 = (props) => {
     strand: "",
   });
 
+  const applyingAsRaw = localStorage.getItem("applyingAs");
+
+  const requiresSeniorHigh =
+    ["1", "2", "3", "4"].includes(String(applyingAsRaw)) ||
+    person.classifiedAs === "Freshman (First Year)";
+
+  useEffect(() => {
+    if (requiresSeniorHigh && !person.schoolLevel1) {
+      setPerson(prev => ({
+        ...prev,
+        schoolLevel1: "Senior High School"
+      }));
+    }
+  }, [requiresSeniorHigh]);
+
   // Add this state at the top if not already:
   const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "warning" });
 
@@ -103,8 +118,9 @@ const Dashboard3 = (props) => {
     const storedRole = localStorage.getItem("role");
     const storedID = localStorage.getItem("person_id");
     const keys = JSON.parse(localStorage.getItem("dashboardKeys") || "{}");
-    navigate(`/dashboard/${keys.step3}`);
-
+    if (keys.step3) {
+      navigate(`/dashboard/${keys.step3}`);
+    }
 
     const overrideId = props?.adminOverridePersonId; // new
 
@@ -130,6 +146,11 @@ const Dashboard3 = (props) => {
       window.location.href = "/login";
     }
   }, []);
+
+  const Asterisk = ({ show }) => {
+    if (!show) return null;
+    return <span style={{ color: "red" }}> *</span>;
+  };
 
 
   // Do not alter
@@ -186,14 +207,14 @@ const Dashboard3 = (props) => {
 
 
 
-  const handleBlur = async () => {
-    try {
-      await axios.put(`${API_BASE_URL}/form/person/${userID}`, person);
-      console.log("Auto-saved");
-    } catch (err) {
-      console.error("Auto-save failed", err);
-    }
-  };
+  // const handleBlur = async () => {
+  //   try {
+  //     await axios.put(`${API_BASE_URL}/form/person/${userID}`, person);
+  //     console.log("Auto-saved");
+  //   } catch (err) {
+  //     console.error("Auto-save failed", err);
+  //   }
+  // };
 
 
 
@@ -220,20 +241,35 @@ const Dashboard3 = (props) => {
       setClickedSteps(newClickedSteps);
       navigate(steps[index].path); // ✅ actually move to step
     } else {
-      Snackbar("Please fill all required fields before proceeding.");
+      showSnackbar("Please fill all required fields before proceeding.");
     }
   };
 
   const [errors, setErrors] = useState({});
 
   const isFormValid = () => {
-    const requiredFields = [
-      // Original fields
-      "schoolLevel", "schoolLastAttended", "schoolAddress",
-      "honor", "generalAverage", "yearGraduated",
-
-   
+    let requiredFields = [
+      // ✅ Always required (Junior High)
+      "schoolLevel",
+      "schoolLastAttended",
+      "schoolAddress",
+      "honor",
+      "generalAverage",
+      "yearGraduated",
     ];
+
+    // ✅ CONDITION: if applyingAs is 1–4 → require Senior High
+    if (requiresSeniorHigh) {
+      requiredFields.push(
+        "schoolLevel1",
+        "schoolLastAttended1",
+        "schoolAddress1",
+        "honor1",
+        "generalAverage1",
+        "yearGraduated1",
+        "strand"
+      );
+    }
 
     let newErrors = {};
     let isValid = true;
@@ -251,8 +287,6 @@ const Dashboard3 = (props) => {
     setErrors(newErrors);
     return isValid;
   };
-
-
 
 
   const divToPrintRef = useRef();
@@ -305,30 +339,30 @@ const Dashboard3 = (props) => {
     setExamPermitError("");
   };
 
-   const handleExamPermitClick = async () => {
-      try {
-        const res = await axios.get(`${API_BASE_URL}/api/verified-exam-applicants`);
-        const verified = res.data.some(a => a.person_id === parseInt(userID));
-  
-        if (!verified) {
-          setExamPermitError("❌ You cannot print the Exam Permit until all required documents are verified.");
-          setExamPermitModalOpen(true);
-          return;
-        }
-  
-        // ✅ Render permit and print
-        setShowPrintView(true);
-        setTimeout(() => {
-          printDiv();
-          setShowPrintView(false);
-        }, 500);
-      } catch (err) {
-        console.error("Error verifying exam permit eligibility:", err);
-        setExamPermitError("⚠️ Unable to check document verification status right now.");
+  const handleExamPermitClick = async () => {
+    try {
+      const res = await axios.get(`${API_BASE_URL}/api/verified-exam-applicants`);
+      const verified = res.data.some(a => a.person_id === parseInt(userID));
+
+      if (!verified) {
+        setExamPermitError("❌ You cannot print the Exam Permit until all required documents are verified.");
         setExamPermitModalOpen(true);
+        return;
       }
-    };
-  
+
+      // ✅ Render permit and print
+      setShowPrintView(true);
+      setTimeout(() => {
+        printDiv();
+        setShowPrintView(false);
+      }, 500);
+    } catch (err) {
+      console.error("Error verifying exam permit eligibility:", err);
+      setExamPermitError("⚠️ Unable to check document verification status right now.");
+      setExamPermitModalOpen(true);
+    }
+  };
+
 
 
   const links = [
@@ -360,7 +394,7 @@ const Dashboard3 = (props) => {
 
 
   return (
-     <Box sx={{ height: "calc(100vh - 150px)", overflowY: "auto", paddingRight: 1, backgroundColor: "transparent", mt: 1, padding: 2 }}>
+    <Box sx={{ height: "calc(100vh - 150px)", overflowY: "auto", paddingRight: 1, backgroundColor: "transparent", mt: 1, padding: 2 }}>
       {showPrintView && (
         <div ref={divToPrintRef} style={{ display: "block" }}>
           <ExamPermit />
@@ -604,17 +638,17 @@ const Dashboard3 = (props) => {
                   {step.label}
                 </Typography>
               </Box>
-          {index < steps.length - 1 && (
-  <Box
-    sx={{
-      height: "2px",
-      backgroundColor: mainButtonColor,
-      flex: 1,
-      alignSelf: "center",
-      mx: 2,
-    }}
-  />
-)}
+              {index < steps.length - 1 && (
+                <Box
+                  sx={{
+                    height: "2px",
+                    backgroundColor: mainButtonColor,
+                    flex: 1,
+                    alignSelf: "center",
+                    mx: 2,
+                  }}
+                />
+              )}
             </React.Fragment>
           ))}
         </Box>
@@ -656,7 +690,7 @@ const Dashboard3 = (props) => {
               {/* Educational Attainment */}
               <Box sx={{ flex: "1" }}>
                 <Typography variant="subtitle1" mb={1} sx={{ minHeight: "32px" }}>
-                  Educational Attainment<span style={{color: "red"}}> *</span>
+                  Educational Attainment<span style={{ color: "red" }}> *</span>
                 </Typography>
 
                 <FormControl fullWidth size="small" required error={!!errors.schoolLevel}>
@@ -687,7 +721,7 @@ const Dashboard3 = (props) => {
               {/* School Last Attended */}
               <Box sx={{ flex: "1" }}>
                 <Typography variant="subtitle1" mb={1} sx={{ minHeight: "32px" }}>
-                  School Last Attended<span style={{color: "red"}}> *</span>
+                  School Last Attended<span style={{ color: "red" }}> *</span>
                 </Typography>
 
                 <TextField
@@ -713,7 +747,7 @@ const Dashboard3 = (props) => {
                   mb={1}
                   sx={{ minHeight: "32px", fontSize: "12.5px" }}
                 >
-                  School Full Address (Street / BRGY / City)<span style={{color: "red"}}> *</span>
+                  School Full Address (Street / BRGY / City)<span style={{ color: "red" }}> *</span>
                 </Typography>
 
                 <TextField
@@ -760,7 +794,7 @@ const Dashboard3 = (props) => {
             >
               <Box sx={{ flex: "1 1 33%" }}>
                 <Typography variant="subtitle1" mb={1}>
-                  Recognition / Awards<span style={{color: "red"}}> *</span>
+                  Recognition / Awards<span style={{ color: "red" }}> *</span>
                 </Typography>
                 <TextField
                   fullWidth
@@ -779,7 +813,7 @@ const Dashboard3 = (props) => {
 
               <Box sx={{ flex: "1 1 33%" }}>
                 <Typography variant="subtitle1" mb={1}>
-                  General Average<span style={{color: "red"}}> *</span>
+                  General Average<span style={{ color: "red" }}> *</span>
                 </Typography>
                 <TextField
                   fullWidth
@@ -805,7 +839,7 @@ const Dashboard3 = (props) => {
 
               <Box sx={{ flex: "1 1 33%" }}>
                 <Typography variant="subtitle1" mb={1}>
-                  Year Graduated<span style={{color: "red"}}> *</span>
+                  Year Graduated<span style={{ color: "red" }}> *</span>
                 </Typography>
                 <TextField
                   fullWidth
@@ -848,7 +882,7 @@ const Dashboard3 = (props) => {
               {/* School Level 1 */}
               <Box sx={{ flex: "1" }}>
                 <Typography variant="subtitle1" mb={1} sx={{ minHeight: "32px" }}>
-                  Educational Attainment
+                  Educational Attainment <Asterisk show={requiresSeniorHigh} />
                 </Typography>
 
                 <FormControl fullWidth size="small" >
@@ -871,14 +905,14 @@ const Dashboard3 = (props) => {
                     <MenuItem value="ALS">ALS</MenuItem>
                   </Select>
 
-                 
+
                 </FormControl>
               </Box>
 
               {/* School Last Attended 1 */}
               <Box sx={{ flex: "1" }}>
                 <Typography variant="subtitle1" mb={1} sx={{ minHeight: "32px" }}>
-                  School Last Attended
+                  School Last Attended <Asterisk show={requiresSeniorHigh} />
                 </Typography>
 
                 <TextField
@@ -887,10 +921,12 @@ const Dashboard3 = (props) => {
                   required
                   name="schoolLastAttended1"
                   placeholder="Enter School Last Attended"
+                  error={errors.schoolLastAttended1}
+                  helperText={errors.schoolLastAttended1 ? "This field is required." : ""}
                   value={person.schoolLastAttended1 || ""}
                   onChange={handleChange}
                   onBlur={() => handleUpdate(person)}
-              
+
                 />
               </Box>
 
@@ -901,38 +937,42 @@ const Dashboard3 = (props) => {
                   mb={1}
                   sx={{ minHeight: "32px", fontSize: "12.5px" }}
                 >
-                  School Full Address (Street / BRGY / City)
+                  School Full Address (Street / BRGY / City) <Asterisk show={requiresSeniorHigh} />
                 </Typography>
 
                 <TextField
                   fullWidth
                   size="small"
-                  required
+                  required={requiresSeniorHigh}
                   name="schoolAddress1"
+                  error={errors.schoolAddress1}
+                  helperText={errors.schoolAddress1 ? "This field is required." : ""}
                   placeholder="Enter your School Address"
                   value={person.schoolAddress1 || ""}
                   onChange={handleChange}
                   onBlur={() => handleUpdate(person)}
-                 
+
                 />
               </Box>
 
               {/* Course Program 1 */}
               <Box sx={{ flex: "1" }}>
                 <Typography variant="subtitle1" mb={1} sx={{ minHeight: "32px" }}>
-                  Course Program
+                  Course Program <Asterisk show={requiresSeniorHigh} />
                 </Typography>
 
                 <TextField
                   fullWidth
                   size="small"
-                  required
+                  required={requiresSeniorHigh}
                   name="courseProgram1"
+                  error={errors.courseProgram1}
+                  helperText={errors.courseProgram1 ? "This field is required." : ""}
                   placeholder="Enter your Course Program"
                   value={person.courseProgram1 || ""}
                   onChange={handleChange}
                   onBlur={() => handleUpdate(person)}
-                 
+
                 />
               </Box>
             </Box>
@@ -948,13 +988,15 @@ const Dashboard3 = (props) => {
               {/* Honor 1 */}
               <Box sx={{ flex: "1 1 33%" }}>
                 <Typography variant="subtitle1" mb={1}>
-                  Recognition / Awards
+                  Recognition / Awards <Asterisk show={requiresSeniorHigh} />
                 </Typography>
                 <TextField
                   fullWidth
                   size="small"
-                  required
+                  required={requiresSeniorHigh}
                   name="honor1"
+                  error={errors.honor1}
+                  helperText={errors.honor1 ? "This field is required." : ""}
                   placeholder="Enter your Honor"
                   value={person.honor1 || ""}
                   onChange={handleChange}
@@ -966,13 +1008,15 @@ const Dashboard3 = (props) => {
               {/* General Average 1 */}
               <Box sx={{ flex: "1 1 33%" }}>
                 <Typography variant="subtitle1" mb={1}>
-                  General Average
+                  General Average <Asterisk show={requiresSeniorHigh} />
                 </Typography>
                 <TextField
                   fullWidth
                   size="small"
-                  required
+                  required={requiresSeniorHigh}
                   name="generalAverage1"
+                  error={errors.generalAverage1}
+                  helperText={errors.generalAverage1 ? "This field is required." : ""}
                   type="number" // allow only numeric input
                   inputProps={{
                     step: "0.01", // allow decimals
@@ -983,7 +1027,7 @@ const Dashboard3 = (props) => {
                   value={person.generalAverage1 || ""}
                   onChange={handleChange}
                   onBlur={() => handleUpdate(person)}
-             
+
                 />
               </Box>
 
@@ -991,13 +1035,15 @@ const Dashboard3 = (props) => {
               {/* Year Graduated 1 */}
               <Box sx={{ flex: "1 1 33%" }}>
                 <Typography variant="subtitle1" mb={1}>
-                  Year Graduated
+                  Year Graduated <Asterisk show={requiresSeniorHigh} />
                 </Typography>
                 <TextField
                   fullWidth
                   size="small"
-                  required
+                  required={requiresSeniorHigh}
                   name="yearGraduated1"
+                  error={errors.yearGraduated1}
+                  helperText={errors.yearGraduated1 ? "This field is required." : ""}
                   type="number" // restrict to numbers
                   inputProps={{
                     min: 1900, // optional: earliest year
@@ -1008,14 +1054,14 @@ const Dashboard3 = (props) => {
                   value={person.yearGraduated1 || ""}
                   onChange={handleChange}
                   onBlur={() => handleUpdate(person)}
-               
+
                 />
               </Box>
 
             </Box>
 
             <Typography style={{ fontSize: "20px", color: mainButtonColor, fontWeight: "bold" }}>
-              Strand (For Senior High School)
+              Strand (For Senior High School) <Asterisk show={requiresSeniorHigh} />
             </Typography>
             <hr style={{ border: "1px solid #ccc", width: "100%" }} />
             <br />
@@ -1026,7 +1072,10 @@ const Dashboard3 = (props) => {
               <Select
                 labelId="strand-label"
                 id="strand-select"
+                required={requiresSeniorHigh}
                 name="strand"
+                error={errors.strand}
+                helperText={errors.strand ? "This field is required." : ""}
                 value={person.strand ?? ""}
                 label="Strand"
                 onChange={handleChange}
@@ -1055,7 +1104,7 @@ const Dashboard3 = (props) => {
                 <MenuItem value="Sports Track">Sports Track</MenuItem>
                 <MenuItem value="Design and Arts Track">Design and Arts Track</MenuItem>
               </Select>
-    
+
             </FormControl>
 
             <Modal
@@ -1104,7 +1153,7 @@ const Dashboard3 = (props) => {
               <Button
                 variant="contained"
                 onClick={() => {
-                  handleUpdate();
+                  handleUpdate(person);
 
                   if (isFormValid()) {
                     navigate(`/dashboard/${keys.step2}`);
@@ -1140,7 +1189,7 @@ const Dashboard3 = (props) => {
               <Button
                 variant="contained"
                 onClick={() => {
-                  handleUpdate();
+                  handleUpdate(person);
 
                   if (isFormValid()) {
                     navigate(`/dashboard/${keys.step4}`); // ✅ Goes to step4

@@ -1325,7 +1325,7 @@ Thank you and good luck!`
 
                     <Grid container spacing={2} sx={{ mb: 2 }}>
                         {/* Select Schedule */}
-                        <Grid item xs={10} md={2}>
+                        <Grid item xs={12} md={3}>
                             <Typography textAlign="left" color="maroon" sx={{ mb: 1 }}>
                                 Select Schedule:
                             </Typography>

@@ -503,27 +503,17 @@ router.get("/registration-status/:branch_id", async (req, res) => {
 
     let updated = false;
 
-    const combineDateTime = (dateStr, timeStr) => {
-      if (!dateStr || !timeStr) return null;
-
-      return new Date(
-        `${dateStr}T${timeStr}:00`
-      );
-    };
-
     const updatedBranches = branches.map((b) => {
 
       if (b.id == branch_id) {
 
-        const start = combineDateTime(
-          b.start_date,
-          b.start_time
-        );
+        const start = b.start_date
+          ? new Date(b.start_date)
+          : null;
 
-        const end = combineDateTime(
-          b.end_date,
-          b.end_time
-        );
+        const end = b.end_date
+          ? new Date(b.end_date)
+          : null;
 
         let isOpen = false;
 
@@ -552,12 +542,10 @@ router.get("/registration-status/:branch_id", async (req, res) => {
     });
 
     if (updated) {
-
       await db.query(
         "UPDATE company_settings SET branches = ? WHERE id = 1",
         [JSON.stringify(updatedBranches)]
       );
-
     }
 
     const branch = updatedBranches.find(
@@ -579,6 +567,7 @@ router.get("/registration-status/:branch_id", async (req, res) => {
 
   }
 });
+
 
 
 module.exports = router;

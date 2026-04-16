@@ -92,7 +92,7 @@ const Dashboard1 = (props) => {
 
   }, [settings]);
 
-    const getBranchLabel = (branchId) => {
+  const getBranchLabel = (branchId) => {
     const branch = branches.find((item) => String(item.id) === String(branchId));
     return branch?.branch || "—";
   };
@@ -296,7 +296,9 @@ const Dashboard1 = (props) => {
     const storedRole = localStorage.getItem("role");
     const storedID = localStorage.getItem("person_id");
     const keys = JSON.parse(localStorage.getItem("dashboardKeys") || "{}");
-    navigate(`/dashboard/${keys.step1}`);
+    if (keys.step1) {
+      navigate(`/dashboard/${keys.step1}`);
+    }
     const userId = localStorage.getItem("person_id");
 
     const overrideId = props?.adminOverridePersonId; // new
@@ -1605,7 +1607,7 @@ const Dashboard1 = (props) => {
                               }}
                             >
                               {`(${item.program_code}): ${item.program_description}${item.major ? ` (${item.major})` : ""
-                                } (${item.current_year}-${item.next_year}) (${getBranchLabel(item.components)})`}
+                                } (${getBranchLabel(item.components)})`}
 
                               {/* Slot info */}
                               {isFull ? (
@@ -3621,7 +3623,7 @@ const Dashboard1 = (props) => {
               <Button
                 variant="contained"
                 onClick={(e) => {
-                  handleUpdate();
+                  handleUpdate(person);
 
                   if (isFormValid()) {
                     navigate(`/dashboard/${keys.step2}`);

@@ -75,7 +75,8 @@ const Register = () => {
     setUserData(prevState => ({ ...prevState, [name]: value }));
   };
 
-  const [agreeChecked, setAgreeChecked] = useState(false);
+  const [agreeChecked, setAgreeChecked] = useState(false); // Terms checkbox
+  const [reminderChecked, setReminderChecked] = useState(false); // Dialog checkbox
 
   const [currentYear, setCurrentYear] = useState("");
 
@@ -114,17 +115,9 @@ const Register = () => {
     newOtp[index] = value;
     setOtp(newOtp);
 
+    // Auto focus next
     if (value && index < 5) {
       otpRefs.current[index + 1]?.focus();
-    }
-
-    if (
-      newOtp.every((digit) => digit !== "") &&
-      !loadingOtp
-    ) {
-      setTimeout(() => {
-        verifyOtp();
-      }, 200);
     }
   };
 
@@ -149,6 +142,16 @@ const Register = () => {
 
   const handleRegister = async () => {
     if (isSubmitting) return;
+    if (!reminderChecked) {
+      setSnack({
+        open: true,
+        message:
+          "You must agree to the Terms and Conditions before registering.",
+        severity: "warning",
+      });
+      return;
+    }
+
 
     if (!isFormValid()) {
       setSnack({
@@ -160,7 +163,6 @@ const Register = () => {
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
 
     if (!branchId || !checkBranchStatus(branchId)) {
       setSnack({
@@ -180,8 +182,6 @@ const Register = () => {
       return;
     }
 
-
-    // ✅ Password match check
     if (usersData.password !== confirmPassword) {
       setSnack({
         open: true,
@@ -192,15 +192,16 @@ const Register = () => {
     }
 
     setIsSubmitting(true);
+
     try {
       await axios.post(`${API_BASE_URL}/auth/request-otp`, {
-        email: usersData.email, // ✅ FIX
+        email: usersData.email,
       });
 
       setTempEmail(usersData.email);
+      setOtp(["", "", "", "", "", ""]);
       setShowOtpModal(true);
       startResendTimer();
-
 
       setSnack({
         open: true,
@@ -208,24 +209,16 @@ const Register = () => {
         severity: "success",
       });
 
-      setIsSubmitting(false);
-      return;
-
-
-
     } catch (error) {
       setSnack({
         open: true,
         message: error.response?.data?.message || "Failed to send OTP",
         severity: "error",
       });
-
+    } finally {
       setIsSubmitting(false);
-      return;
     }
-
   };
-
 
   const isFormValid = () => {
     let newErrors = {};
@@ -322,7 +315,19 @@ const Register = () => {
   const [redirectLoading, setRedirectLoading] = useState(false);
 
   const verifyOtp = async () => {
+    const otpValue = otp.join("");
+
+    if (!/^\d{6}$/.test(otpValue)) {
+      setSnack({
+        open: true,
+        message: "Enter complete 6-digit OTP",
+        severity: "error",
+      });
+      return;
+    }
+
     setLoadingOtp(true);
+
     try {
       const response = await axios.post(`${API_BASE_URL}/auth/register`, {
         ...usersData,
@@ -333,11 +338,10 @@ const Register = () => {
         birthday,
         academicProgram,
         applyingAs,
-        otp: otp.join(""),
+        otp: otpValue,
       });
 
       if (!response.data.success) {
-        // Show error message if registration failed
         setSnack({
           open: true,
           message: response.data.message,
@@ -346,7 +350,6 @@ const Register = () => {
         return;
       }
 
-      // Close OTP modal
       setShowOtpModal(false);
       setRedirectLoading(true);
 
@@ -357,7 +360,7 @@ const Register = () => {
     } catch (err) {
       setSnack({
         open: true,
-        message: err.response?.data?.message || "Something went wrong. Please try again.",
+        message: err.response?.data?.message || "Something went wrong.",
         severity: "error",
       });
     } finally {
@@ -659,7 +662,7 @@ const Register = () => {
                     }
 
                     return (
-                      <option key={b.id} value={b.id} d>
+                      <option key={b.id} value={b.id}>
                         {b.branch} {isClosed ? " (Closed)" : ""}
                       </option>
                     );
@@ -816,9 +819,8 @@ const Register = () => {
                   }}
                 >
                   <option value="">Select Program</option>
-
                   {selectedBranch?.academicPrograms
-                    ?.filter((prog) => prog.open === 1) // 🔥 ONLY SHOW OPEN
+                    ?.filter((prog) => prog.open === 1)
                     .map((prog) => (
                       <option key={prog.id} value={prog.id}>
                         {prog.name}
@@ -852,28 +854,70 @@ const Register = () => {
                   required
                   value={applyingAs}
                   disabled={fieldDisabled}
-                  onChange={(e) => setApplyingAs(e.target.value)}
+                  onChange={(e) => {
+                    if (!academicProgram) {
+                      setSnack({
+                        open: true,
+                        message: "Please select Academic Program first.",
+                        severity: "warning",
+                      });
+                      return;
+                    }
+
+                    setApplyingAs(e.target.value);
+                  }}
+
                   className="border"
                   style={{
                     paddingLeft: "1rem",
                     height: "45px",
-                    border: errors.applyingAs ? "2px solid red" : "2px solid black",
+                    border: errors.academicProgram ? "2px solid red" : "2px solid black",
                     width: "100%",
                     appearance: "none",   // 👈 remove default arrow
                     WebkitAppearance: "none",
                     MozAppearance: "none",
-
                   }}
                 >
                   <option value="">Select Applying</option>
-                  <option value="1">Senior High School Graduate</option>
-                  <option value="2">Senior High School Graduating Student</option>
-                  <option value="3">ALS (Alternative Learning System) Passer</option>
-                  <option value="4">Transferee from other University/College</option>
-                  <option value="5">Cross Enrolee Student</option>
-                  <option value="6">Foreign Applicant/Student</option>
-                  <option value="7">Baccalaureate Graduate</option>
-                  <option value="8">Master Degree Graduate</option>
+
+                  {(() => {
+                    const selectedProgram = selectedBranch?.academicPrograms?.find(
+                      (prog) => prog.id.toString() === academicProgram
+                    );
+
+                    if (!selectedProgram) return null;
+
+                    const name = selectedProgram.name.toLowerCase();
+
+                    if (name.includes("undergraduate")) {
+                      return (
+                        <>
+
+                          <option value="1">Senior High School Graduate</option>
+                          <option value="2">Senior High School Graduating Student</option>
+                          <option value="3">ALS (Alternative Learning System) Passer</option>
+                          <option value="4">Transferee from other University/College</option>
+                          <option value="5">Cross Enrolee Student</option>
+                          <option value="6">Foreign Applicant/Student</option>
+                        </>
+                      );
+                    }
+
+                    if (
+                      name.includes("graduate") ||
+                      name.includes("master") ||
+                      name.includes("baccalaureate")
+                    ) {
+                      return (
+                        <>
+                          <option value="7">Baccalaureate Graduate</option>
+                          <option value="8">Master Degree Graduate</option>
+                        </>
+                      );
+                    }
+
+                    return null;
+                  })()}
                 </select>
                 {errors.applyingAs && (
                   <span style={{ color: "red", fontSize: "12px" }}>
@@ -892,8 +936,9 @@ const Register = () => {
                   }}
                 />
 
-              </div>
 
+              </div>
+          
 
 
               <div className="TextField" style={{ position: "relative" }}>
@@ -939,7 +984,7 @@ const Register = () => {
                   onChange={handleChanges}
                   onKeyDown={handleKeyDownRegister}
                   required
-                  style={{ paddingLeft: "2.5rem", border: errors.password ? "2px solid red" : "2px solid black", }}
+                  style={{ paddingLeft: "2.5rem", border: errors.confirmPassword ? "2px solid red" : "2px solid black", }}
                 />
                 <LockIcon
                   style={{
@@ -969,12 +1014,13 @@ const Register = () => {
                   ) : (
                     <VisibilityOff sx={{ fontSize: "26px", color: "rgba(0,0,0,0.4)" }} />
                   )}
-                  {errors.password && (
-                    <span style={{ color: "red", fontSize: "12px" }}>
-                      This field is required
-                    </span>
-                  )}
+
                 </button>
+                {errors.password && (
+                  <span style={{ color: "red", fontSize: "12px" }}>
+                    This field is required
+                  </span>
+                )}
               </div>
 
               <div className="TextField" style={{ position: "relative", }}>
@@ -993,7 +1039,7 @@ const Register = () => {
                   disabled={!usersData.password} // ✅ Disabled until password is filled
                   style={{
                     paddingLeft: "2.5rem",
-                    border: errors.password ? "2px solid red" : "2px solid black",
+                    border: errors.confirmPassword ? "2px solid red" : "2px solid black",
                     backgroundColor: !usersData.password ? "#f0f0f0" : "white", // Optional: gray background when disabled
                     cursor: !usersData.password ? "not-allowed" : "text",
                   }}
@@ -1026,12 +1072,13 @@ const Register = () => {
                   ) : (
                     <VisibilityOff sx={{ fontSize: "26px", color: "rgba(0,0,0,0.4)" }} />
                   )}
-                  {errors.password && (
-                    <span style={{ color: "red", fontSize: "12px" }}>
-                      This field is required
-                    </span>
-                  )}
+
                 </button>
+                {errors.password && (
+                  <span style={{ color: "red", fontSize: "12px" }}>
+                    This field is required
+                  </span>
+                )}
               </div>
 
 
@@ -1042,6 +1089,32 @@ const Register = () => {
                   onChange={(val) => setCapVal(val)}
                 />
               </Box> */}
+
+              {/* Terms and Conditions Checkbox */}
+              <Box
+                sx={{
+                  display: "flex",
+                  justifyContent: "center",
+                  marginTop: "20px",
+                }}
+              >
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={reminderChecked}
+                      onChange={(e) => setReminderChecked(e.target.checked)}
+                    />
+
+                  }
+                  label={
+                    <Typography sx={{ fontSize: "14px" }}>
+                      Please check the box to confirm that you have read and accepted the
+                      EARIST requirements before proceeding with the online application.
+                    </Typography>
+                  }
+                />
+              </Box>
+
 
               {/* Register Button — disabled until CAPTCHA is solved */}
               <div
@@ -1064,12 +1137,27 @@ const Register = () => {
                     return;
                   }
 
+                  if (!reminderChecked) {
+                    setSnack({
+                      open: true,
+                      message:
+                        "Please agree to the Terms and Conditions before registering.",
+                      severity: "warning",
+                    });
+                    return;
+                  }
+
                   if (!isSubmitting) {
                     handleRegister();
                   }
+
                 }}
                 style={{
-                  opacity: registrationOpen && branchSelected ? 1 : 0.7,
+                  opacity:
+                    registrationOpen && branchSelected
+                      ? 1
+                      : 0.5,
+
                   cursor: "pointer",
                   marginTop: "40px",
                   backgroundColor: mainButtonColor,
@@ -1083,6 +1171,7 @@ const Register = () => {
                   fontWeight: "bold",
                   fontSize: "16px",
                 }}
+
               >
                 {!registrationOpen
                   ? "Registration Closed"

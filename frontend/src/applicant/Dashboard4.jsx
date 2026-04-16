@@ -80,9 +80,9 @@ const Dashboard4 = (props) => {
     const storedRole = localStorage.getItem("role");
     const storedID = localStorage.getItem("person_id");
     const keys = JSON.parse(localStorage.getItem("dashboardKeys") || "{}");
-    navigate(`/dashboard/${keys.step4}`);
-
-
+    if (keys.step4) {
+      navigate(`/dashboard/${keys.step4}`);
+    }
     const overrideId = props?.adminOverridePersonId; // new
 
     if (overrideId) {
@@ -155,26 +155,26 @@ const Dashboard4 = (props) => {
   };
 
   // Real-time save on every character typed
-  const handleChange = (e) => {
-    const { name, type, checked, value } = e.target;
-    const updatedPerson = {
-      ...person,
-      [name]: type === "checkbox" ? (checked ? 1 : 0) : value,
-    };
-    setPerson(updatedPerson);
-    handleUpdate(updatedPerson); // No delay, real-time save
-  };
+  // const handleChange = (e) => {
+  //   const { name, type, checked, value } = e.target;
+  //   const updatedPerson = {
+  //     ...person,
+  //     [name]: type === "checkbox" ? (checked ? 1 : 0) : value,
+  //   };
+  //   setPerson(updatedPerson);
+  //   handleUpdate(updatedPerson); // No delay, real-time save
+  // };
 
 
 
-  const handleBlur = async () => {
-    try {
-      await axios.put(`${API_BASE_URL}/form/person/${userID}`, person);
-      console.log("Auto-saved");
-    } catch (err) {
-      console.error("Auto-save failed", err);
-    }
-  };
+  // const handleBlur = async () => {
+  //   try {
+  //     await axios.put(`${API_BASE_URL}/form/person/${userID}`, person);
+  //     console.log("Auto-saved");
+  //   } catch (err) {
+  //     console.error("Auto-save failed", err);
+  //   }
+  // };
 
 
   const keys = JSON.parse(localStorage.getItem("dashboardKeys") || "{}");
@@ -262,29 +262,29 @@ const Dashboard4 = (props) => {
   };
 
   const handleExamPermitClick = async () => {
-     try {
-       const res = await axios.get(`${API_BASE_URL}/api/verified-exam-applicants`);
-       const verified = res.data.some(a => a.person_id === parseInt(userID));
- 
-       if (!verified) {
-         setExamPermitError("❌ You cannot print the Exam Permit until all required documents are verified.");
-         setExamPermitModalOpen(true);
-         return;
-       }
- 
-       // ✅ Render permit and print
-       setShowPrintView(true);
-       setTimeout(() => {
-         printDiv();
-         setShowPrintView(false);
-       }, 500);
-     } catch (err) {
-       console.error("Error verifying exam permit eligibility:", err);
-       setExamPermitError("⚠️ Unable to check document verification status right now.");
-       setExamPermitModalOpen(true);
-     }
-   };
- 
+    try {
+      const res = await axios.get(`${API_BASE_URL}/api/verified-exam-applicants`);
+      const verified = res.data.some(a => a.person_id === parseInt(userID));
+
+      if (!verified) {
+        setExamPermitError("❌ You cannot print the Exam Permit until all required documents are verified.");
+        setExamPermitModalOpen(true);
+        return;
+      }
+
+      // ✅ Render permit and print
+      setShowPrintView(true);
+      setTimeout(() => {
+        printDiv();
+        setShowPrintView(false);
+      }, 500);
+    } catch (err) {
+      console.error("Error verifying exam permit eligibility:", err);
+      setExamPermitError("⚠️ Unable to check document verification status right now.");
+      setExamPermitModalOpen(true);
+    }
+  };
+
 
   const links = [
     { to: "/ecat_application_form", label: "ECAT Application Form" },
@@ -315,7 +315,7 @@ const Dashboard4 = (props) => {
 
   // dot not alter
   return (
-     <Box sx={{ height: "calc(100vh - 150px)", overflowY: "auto", paddingRight: 1, backgroundColor: "transparent", mt: 1, padding: 2 }}>
+    <Box sx={{ height: "calc(100vh - 150px)", overflowY: "auto", paddingRight: 1, backgroundColor: "transparent", mt: 1, padding: 2 }}>
       {showPrintView && (
         <div ref={divToPrintRef} style={{ display: "block" }}>
           <ExamPermit />
@@ -352,7 +352,7 @@ const Dashboard4 = (props) => {
       <hr style={{ border: "1px solid #ccc", width: "100%" }} />
 
       <br />
- <Box
+      <Box
         sx={{
           display: "flex",
           justifyContent: "center",
@@ -412,18 +412,18 @@ const Dashboard4 = (props) => {
 
 
 
-  
-        <h1
-          style={{
-            fontSize: "30px",
-            fontWeight: "bold",
-            textAlign: "center",
-            color: "black",
-            marginTop: "25px",
-          }}
-        >
-          AVAILABLE PRINTABLE DOCUMENTS
-        </h1>
+
+      <h1
+        style={{
+          fontSize: "30px",
+          fontWeight: "bold",
+          textAlign: "center",
+          color: "black",
+          marginTop: "25px",
+        }}
+      >
+        AVAILABLE PRINTABLE DOCUMENTS
+      </h1>
 
       <Box
         sx={{
@@ -481,7 +481,7 @@ const Dashboard4 = (props) => {
               <PictureAsPdfIcon
                 className="card-icon"
                 sx={{ fontSize: 35, color: mainButtonColor, mr: 1.5 }}
-                      />
+              />
 
               {/* Label */}
               <Typography
@@ -558,17 +558,17 @@ const Dashboard4 = (props) => {
                   {step.label}
                 </Typography>
               </Box>
-          {index < steps.length - 1 && (
-  <Box
-    sx={{
-      height: "2px",
-      backgroundColor: mainButtonColor,
-      flex: 1,
-      alignSelf: "center",
-      mx: 2,
-    }}
-                      />
-)}
+              {index < steps.length - 1 && (
+                <Box
+                  sx={{
+                    height: "2px",
+                    backgroundColor: mainButtonColor,
+                    flex: 1,
+                    alignSelf: "center",
+                    mx: 2,
+                  }}
+                />
+              )}
             </React.Fragment>
           ))}
         </Box>
@@ -623,11 +623,11 @@ const Dashboard4 = (props) => {
                         handleUpdate(updatedPerson);
                       }}
                       onBlur={() => handleUpdate(person)}
-                      />
+                    />
                   }
                   label={symptom.charAt(0).toUpperCase() + symptom.slice(1)}
                   sx={{ ml: 5 }}
-                      />
+                />
               ))}
             </FormGroup>
 
@@ -701,7 +701,7 @@ const Dashboard4 = (props) => {
                                       handleUpdate(updatedPerson);
                                     }}
                                     onBlur={() => handleUpdate(person)}
-                      />
+                                  />
                                   <span style={{ fontSize: "15px", fontFamily: "Poppins, sans-serif" }}>Yes</span>
                                 </div>
 
@@ -719,7 +719,7 @@ const Dashboard4 = (props) => {
                                       handleUpdate(updatedPerson);
                                     }}
                                     onBlur={() => handleUpdate(person)}
-                      />
+                                  />
                                   <span style={{ fontSize: "15px", fontFamily: "Poppins, sans-serif" }}>No</span>
                                 </div>
                               </div>
@@ -759,10 +759,10 @@ const Dashboard4 = (props) => {
                             handleUpdate(updatedPerson);
                           }}
                           onBlur={() => handleUpdate(person)}
-                      />
+                        />
                       }
                       label="Yes"
-                      />
+                    />
 
                     {/* NO */}
                     <FormControlLabel
@@ -779,10 +779,10 @@ const Dashboard4 = (props) => {
                             handleUpdate(updatedPerson);
                           }}
                           onBlur={() => handleUpdate(person)}
-                      />
+                        />
                       }
                       label="No"
-                      />
+                    />
 
 
                   </Box>
@@ -814,7 +814,7 @@ const Dashboard4 = (props) => {
                   handleUpdate(updatedPerson);
                 }}
                 onBlur={() => handleUpdate(person)}
-                      />
+              />
             </Box>
 
             <br />
@@ -844,7 +844,7 @@ const Dashboard4 = (props) => {
                   handleUpdate(updatedPerson);
                 }}
                 onBlur={() => handleUpdate(person)}
-                      />
+              />
             </Box>
 
             {/* IV. COVID PROFILE */}
@@ -892,7 +892,7 @@ const Dashboard4 = (props) => {
                               handleUpdate(updatedPerson);
                             }}
                             onBlur={() => handleUpdate(person)}
-                      />
+                          />
                           <span style={{ fontSize: "15px", fontFamily: "Poppins, sans-serif" }}>YES</span>
                         </Box>
 
@@ -910,7 +910,7 @@ const Dashboard4 = (props) => {
                               handleUpdate(updatedPerson);
                             }}
                             onBlur={() => handleUpdate(person)}
-                      />
+                          />
                           <span style={{ fontSize: "15px", fontFamily: "Poppins, sans-serif" }}>NO</span>
 
 
@@ -920,7 +920,7 @@ const Dashboard4 = (props) => {
                       {/* IF YES, WHEN */}
                       <span>IF YES, WHEN:</span>
                       <DateField
-                          size="small"
+                        size="small"
                         name="covidDate"
                         value={person.covidDate || ""}
                         onChange={(e) => {
@@ -995,7 +995,7 @@ const Dashboard4 = (props) => {
                                 }}
                                 onBlur={() => handleUpdate(person)}
                                 style={inputStyle}
-                      />
+                              />
                             </td>
                           ))}
                         </tr>
@@ -1007,8 +1007,8 @@ const Dashboard4 = (props) => {
                           {["vaccine1Date", "vaccine2Date", "booster1Date", "booster2Date"].map((field) => (
                             <td key={field} style={{ padding: "4px" }}>
                               <DateField
-                                  size="small"
-                        name={field}
+                                size="small"
+                                name={field}
                                 value={person[field] || ""}
                                 onChange={(e) => {
                                   const updatedPerson = {
@@ -1020,7 +1020,7 @@ const Dashboard4 = (props) => {
                                 }}
                                 onBlur={() => handleUpdate(person)}
                                 style={inputStyle}
-                      />
+                              />
                             </td>
                           ))}
                         </tr>
@@ -1058,7 +1058,7 @@ const Dashboard4 = (props) => {
                       }}
                       onBlur={() => handleUpdate(person)}
                       className="w-full border px-3 py-2 rounded"
-                      />
+                    />
                   </td>
                 </tr>
 
@@ -1078,7 +1078,7 @@ const Dashboard4 = (props) => {
                       }}
                       onBlur={() => handleUpdate(person)}
                       className="w-full border px-3 py-2 rounded"
-                      />
+                    />
                   </td>
                 </tr>
 
@@ -1098,7 +1098,7 @@ const Dashboard4 = (props) => {
                       }}
                       onBlur={() => handleUpdate(person)}
                       className="w-full border px-3 py-2 rounded"
-                      />
+                    />
                   </td>
                 </tr>
 
@@ -1118,7 +1118,7 @@ const Dashboard4 = (props) => {
                       }}
                       onBlur={() => handleUpdate(person)}
                       className="w-full border px-3 py-2 rounded"
-                      />
+                    />
                   </td>
                 </tr>
               </tbody>
@@ -1171,7 +1171,7 @@ const Dashboard4 = (props) => {
                               handleUpdate(updatedPerson);
                             }}
                             onBlur={() => handleUpdate(person)}
-                      />
+                          />
                           <span style={{ fontSize: "15px", fontFamily: "Poppins, sans-serif" }}>Physically Fit</span>
                         </div>
 
@@ -1189,7 +1189,7 @@ const Dashboard4 = (props) => {
                               handleUpdate(updatedPerson);
                             }}
                             onBlur={() => handleUpdate(person)}
-                      />
+                          />
                           <span style={{ fontSize: "15px", fontFamily: "Poppins, sans-serif" }}>For Compliance</span>
                         </div>
                       </div>
@@ -1301,11 +1301,11 @@ const Dashboard4 = (props) => {
                       color: "#000",
                       transition: "color 0.3s",
                     }}
-                      />
+                  />
                 }
                 sx={{
                   backgroundColor: subButtonColor,
-                  border: `1px solid ${borderColor}`, 
+                  border: `1px solid ${borderColor}`,
                   color: "#000",
                   "&:hover": {
                     backgroundColor: "#000000",
@@ -1323,7 +1323,7 @@ const Dashboard4 = (props) => {
               <Button
                 variant="contained"
                 onClick={() => {
-                  handleUpdate();
+                  handleUpdate(person);
                   navigate(`/dashboard/${keys.step5}`); // ✅ Goes to step5
                 }}
                 endIcon={
@@ -1332,11 +1332,11 @@ const Dashboard4 = (props) => {
                       color: "#fff",
                       transition: "color 0.3s",
                     }}
-                      />
+                  />
                 }
                 sx={{
                   backgroundColor: mainButtonColor,
-                  border: `1px solid ${borderColor}`, 
+                  border: `1px solid ${borderColor}`,
                   color: "#fff",
                   "&:hover": {
                     backgroundColor: "#000000",

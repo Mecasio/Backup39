@@ -791,13 +791,6 @@ const GradingSheet = () => {
     setSelectedCourse(event.target.value);
   };
 
-  const handleSchoolYearChange = (event) => {
-    setSelectedSchoolYear(event.target.value);
-  };
-
-  const handleSchoolSemesterChange = (event) => {
-    setSelectedSchoolSemester(event.target.value);
-  };
 
   const handleSnackClose = (_, reason) => {
     if (reason === "clickaway") return;

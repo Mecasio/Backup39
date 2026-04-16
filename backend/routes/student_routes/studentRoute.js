@@ -28,7 +28,7 @@ router.get("/student-info", async (req, res) => {
       [searchQuery, keyword, keyword, keyword, searchQuery]
     );
 
-    console.log("LOG #1: ",searchStudentNumber);
+    console.log("LOG #1: ", searchStudentNumber);
 
     if (searchStudentNumber.length === 0) {
       return res.status(400).json({ error: "student is not found" });
@@ -84,7 +84,7 @@ ORDER BY
   sst.year_level_id DESC
 LIMIT 1;
       `, [student_number]
-    ) 
+    )
 
     if (rows.length === 0) {
       return res.status(400).json({ error: "student record is not found" });
@@ -284,12 +284,10 @@ router.get("/api/grading_status", async (req, res) => {
   }
 });
 
-
 router.get("/api/student_grade/:id", async (req, res) => {
   const { id } = req.params;
 
   try {
-
     const [pending] = await db3.execute(
       `
       SELECT COUNT(*) AS total_professors
@@ -299,12 +297,12 @@ router.get("/api/student_grade/:id", async (req, res) => {
       WHERE es.fe_status = 0
       AND snt.person_id = ?
       `,
-      [id],
+      [id]
     );
 
     const [rows] = await db3.execute(
       `
-    SELECT DISTINCT
+SELECT DISTINCT
 
   ct.course_description,
   ct.course_code,
@@ -324,11 +322,9 @@ router.get("/api/student_grade/:id", async (req, res) => {
   tt.school_time_end,
   rt.room_description,
 
-  -- ✅ YEAR LEVEL (FROM student_status_table)
   ylt.year_level_description,
   sst.year_level_id,
 
-  -- ✅ SEMESTER / SCHOOL YEAR
   smt.semester_description,
   smt.semester_id,
   yt.year_description,
@@ -336,7 +332,13 @@ router.get("/api/student_grade/:id", async (req, res) => {
   IFNULL(pft.fname, 'TBA') AS fname,
   IFNULL(pft.lname, 'TBA') AS lname,
 
+  -- ✅ ORIGINAL GRADE
   es.final_grade,
+
+  -- ✅ ADD THESE (FIX)
+  gc_main.equivalent_grade AS numeric_grade,
+  gc_main.descriptive_rating AS descriptive_grade,
+
   es.fe_status,
   es.active_school_year_id,
 
@@ -345,6 +347,9 @@ router.get("/api/student_grade/:id", async (req, res) => {
   pt.middle_name,
 
   snt.student_number,
+
+  honors.gwa,
+  honors.honor_title,
 
   CASE
     WHEN LOWER(IFNULL(es.remarks, '')) = 'migrated from old system'
@@ -360,7 +365,6 @@ JOIN student_numbering_table AS snt
 JOIN person_table AS pt
   ON snt.person_id = pt.person_id
 
--- ✅ IMPORTANT JOIN
 JOIN student_status_table AS sst
   ON sst.student_number = es.student_number
   AND sst.active_school_year_id = es.active_school_year_id
@@ -403,7 +407,10 @@ JOIN semester_table AS smt
 JOIN course_table AS ct
   ON es.course_id = ct.course_id
 
--- OPTIONAL (if still needed)
+-- ✅ MAIN CONVERSION JOIN
+LEFT JOIN grade_conversion gc_main
+  ON es.final_grade BETWEEN gc_main.min_score AND gc_main.max_score
+
 LEFT JOIN program_tagging_table AS ptg
   ON ptg.curriculum_id = es.curriculum_id
   AND ptg.course_id = es.course_id
@@ -411,15 +418,48 @@ LEFT JOIN program_tagging_table AS ptg
 LEFT JOIN year_level_table AS ylt
   ON sst.year_level_id = ylt.year_level_id
 
+-- ✅ FIXED SUBQUERY (NO gc_main HERE)
+LEFT JOIN (
+  SELECT 
+    g.student_number,
+    g.year_id,
+    g.semester_id,
+    g.gwa,
+    hr.title AS honor_title
+  FROM (
+    SELECT 
+      es.student_number,
+      sy.year_id,
+      sy.semester_id,
+      AVG(gc.equivalent_grade) AS gwa
+    FROM enrolled_subject es
+    JOIN grade_conversion gc 
+      ON es.final_grade BETWEEN gc.min_score AND gc.max_score
+    JOIN active_school_year_table sy 
+      ON es.active_school_year_id = sy.id
+    WHERE es.final_grade > 0
+    GROUP BY es.student_number, sy.year_id, sy.semester_id
+  ) g
+  LEFT JOIN honors_rules hr
+    ON g.gwa <= hr.max_allowed_grade
+  WHERE hr.max_allowed_grade = (
+    SELECT MIN(max_allowed_grade)
+    FROM honors_rules
+    WHERE g.gwa <= max_allowed_grade
+  )
+) honors
+ON honors.student_number = es.student_number
+AND honors.year_id = sy.year_id
+AND honors.semester_id = sy.semester_id
+
 WHERE pt.person_id = ?
 
--- ✅ LATEST FIRST (IMPORTANT)
 ORDER BY
   yt.year_description DESC,
   smt.semester_id DESC,
   sst.year_level_id DESC;
       `,
-      [id],
+      [id]
     );
 
     if (rows.length === 0) {
@@ -437,7 +477,6 @@ ORDER BY
     });
   }
 });
-
 
 
 router.get("/api/student/view_latest_grades/:id", async (req, res) => {

@@ -131,6 +131,9 @@ const statistics = require("./routes/system_routes/statistics");
 const payment = require("./routes/payment/payment");
 const evaluation = require("./routes/system_routes/evaluation");
 const yearLevelRoute = require("./routes/system_routes/yearLevel");
+const gradeConversionRoute = require("./routes/system_routes/gradeConversion");
+
+
 app.use("/", evaluation);
 app.use("/", payment);
 app.use("/", statistics);
@@ -181,6 +184,7 @@ app.use("/api", settingsRoute);
 app.use("/", section);
 app.use("/api", studentAccountRoute);
 app.use("/", yearLevelRoute);
+app.use("/", gradeConversionRoute);
 
 const uploadPath = path.join(__dirname, "uploads");
 

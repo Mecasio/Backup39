@@ -55,22 +55,7 @@ const RemarkBadge = ({ value }) => {
   );
 };
 
-// ─── Helpers ──────────────────────────────────────────────────────
-const convertNumericToGrade = (numeric) => {
-  const grade = parseFloat(numeric);
-  if (Number.isNaN(grade)) return null;
-  if (grade === 0) return "";
-  if (grade >= 97) return "1.00";
-  if (grade >= 94) return "1.25";
-  if (grade >= 91) return "1.50";
-  if (grade >= 88) return "1.75";
-  if (grade >= 85) return "2.00";
-  if (grade >= 82) return "2.25";
-  if (grade >= 79) return "2.50";
-  if (grade >= 76) return "2.75";
-  if (grade >= 75) return "3.00";
-  return "5.00";
-};
+
 
 const getUnitDisplay = (row) => {
   const course = parseInt(row.course_unit) || 0;
@@ -81,36 +66,10 @@ const getUnitDisplay = (row) => {
   return course + lab;
 };
 
-const computeGWA = (subjects) => {
-  const items = subjects
-    .map((row) => {
-      const grade = parseFloat(row.final_grade);
-      if (isNaN(grade)) return null;
 
-      const units =
-        (parseFloat(row.lec_unit) || 0) +
-        (parseFloat(row.lab_unit) || 0);
-
-      return { CG: grade * units, units };
-    })
-    .filter((item) => item && item.units > 0);
-
-  const totalUnits = items.reduce((s, i) => s + i.units, 0);
-  const totalCG = items.reduce((s, i) => s + i.CG, 0);
-
-  return totalUnits > 0
-    ? parseFloat((totalCG / totalUnits).toFixed(2))
-    : null;
-};
 // ─── Term Sorting ─────────────────────────────────────────────────
 // Order within a year: First Semester → Second Semester → Summer / Midyear
-const getSemesterOrder = (semDesc = "") => {
-  const key = semDesc.toLowerCase().trim();
-  if (key.includes("first") || key.includes("1st")) return 1;
-  if (key.includes("second") || key.includes("2nd")) return 2;
-  if (key.includes("summer") || key.includes("mid")) return 3;
-  return 99;
-};
+
 
 const yearOrder = {
   "First Year": 1,
@@ -221,6 +180,8 @@ const StudentGradingPage = () => {
           return termSubjects.map((s) => ({
             ...s,
             final_grade: s.fe_status === 1 || s.is_migrated ? s.final_grade : null,
+            numeric_grade: s.fe_status === 1 || s.is_migrated ? s.numeric_grade : null,
+            descriptive_grade: s.fe_status === 1 || s.is_migrated ? s.descriptive_grade : null,
             en_remarks: s.fe_status === 1 || s.is_migrated ? s.en_remarks : null,
           }));
         }
@@ -293,9 +254,7 @@ const StudentGradingPage = () => {
       console.error("Failed to fetch grades:", err);
       setMessage("Error fetching grades.");
     }
-  };
-
-
+  }
 
   const yearLabelMap = {
     "First Year": "1st Year",
@@ -465,8 +424,8 @@ const StudentGradingPage = () => {
 
           const yearLevel = termSubjects[0]?.year_level_description;
           const semesterLabel = termSubjects[0]?.semester_description;
-
-          const gwa = computeGWA(termSubjects);
+          const honorTitle = termSubjects[0]?.honor_title;
+          const gwaValue = termSubjects[0]?.gwa;
 
           return (
             <Box key={idx} sx={{ mb: 5 }}>
@@ -556,13 +515,12 @@ const StudentGradingPage = () => {
                             </Box>
                           </Typography>
                           {/* GWA BELOW NAME */}
-                          {gwa && (
+                          {gwaValue && (
                             <Typography
                               sx={{
                                 fontSize: 14,
                                 fontWeight: 700,
                                 color: titleColor,
-                              
                               }}
                             >
                               GWA:
@@ -574,8 +532,25 @@ const StudentGradingPage = () => {
                                   color: headerBg,
                                 }}
                               >
-                                {convertNumericToGrade(gwa)}
+                                {gwaValue !== null && gwaValue !== undefined
+                                  ? Number(gwaValue).toFixed(3)
+                                  : "—"}
                               </Box>
+                              <br />
+
+
+                              {/* {honorTitle && (
+                                <Box
+
+                                  sx={{
+
+                                    color: "green",
+                                    fontWeight: "bold",
+                                  }}
+                                >
+                                  ACADEMIC AWARD: {honorTitle}
+                                </Box>
+                              )} */}
                             </Typography>
                           )}
 
@@ -652,7 +627,8 @@ const StudentGradingPage = () => {
 
                   <TableBody>
                     {termSubjects.map((row, i) => {
-                      const convertedGrade = convertNumericToGrade(row.final_grade ?? "");
+                      row.numeric_grade
+                      row.descriptive_grade
                       return (
                         <TableRow
                           key={i}
@@ -681,11 +657,14 @@ const StudentGradingPage = () => {
                           <TableCell sx={{ ...bodyCell, textAlign: "center", border: `1px solid ${borderColor}`, }}>
                             {row.program_code}-{row.section_description}
                           </TableCell>
-                          <TableCell sx={{ ...bodyCell, textAlign: "center", border: `1px solid ${borderColor}`, }}>
-                            {convertedGrade
-                              ? <span style={{ fontWeight: 700, fontSize: 14, color: titleColor }}>{convertedGrade}</span>
-                              : <span style={{ color: "#9CA3AF" }}>—</span>
-                            }
+                          <TableCell sx={{ ...bodyCell, textAlign: "center", border: `1px solid ${borderColor}` }}>
+                            {row.numeric_grade ? (
+                              <span style={{ fontWeight: 700, fontSize: 14, color: titleColor }}>
+                                {row.numeric_grade}
+                              </span>
+                            ) : (
+                              <span style={{ color: "#9CA3AF" }}>—</span>
+                            )}
                           </TableCell>
                           <TableCell sx={{ ...bodyCell, textAlign: "center", border: `1px solid ${borderColor}` }}>
                             <RemarkBadge value={row.en_remarks} />

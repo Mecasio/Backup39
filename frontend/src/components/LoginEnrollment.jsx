@@ -9,6 +9,10 @@ import {
   Button,
   Snackbar,
   Alert,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from "@mui/material";
 import {
   Email as EmailIcon,
@@ -80,7 +84,34 @@ const LoginEnrollment = ({ setIsAuthenticated }) => {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [snack, setSnack] = useState({ open: false, message: "", severity: "info" });
-  const [otp, setOtp] = useState("");
+  const [otp, setOtp] = useState(["", "", "", "", "", ""]);
+
+
+  const otpRefs = useRef([]);
+
+  const handleOtpChange = (value, index) => {
+    if (!/^[0-9]?$/.test(value)) return;
+
+    const newOtp = [...otp];
+    newOtp[index] = value;
+    setOtp(newOtp);
+
+    if (value && index < 5) {
+      otpRefs.current[index + 1]?.focus();
+    }
+  };
+
+  const handleOtpKeyDown = (e, index) => {
+    if (e.key === "Backspace" && !otp[index] && index > 0) {
+      otpRefs.current[index - 1]?.focus();
+    }
+
+    if (e.key === "Enter") {
+      verifyOtp();
+    }
+  };
+
+
   const [showOtpModal, setShowOtpModal] = useState(false);
   const [tempLoginData, setTempLoginData] = useState(null);
   const [resendTimer, setResendTimer] = useState(60);
@@ -108,6 +139,13 @@ const LoginEnrollment = ({ setIsAuthenticated }) => {
     : Logo;
 
   const [errors, setErrors] = useState({});
+
+  const [applyingAs, setApplyingAs] = useState("");
+
+  useEffect(() => {
+    const storedApplyingAs = localStorage.getItem("applyingAs") || "";
+    setApplyingAs(storedApplyingAs);
+  }, []);
 
   const handleLogin = async () => {
     if (!isFormValid()) {
@@ -167,6 +205,7 @@ const LoginEnrollment = ({ setIsAuthenticated }) => {
         localStorage.setItem("email", res.data.email);
         localStorage.setItem("role", res.data.role);
         localStorage.setItem("person_id", res.data.person_id);
+        localStorage.setItem("applyingAs", res.data.applyingAs);
 
         setIsAuthenticated(true);
         navigate("/applicant_dashboard");
@@ -237,8 +276,9 @@ const LoginEnrollment = ({ setIsAuthenticated }) => {
 
       await axios.post(`${API_BASE_URL}/auth/verify-otp`, {
         email: tempLoginData.email,
-        otp,
+        otp: otp.join(""),
       });
+
 
       localStorage.setItem("token", tempLoginData.token);
       localStorage.setItem("email", tempLoginData.email);
@@ -246,6 +286,7 @@ const LoginEnrollment = ({ setIsAuthenticated }) => {
       localStorage.setItem("person_id", tempLoginData.person_id);
       localStorage.setItem("department", tempLoginData.department || "");
       localStorage.setItem("employee_id", tempLoginData.employee_id);
+
 
       setIsAuthenticated(true);
 
@@ -313,6 +354,38 @@ const LoginEnrollment = ({ setIsAuthenticated }) => {
       }, 100); // small delay ensures focus after modal is mounted
     }
   }, [showOtpModal]);
+
+  const [openLoginReminder, setOpenLoginReminder] = useState(true);
+  const [openLoginClosed, setOpenLoginClosed] = useState(false);
+
+  const dialogStyles = {
+    title: {
+      textAlign: "center",
+      fontWeight: "bold",
+      fontSize: "18px"
+    },
+    contentText: {
+      fontSize: "16px",
+      textAlign: "justify",
+      mt: 1
+    },
+    contentTextCenter: {
+      fontSize: "16px",
+      textAlign: "center",
+      mt: 2,
+      fontWeight: "bold"
+    },
+    actions: {
+      justifyContent: "center",
+      pb: 2
+    },
+    button: {
+      fontWeight: "bold",
+      textTransform: "none",
+      minWidth: "220px"
+    }
+  };
+
 
   return (
     <>
@@ -583,100 +656,167 @@ const LoginEnrollment = ({ setIsAuthenticated }) => {
         {/* OTP Modal */}
 
         <Modal open={showOtpModal} onClose={() => setShowOtpModal(false)}>
-          <Box sx={{
-            position: "absolute",
-            top: "50%",
-            left: "50%",
-            transform: "translate(-50%, -50%)",
-            bgcolor: "#fff",
-            border: "3px solid black",
-            p: 4,
-            borderRadius: "12px",
-            width: 350,
-            boxShadow: 24,
-            textAlign: "center",
-            position: "relative",
-          }}>
+          <Box
+            sx={{
+              position: "absolute",
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%)",
+              width: 440,
+              bgcolor: "#fff",
+              borderRadius: "20px",
+              boxShadow: "0 20px 60px rgba(0,0,0,0.15)",
+              p: 4,
+              border: "1px solid #eee",
+            }}
+          >
+            {/* Close Button */}
             <button
               onClick={() => setShowOtpModal(false)}
               style={{
                 position: "absolute",
-                top: "8px",
-                right: "8px",
-                backgroundColor: mainButtonColor,
+                top: "12px",
+                right: "12px",
+                backgroundColor: "black",
                 color: "white",
-                border: "2px solid black",
+                border: "none",
                 borderRadius: "50%",
-                width: "32px",
-                height: "32px",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
+                width: "34px",
+                height: "34px",
                 cursor: "pointer",
-                fontSize: "18px",
+                fontSize: "16px",
+                fontWeight: "bold",
               }}
             >
-              <CloseIcon fontSize="small" />
+              ✕
             </button>
 
-            <Typography
-              variant="h6"
-              sx={{
-                mb: 2,
-                fontWeight: "bold",
-                fontSize: "20px",
-                color: "#6D2323",
+            {/* Title */}
+            <h2
+              style={{
+                fontSize: "24px",
+                fontWeight: 700,
+                marginBottom: "8px",
               }}
             >
-              Enter the 6-digit OTP
-            </Typography>
+              Verify your email
+            </h2>
 
-            <Typography variant="body2" sx={{ mb: 3, color: "#666" }}>
-              We sent a verification code to your Gmail address.
-            </Typography>
-
-            <TextField
-              fullWidth
-              value={otp}
-              onChange={(e) => setOtp(e.target.value)}
-              placeholder="Enter OTP"
-              inputRef={otpInputRef}
-              inputProps={{
-                maxLength: 6,
-                style: { textAlign: "center", fontSize: "18px" },
+            {/* Description */}
+            <p
+              style={{
+                color: "#666",
+                fontSize: "14px",
+                lineHeight: 1.6,
+                marginBottom: "20px",
               }}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") verifyOtp();
-              }}
-              sx={{ mb: 3 }}
-            />
+            >
+              We sent a 6-digit verification code to your registered email
+              address.
+            </p>
 
-            <Button
-              variant="contained"
+            {/* OTP Boxes */}
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "center",
+                gap: 1.5,
+                mb: 3,
+              }}
+            >
+              {otp.map((digit, index) => (
+                <input
+                  key={index}
+                  ref={(el) => (otpRefs.current[index] = el)}
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={1}
+                  value={digit}
+                  onChange={(e) =>
+                    handleOtpChange(e.target.value, index)
+                  }
+                  onKeyDown={(e) =>
+                    handleOtpKeyDown(e, index)
+                  }
+                  style={{
+                    width: "54px",
+                    height: "60px",
+                    fontSize: "24px",
+                    fontWeight: 700,
+                    textAlign: "center",
+                    borderRadius: "14px",
+                    border: "2px solid #ddd",
+                    outline: "none",
+                  }}
+                />
+              ))}
+            </Box>
+
+            {/* Helper */}
+            <p
+              style={{
+                fontSize: "13px",
+                color: "#777",
+                marginBottom: "18px",
+                textAlign: "center",
+              }}
+            >
+              This email can only be used once for admission verification.
+            </p>
+
+            {/* Verify */}
+            <button
               onClick={verifyOtp}
-              sx={{
+              disabled={loading3}
+              style={{
                 width: "100%",
+                padding: "14px",
+                borderRadius: "12px",
+                border: "none",
                 backgroundColor: mainButtonColor,
-                "&:hover": { backgroundColor: "#6D2323" },
-                textTransform: "none",
-                fontWeight: "bold",
-                fontSize: "16px",
-                py: 1,
+                color: "white",
+                fontWeight: 700,
+                fontSize: "15px",
+                cursor: loading3 ? "not-allowed" : "pointer",
               }}
             >
-              Verify OTP
-            </Button>
+              {loading3 ? "Verifying..." : "Verify & Continue"}
+            </button>
 
-            <Button
-              variant="outlined"
+            {/* Resend */}
+            <button
               onClick={resendOtp}
               disabled={resendTimer > 0}
-              sx={{ mt: 2, width: "100%", textTransform: "none" }}
+              style={{
+                width: "100%",
+                marginTop: "12px",
+                padding: "12px",
+                borderRadius: "12px",
+                border: "1px solid #ddd",
+                background: "#fff",
+                fontWeight: 600,
+                color: resendTimer > 0 ? "#999" : "#333",
+              }}
             >
-              {resendTimer > 0 ? `Resend OTP in ${resendTimer}s` : "Resend OTP"}
-            </Button>
+              {resendTimer > 0
+                ? `Resend code in ${resendTimer}s`
+                : "Resend code"}
+            </button>
+
+            {/* Support */}
+            <p
+              style={{
+                marginTop: "14px",
+                fontSize: "12px",
+                color: "#999",
+                textAlign: "center",
+              }}
+            >
+              Didn’t receive the code? Check your spam folder.
+            </p>
           </Box>
         </Modal>
+
         <LoadingOverlay open={loading} />
         <LoadingOverlay open={loading2} />
         <LoadingOverlay open={loading3} />
