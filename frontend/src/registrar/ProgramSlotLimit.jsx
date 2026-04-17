@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext, useRef } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import { SettingsContext } from "../App";
 import {
   Box,
@@ -30,6 +30,8 @@ import axios from "axios";
 import API_BASE_URL from "../apiConfig";
 import SearchIcon from "@mui/icons-material/Search";
 import LoadingOverlay from "../components/LoadingOverlay";
+import Unauthorized from "../components/Unauthorized";
+import EaristLogo from "../assets/EaristLogo.png";
 const generateSlotOptions = (start = 10, end = 500, step = 10) => {
   const options = [];
   for (let i = start; i <= end; i += step) {
@@ -50,7 +52,6 @@ const ProgramSlotLimit = () => {
   const [selectedDepartmentFilter, setSelectedDepartmentFilter] = useState("");
   const [schoolYears, setSchoolYears] = useState([]);
   const [semesters, setSchoolSemester] = useState([]);
-  const [campusFilter, setCampusFilter] = useState("1");
   const [maxSlots, setMaxSlots] = useState("");
 
   const settings = useContext(SettingsContext);
@@ -80,6 +81,10 @@ const ProgramSlotLimit = () => {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [confirmAllOpen, setConfirmAllOpen] = useState(false);
   const [confirmAllProgramsOpen, setConfirmAllProgramsOpen] = useState(false);
+
+  const setErrorMessage = (message) => {
+    console.error(message);
+  };
 
   const branches = Array.isArray(settings?.branches)
     ? settings.branches
@@ -190,10 +195,26 @@ const ProgramSlotLimit = () => {
   }, [department, selectedDepartmentFilter]);
 
   useEffect(() => {
-    if (programs.length > 0 && !selectedProgram) {
-      setSelectedProgram(programs[0].program_id);
+    const nextPrograms = programs.filter(
+      (program) =>
+        !selectedBranch || program.components === Number(selectedBranch),
+    );
+
+    if (nextPrograms.length === 0) {
+      if (selectedProgram) {
+        setSelectedProgram("");
+      }
+      return;
     }
-  }, [programs, selectedProgram]);
+
+    const selectedStillExists = nextPrograms.some(
+      (program) => String(program.curriculum_id) === String(selectedProgram),
+    );
+
+    if (!selectedProgram || !selectedStillExists) {
+      setSelectedProgram(nextPrograms[0].curriculum_id);
+    }
+  }, [programs, selectedProgram, selectedBranch]);
 
   useEffect(() => {
     axios
@@ -224,7 +245,7 @@ const ProgramSlotLimit = () => {
   };
 
   const fetchPrograms = async (dprtmnt_id) => {
-    if (!dprtmnt_id) return;
+    if (!dprtmnt_id) return [];
     try {
       const res = await axios.get(
         `${API_BASE_URL}/api/applied_program/${dprtmnt_id}`,
@@ -234,16 +255,22 @@ const ProgramSlotLimit = () => {
     } catch (err) {
       console.error("❌ Department fetch error:", err);
       setErrorMessage("Failed to load department list");
+      return [];
     }
   };
 
   const fetchSlotSummary = async () => {
     if (!yearId || !semesterId) return;
 
-    const res = await axios.get(`${API_BASE_URL}/api/programs/availability`, {
-      params: { year_id: yearId, semester_id: semesterId },
-    });
-    setSlots(res.data);
+    try {
+      const res = await axios.get(`${API_BASE_URL}/api/programs/availability`, {
+        params: { year_id: yearId, semester_id: semesterId },
+      });
+      setSlots(res.data);
+    } catch (err) {
+      console.error("Failed to fetch slot summary:", err);
+      setSlots([]);
+    }
   };
 
   const fetchActiveSchoolYear = async () => {
@@ -340,14 +367,33 @@ const ProgramSlotLimit = () => {
       (!selectedDepartmentFilter ||
         row.dprtmnt_id === Number(selectedDepartmentFilter)) &&
       (!selectedBranch ||
-        row.components === Number(selectedBranch))
+        row.components === Number(selectedBranch)) &&
+      (!searchTerm ||
+        `${row.program_code} ${row.program_description} ${row.major || ""}`
+          .toLowerCase()
+          .includes(searchTerm.toLowerCase()))
   );
 
-  const filteredDepartments = department.filter((dep) => {
-    return slots.some(
+  const filteredDepartments = department.filter((dep) =>
+    slots.some(
       (row) =>
         row.dprtmnt_id === dep.dprtmnt_id &&
-        (!selectedBranch || row.components === Number(selectedBranch))
+        (!selectedBranch || row.components === Number(selectedBranch)),
+    ),
+  );
+
+  const filteredPrograms = programs.filter(
+    (program) =>
+      !selectedBranch || program.components === Number(selectedBranch),
+  );
+  const currentCalendarYear = new Date().getFullYear();
+  const earliestVisibleYear = currentCalendarYear - 10;
+  const visibleSchoolYears = schoolYears.filter((sy) => {
+    const startYear = Number(sy.current_year ?? sy.year_description);
+    return (
+      Number.isFinite(startYear) &&
+      startYear <= currentCalendarYear &&
+      startYear >= earliestVisibleYear
     );
   });
 
@@ -367,7 +413,7 @@ const ProgramSlotLimit = () => {
       setSelectedDepartmentFilter("");
       setPrograms([]);
     }
-  }, [filteredDepartments]);
+  }, [filteredDepartments, selectedDepartmentFilter]);
 
   if (loading || hasAccess === null) {
     return <LoadingOverlay open={loading} message="Loading..." />;
@@ -378,7 +424,7 @@ const ProgramSlotLimit = () => {
   }
 
   const selectedProgramItem = programs.find(
-    (p) => p.curriculum_id === selectedProgram,
+    (p) => String(p.curriculum_id) === String(selectedProgram),
   );
   const selectedProgramCode = selectedProgramItem
     ? selectedProgramItem.program_code
@@ -394,7 +440,6 @@ const ProgramSlotLimit = () => {
   const handleSelectBranch = (e) => {
     const branchId = e.target.value;
     setSelectedBranch(branchId);
-
     setSelectedProgram("");
     setSelectedDepartmentFilter("");
   };
@@ -501,7 +546,7 @@ const ProgramSlotLimit = () => {
                 },
               }}
             >
-              {schoolYears.map((sy) => (
+              {visibleSchoolYears.map((sy) => (
                 <MenuItem key={sy.year_id} value={sy.year_id}>
                   {sy.current_year} - {sy.next_year}
                 </MenuItem>
@@ -557,7 +602,7 @@ const ProgramSlotLimit = () => {
               displayEmpty
             >
               <MenuItem value="">Select Program</MenuItem>
-              {programs.map((p) => (
+              {filteredPrograms.map((p) => (
                 <MenuItem key={p.curriculum_id} value={p.curriculum_id}>
                   ({p.program_code}-{p.year_description}){" "}
                   {p.program_description} {p.program_major}
@@ -611,7 +656,7 @@ const ProgramSlotLimit = () => {
               !yearId ||
               !semesterId ||
               !maxSlots ||
-              programs.length === 0
+              filteredPrograms.length === 0
             }
           >
             Save Slot Per Department

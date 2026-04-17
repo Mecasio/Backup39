@@ -3,6 +3,11 @@ const multer = require("multer");
 const XLSX = require("xlsx");
 const { db, db3 } = require("./database/database");
 const {
+  getGradeConversions,
+  getStoredNumericGrade,
+  deriveRemarkAndStatusFromNumeric,
+} = require("../utils/gradeConversion");
+const {
   XLSX_IMPORT_LIMITS,
   validateSpreadsheetUpload,
   readWorkbookSafely,
@@ -262,22 +267,7 @@ const buildImportResponse = (message, importedCount, skippedItems) => ({
   skippedItems: skippedItems.slice(0, 100),
 });
 
-const convertGradeToNumericLegacy = (grade) => {
-  const gradeMap = {
-    1.0: 100,
-    1.25: 96,
-    1.5: 93,
-    1.75: 90,
-    2.0: 87,
-    2.25: 84,
-    2.5: 81,
-    2.75: 78,
-    3.0: 75,
-    5.0: 60,
-  };
-
-  return gradeMap[grade] ?? null;
-};
+// Dynamic grade conversion now comes from the grade_conversion table.
 
 const normalizeCourseCodeForMatching = (courseCode) =>
   normalizeText(courseCode)
@@ -286,6 +276,20 @@ const normalizeCourseCodeForMatching = (courseCode) =>
 
 const normalizeImportedCourseCode = (courseCode) =>
   normalizeText(courseCode).toUpperCase();
+
+const deriveLegacyImportOutcome = (numericInput, gradeConversions) => {
+  const storedNumericGrade = getStoredNumericGrade(numericInput, gradeConversions);
+  const { enRemark, status } = deriveRemarkAndStatusFromNumeric(
+    numericInput,
+    gradeConversions,
+  );
+
+  return {
+    storedNumericGrade,
+    enRemark,
+    status,
+  };
+};
 
 /* PROBLEMS
 - The normalization logic for NSTP course codes is somewhat ad-hoc and may not cover all possible variations or edge cases. It specifically looks for "NSTP" and then tries to canonicalize certain patterns, but there could be other unexpected formats that it doesn't handle well.
@@ -2630,6 +2634,8 @@ router.post("/api/grades/import", upload.single("file"), async (req, res) => {
     const existingStudentNumbers = existingStudents.map(
       (s) => s.student_number,
     );
+    // Dynamic conversion keeps Excel grade imports aligned with grade_conversion.
+    const gradeConversions = await getGradeConversions();
     let skippedCount = 0;
 
     // 2. Processing and Updating Grades
@@ -2681,9 +2687,21 @@ router.post("/api/grades/import", upload.single("file"), async (req, res) => {
               if (isNaN(numericFinals)) numericFinals = 0;
 
               finalGradeValue = numericFinals;
-              if (finalGradeValue < 75 || numericMidterm < 75) {
+              const finalsOutcome = deriveRemarkAndStatusFromNumeric(
+                numericFinals,
+                gradeConversions,
+              );
+              const midtermOutcome = deriveRemarkAndStatusFromNumeric(
+                numericMidterm,
+                gradeConversions,
+              );
+
+              if (
+                finalsOutcome.enRemark === 2 ||
+                midtermOutcome.enRemark === 2
+              ) {
                 en_remarks = 2;
-              } else if (finalGradeValue >= 75) {
+              } else if (finalsOutcome.enRemark === 1) {
                 en_remarks = 1;
               } else {
                 en_remarks = 0;
@@ -2734,22 +2752,6 @@ router.post("/api/grades/import", upload.single("file"), async (req, res) => {
   }
 });
 
-/* CURRENT API ISSUES 
-- Duplicate insert in student status table even though its supposed to be an update. This is because the code does not check if a student status record already exists for the given student number before attempting to insert a new one. If the student number exists but there is no corresponding record in the student status table, it will try to insert a new record, which can lead to duplicates if the same student number is processed multiple times.
-- The code does not handle the case where a student number exists in the student numbering table but does not have a corresponding record in the student status table. In such cases, it should ideally create a new student status record instead of trying to update a non-existent one.
-- The transaction management is not properly implemented. If an error occurs after some database operations have been performed, the code does not roll back the transaction, which can lead to partial updates and data inconsistency.
-- The year level is calculated wrong, Currently, it return +1 if there are two semester (e.g., First Semester and Second Semester) in same year but what if the user have the summer in same year?
-  for example:
-  - First Semester 2023-2024
-  - Summer 2023-2024
-  - Second Semester 2023-2024
-  It only insert First Semester and Second Semester but what if the user have the summer in same year? It should be like this:
-  - First Semester 2023-2024 (Year Level 1)
-  - Summer 2023-2024 (Year Level 1) (Need Confirmation to Project Advisor for the calculation of year level)
-  - Second Semester 2023-2024 (Year Level 1) 
-- Another problem, is it insert dupplicate student data into person_status_table
-  for example there are already a person id 1 in peson_status_table but it still insert it same person id and data.
-*/
 router.post("/api/import-xlsx", upload.single("file"), async (req, res) => {
   const { campus } = req.body;
   const connection = await db3.getConnection();
@@ -2792,6 +2794,7 @@ router.post("/api/import-xlsx", upload.single("file"), async (req, res) => {
         },
       },
     );
+
     const { cleanRows, flaggedRows } = removeFormulaLikeRows(parsedRows);
     const { rowsToInsert } = prepareRowsForInsert(cleanRows, req.file.size);
 
@@ -2910,7 +2913,7 @@ router.post("/api/import-xlsx", upload.single("file"), async (req, res) => {
            AND UPPER(TRIM(last_name)) = UPPER(TRIM(?))
            AND UPPER(TRIM(first_name)) = UPPER(TRIM(?))
            AND (
-             UPPER(TRIM(middle_name)) = UPPER(TRIM(?)) 
+             UPPER(TRIM(middle_name)) = UPPER(TRIM(?))
              OR (? IS NULL AND middle_name IS NULL)
              OR (? = '' AND (middle_name IS NULL OR middle_name = ''))
            )
@@ -2975,7 +2978,6 @@ router.post("/api/import-xlsx", upload.single("file"), async (req, res) => {
       `[DEBUG] person_id ${person_id} status record exists: ${checkPersonStatus.length > 0}`,
     );
 
-    // Problem 1 Solved
     if (checkPersonStatus.length > 0) {
       await connection.query(
         `UPDATE person_status_table SET student_registration_status = 1 WHERE person_id = ?`,
@@ -3026,6 +3028,8 @@ router.post("/api/import-xlsx", upload.single("file"), async (req, res) => {
     }
 
     // --- Step 4: Process each School Year + Semester block ---
+    // Dynamic conversion keeps legacy transcript imports aligned with grade_conversion.
+    const gradeConversions = await getGradeConversions();
     const results = [];
     let currentSY = null;
     let subjects = [];
@@ -3055,37 +3059,60 @@ router.post("/api/import-xlsx", upload.single("file"), async (req, res) => {
           importedCourseCode,
           currentSY.normalizedSemester,
         );
-        const finalGradeRaw = String(row.D || "").trim();
+        const raw = String(row.D || "").trim().toUpperCase();
+        const reExamGrade = String(row.E || "").trim();
         let finalGrade = 0.0;
         let enRemark = 0;
         let status = 0;
         let gradeStatus = null;
 
-        if (finalGradeRaw) {
-          if (["INC", "INCOMPLETE"].includes(finalGradeRaw.toUpperCase())) {
-            enRemark = 3; // Incomplete
-          }
-          if (
-            ["DRP", "DROP", "DROPPED"].includes(finalGradeRaw.toUpperCase())
-          ) {
-            enRemark = 4; // Dropped
-            finalGrade = "DRP";
-            gradeStatus = "DRP";
+        if (!raw || ["", "-", "N/A", "NA"].includes(raw)) {
+          enRemark = 5;
+        } else if (["CE", "CURRENTLY ENROLLED"].includes(raw)) {
+          finalGrade = 0;
+          enRemark = 0;
+          status = 0;
+        } else if (["INC", "INCOMPLETE"].includes(raw)) {
+          enRemark = 3;
+          finalGrade = "INC";
+        } else if (["DRP", "DROP", "DROPPED"].includes(raw)) {
+          enRemark = 4;
+          finalGrade = "DRP";
+          gradeStatus = "DRP";
+        } else {
+          const gradeNum = parseFloat(raw);
+
+          if (!isNaN(gradeNum)) {
+            const gradeOutcome = deriveLegacyImportOutcome(
+              gradeNum,
+              gradeConversions,
+            );
+            finalGrade = gradeOutcome.storedNumericGrade;
+            enRemark = gradeOutcome.enRemark;
+            status = gradeOutcome.status;
           } else {
-            const gradeNum = parseFloat(finalGradeRaw);
-            if (!isNaN(gradeNum)) {
-              const numericGrade = convertGradeToNumericLegacy(gradeNum);
+            enRemark = 6;
+          }
+        }
 
-              finalGrade = numericGrade;
+        if (reExamGrade) {
+          gradeStatus = reExamGrade;
 
-              if (gradeNum === 5.0) {
-                enRemark = 2; // Failed
-                status = 1;
-              } else if (gradeNum <= 3.0) {
-                enRemark = 1; // Passed
-                status = 0;
-              }
-            }
+          const normalizedReExam = reExamGrade.toUpperCase();
+          const reExamNumeric = parseFloat(normalizedReExam);
+
+          if (!isNaN(reExamNumeric)) {
+            const reExamOutcome = deriveLegacyImportOutcome(
+              reExamNumeric,
+              gradeConversions,
+            );
+            enRemark = reExamOutcome.enRemark;
+            status = reExamOutcome.status;
+          } else if (["INC", "INCOMPLETE"].includes(normalizedReExam)) {
+            enRemark = 3;
+          } else if (["DRP", "DROP", "DROPPED"].includes(normalizedReExam)) {
+            enRemark = 4;
+            gradeStatus = "DRP";
           }
         }
 
@@ -3152,38 +3179,70 @@ router.post("/api/import-xlsx", upload.single("file"), async (req, res) => {
       }
     }
 
-    // --- Step 5: Count completed semesters ---
+    // --- Step 5: Count completed semesters and collect all semesters for status table ---
     let latestOngoing = null;
     const completedBySchoolYear = {};
+
+    // Place 1 guard: only First/Second Semester affect year level progression and allNonOngoingSemesters
+    const allNonOngoingSemesters = []; // First + Second Sem only (non-ongoing)
+    const allSummerSemesters = [];    // Summer only (non-ongoing)
 
     for (const block of results) {
       const { normalizedSchoolYear, normalizedSemester, subjects } = block;
 
+      // Handle Summer separately — excluded from Place 1 and Place 2 guards
+      if (normalizedSemester === "Summer") {
+        if (subjects.length > 0) {
+          const isOngoingSummer = subjects.every(
+            (s) => s.final_grade === 0 && s.en_remark === 0,
+          );
+          if (!isOngoingSummer) {
+            allSummerSemesters.push({
+              schoolYear: normalizedSchoolYear,
+              semester: normalizedSemester,
+            });
+          } else {
+            latestOngoing = {
+              schoolYear: normalizedSchoolYear,
+              semester: normalizedSemester,
+            };
+          }
+        }
+        continue; // still excluded from Place 1 guard below
+      }
+
+      // Place 1 guard: only First Semester and Second Semester past this point
       if (!["First Semester", "Second Semester"].includes(normalizedSemester))
         continue;
 
-      const hasPassed = subjects.some((s) => s.en_remark === 1);
-      const hasAllInvalid = subjects.every(
-        (s) => s.en_remark === 2 || s.en_remark === 3,
-      );
-
-      const isCompleted = hasPassed && !hasAllInvalid;
       const isOngoing = subjects.every(
         (s) => s.final_grade === 0 && s.en_remark === 0,
       );
-
-      if (isCompleted) {
-        if (!completedBySchoolYear[normalizedSchoolYear]) {
-          completedBySchoolYear[normalizedSchoolYear] = new Set();
-        }
-        completedBySchoolYear[normalizedSchoolYear].add(normalizedSemester);
-      }
 
       if (isOngoing) {
         latestOngoing = {
           schoolYear: normalizedSchoolYear,
           semester: normalizedSemester,
         };
+        continue;
+      }
+
+      if (subjects.length > 0) {
+        // Track every non-ongoing First/Second Semester for student_status_table
+        allNonOngoingSemesters.push({
+          schoolYear: normalizedSchoolYear,
+          semester: normalizedSemester,
+        });
+
+        // Place 2 guard: only increment year level if at least one subject was passed
+        const hasAtLeastOnePassed = subjects.some((s) => s.en_remark === 1);
+
+        if (hasAtLeastOnePassed) {
+          if (!completedBySchoolYear[normalizedSchoolYear]) {
+            completedBySchoolYear[normalizedSchoolYear] = new Set();
+          }
+          completedBySchoolYear[normalizedSchoolYear].add(normalizedSemester);
+        }
       }
     }
 
@@ -3197,7 +3256,76 @@ router.post("/api/import-xlsx", upload.single("file"), async (req, res) => {
 
       if (completedSemCount > 0) {
         runningYearLevel++;
-        yearLevelPerSY.push({ schoolYear: sy, yearLevel: runningYearLevel });
+        yearLevelPerSY.push({
+          schoolYear: sy,
+          yearLevel: runningYearLevel,
+          semesters: [...completedBySchoolYear[sy]],
+        });
+      }
+    }
+
+    // Build semesterYearLevelMap for First/Second Sem entries
+    // Semester ordering for chronological sort
+    const semesterOrder = {
+      "First Semester": 1,
+      "Second Semester": 2,
+      "Summer": 3,
+    };
+
+    const semesterYearLevelMap = {};
+
+    // Populate progressing semesters first
+    for (const entry of yearLevelPerSY) {
+      for (const sem of entry.semesters) {
+        semesterYearLevelMap[`${entry.schoolYear}__${sem}`] = entry.yearLevel;
+      }
+    }
+
+    // Sort all non-ongoing First/Second Sem chronologically
+    const sortedAllSemesters = [...allNonOngoingSemesters].sort((a, b) => {
+      if (a.schoolYear !== b.schoolYear)
+        return a.schoolYear.localeCompare(b.schoolYear);
+      return (
+        (semesterOrder[a.semester] || 0) - (semesterOrder[b.semester] || 0)
+      );
+    });
+
+    // Walk chronologically to assign inherited year levels to non-progressing semesters
+    let trackingYearLevel = 0;
+    for (const { schoolYear, semester } of sortedAllSemesters) {
+      const key = `${schoolYear}__${semester}`;
+      if (semesterYearLevelMap[key] !== undefined) {
+        // Already resolved (progressed year level) — update tracker
+        trackingYearLevel = semesterYearLevelMap[key];
+      } else {
+        // Did not progress — inherit last known year level (minimum 1)
+        semesterYearLevelMap[key] = Math.max(trackingYearLevel, 1);
+      }
+    }
+
+    // Now resolve Summer year levels by merging and sorting all semesters together
+    // Summer sits after Second Semester of the same school year (order = 3)
+    const sortedAllSemestersWithSummer = [
+      ...sortedAllSemesters,
+      ...allSummerSemesters,
+    ].sort((a, b) => {
+      if (a.schoolYear !== b.schoolYear)
+        return a.schoolYear.localeCompare(b.schoolYear);
+      return (
+        (semesterOrder[a.semester] || 0) - (semesterOrder[b.semester] || 0)
+      );
+    });
+
+    // Walk again with Summer included — Summer inherits the last known year level
+    let trackingYearLevelWithSummer = 0;
+    for (const { schoolYear, semester } of sortedAllSemestersWithSummer) {
+      const key = `${schoolYear}__${semester}`;
+      if (semesterYearLevelMap[key] !== undefined) {
+        // Already resolved (First/Second Sem) — just update tracker
+        trackingYearLevelWithSummer = semesterYearLevelMap[key];
+      } else {
+        // Summer — inherit last known year level (minimum 1)
+        semesterYearLevelMap[key] = Math.max(trackingYearLevelWithSummer, 1);
       }
     }
 
@@ -3242,7 +3370,7 @@ router.post("/api/import-xlsx", upload.single("file"), async (req, res) => {
 
         const [result] = await connection.query(
           `UPDATE enrolled_subject
-           SET final_grade = ?, en_remarks = ?, status = ?, component = ?
+           SET final_grade = ?, en_remarks = ?, status = ?, component = ?, grades_status = ?
            WHERE student_number = ?
              AND course_id = ?
              AND curriculum_id = ?
@@ -3252,6 +3380,7 @@ router.post("/api/import-xlsx", upload.single("file"), async (req, res) => {
             subj.en_remark,
             subj.status,
             subj.component || 0,
+            subj.grade_status,
             studentNumber,
             course.course_id,
             curriculum.curriculum_id,
@@ -3265,8 +3394,8 @@ router.post("/api/import-xlsx", upload.single("file"), async (req, res) => {
           await connection.query(
             `INSERT INTO enrolled_subject
               (student_number, curriculum_id, course_id, component, active_school_year_id,
-               midterm, finals, final_grade, en_remarks, department_section_id, status, fe_status, remarks)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+               midterm, finals, final_grade, en_remarks, grades_status, department_section_id, status, fe_status, remarks)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
               studentNumber,
               curriculum.curriculum_id,
@@ -3277,6 +3406,7 @@ router.post("/api/import-xlsx", upload.single("file"), async (req, res) => {
               0,
               subj.final_grade,
               subj.en_remark,
+              subj.grade_status,
               req.body.department_section_id || 0,
               1,
               0,
@@ -3289,62 +3419,57 @@ router.post("/api/import-xlsx", upload.single("file"), async (req, res) => {
     }
 
     // --- Step 7: Update student year level per semester ---
-    // issue need to be resoved: duplicate insert in student status table even though its supposed to be an update if the data exists.
-    for (const entry of yearLevelPerSY) {
-      const { schoolYear, yearLevel } = entry;
+    // Iterates ALL non-ongoing semesters including Summer
+    for (const { schoolYear, semester } of sortedAllSemestersWithSummer) {
+      const key = `${schoolYear}__${semester}`;
+      const yearLevel = semesterYearLevelMap[key];
 
-      // Loop through both semesters
-      for (const sem of ["First Semester", "Second Semester"]) {
-        const [[schoolYearRow]] = await connection.query(
-          "SELECT year_id FROM year_table WHERE year_description = ?",
-          [schoolYear],
-        );
-        if (!schoolYearRow) continue;
+      if (!yearLevel) continue;
 
-        const [[semesterRow]] = await connection.query(
-          "SELECT semester_id FROM semester_table WHERE semester_description = ?",
-          [sem],
-        );
-        if (!semesterRow) continue;
+      const [[schoolYearRow]] = await connection.query(
+        "SELECT year_id FROM year_table WHERE year_description = ?",
+        [schoolYear],
+      );
+      if (!schoolYearRow) continue;
 
-        const [[activeSY]] = await connection.query(
-          `SELECT id FROM active_school_year_table WHERE year_id = ? AND semester_id = ?`,
-          [schoolYearRow.year_id, semesterRow.semester_id],
+      const [[semesterRow]] = await connection.query(
+        "SELECT semester_id FROM semester_table WHERE semester_description = ?",
+        [semester],
+      );
+      if (!semesterRow) continue;
+
+      const [[activeSY]] = await connection.query(
+        `SELECT id FROM active_school_year_table WHERE year_id = ? AND semester_id = ?`,
+        [schoolYearRow.year_id, semesterRow.semester_id],
+      );
+      if (!activeSY) continue;
+
+      const [existingStatus] = await connection.query(
+        `SELECT id FROM student_status_table
+         WHERE student_number = ? AND active_curriculum = ? AND year_level_id = ? AND active_school_year_id = ?`,
+        [studentNumber, curriculum.curriculum_id, yearLevel, activeSY.id],
+      );
+
+      if (existingStatus.length > 0) {
+        await connection.query(
+          `UPDATE student_status_table
+           SET enrolled_status = 1
+           WHERE id = ?`,
+          [existingStatus[0].id],
         );
-        if (!activeSY) continue;
-        // CREATE or UPDATE student status record
-        // IF student_number, active_curriculum, enrolled_status, year_level_id, and active_school_year_id is the same, then UPDATE the record
-        // ELSE, INSERT a new record
-        // MAP IT and check it one by one if the record exist or not, if exist then update else insert
-        const [existingStatus] = await connection.query(
-          `SELECT id FROM student_status_table
-           WHERE student_number = ? AND active_curriculum = ? AND year_level_id = ? AND active_school_year_id = ?`,
-          [studentNumber, curriculum.curriculum_id, yearLevel, activeSY.id],
+        console.log(
+          `✓ Updated student_status_table for student_number ${studentNumber}, year level ${yearLevel}, school year ${schoolYear} (${semester})`,
         );
-        if (existingStatus.length > 0) {
-          await connection.query(
-            `UPDATE student_status_table
-             SET enrolled_status = 1
-              WHERE id = ?`,
-            [existingStatus[0].id],
-          );
-          console.log(
-            `✓ Updated student_status_table for student_number ${studentNumber}, year level ${yearLevel}, school year ${schoolYear} (${sem})`,
-          );
-        } else {
-          await connection.query(
-            `INSERT INTO student_status_table
-            (student_number, active_curriculum, enrolled_status, year_level_id, active_school_year_id)
+      } else {
+        await connection.query(
+          `INSERT INTO student_status_table
+           (student_number, active_curriculum, enrolled_status, year_level_id, active_school_year_id)
            VALUES (?, ?, ?, ?, ?)`,
-            [
-              studentNumber,
-              curriculum.curriculum_id,
-              1,
-              yearLevel,
-              activeSY.id,
-            ],
-          );
-        }
+          [studentNumber, curriculum.curriculum_id, 1, yearLevel, activeSY.id],
+        );
+        console.log(
+          `✓ Inserted student_status_table for student_number ${studentNumber}, year level ${yearLevel}, school year ${schoolYear} (${semester})`,
+        );
       }
     }
 
@@ -3367,30 +3492,44 @@ router.post("/api/import-xlsx", upload.single("file"), async (req, res) => {
         );
 
         if (activeSY) {
+          const ongoingYearLevel = runningYearLevel + 1;
+
           const [existingStatus] = await connection.query(
             `SELECT id FROM student_status_table
-            WHERE student_number = ? AND active_curriculum = ? AND year_level_id = ? AND active_school_year_id = ?`,
-            [studentNumber, curriculum.curriculum_id, runningYearLevel + 1, activeSY.id],
+             WHERE student_number = ? AND active_curriculum = ? AND year_level_id = ? AND active_school_year_id = ?`,
+            [
+              studentNumber,
+              curriculum.curriculum_id,
+              ongoingYearLevel,
+              activeSY.id,
+            ],
           );
+
           if (existingStatus.length > 0) {
             await connection.query(
               `UPDATE student_status_table
-              SET enrolled_status = 1
-              WHERE id = ?`,
+               SET enrolled_status = 1
+               WHERE id = ?`,
               [existingStatus[0].id],
+            );
+            console.log(
+              `✓ Updated ongoing semester: student_number ${studentNumber}, year level ${ongoingYearLevel}, school year ${latestOngoing.schoolYear} (${latestOngoing.semester})`,
             );
           } else {
             await connection.query(
               `INSERT INTO student_status_table
-                (student_number, active_curriculum, enrolled_status, year_level_id, active_school_year_id)
-              VALUES (?, ?, ?, ?, ?)`,
+               (student_number, active_curriculum, enrolled_status, year_level_id, active_school_year_id)
+               VALUES (?, ?, ?, ?, ?)`,
               [
                 studentNumber,
                 curriculum.curriculum_id,
                 1,
-                runningYearLevel + 1,
+                ongoingYearLevel,
                 activeSY.id,
               ],
+            );
+            console.log(
+              `✓ Inserted ongoing semester: student_number ${studentNumber}, year level ${ongoingYearLevel}, school year ${latestOngoing.schoolYear} (${latestOngoing.semester})`,
             );
           }
         }
@@ -3535,5 +3674,7 @@ router.post("/api/qualifying_exam/import", async (req, res) => {
     res.status(500).json({ success: false, error: err.message });
   }
 });
+
+
 
 module.exports = router;

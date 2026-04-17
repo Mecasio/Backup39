@@ -29,6 +29,10 @@ import API_BASE_URL from "../apiConfig";
 import { useLocation } from "react-router-dom";
 import { FcPrint } from "react-icons/fc";
 import SearchIcon from "@mui/icons-material/Search";
+import {
+  convertRawToRatingDynamic,
+  setRemarksFromRatingDynamic,
+} from "../utils/gradeConversion";
 
 const GradingSheet = () => {
   const settings = useContext(SettingsContext);
@@ -95,6 +99,7 @@ const GradingSheet = () => {
   const [selectedFile, setSelectedFile] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [sortOrder, setSortOrder] = useState("asc");
+  const [gradeConversions, setGradeConversions] = useState([]);
   const [snack, setSnack] = useState({
     open: false,
     message: "",
@@ -204,6 +209,17 @@ const GradingSheet = () => {
         }
       })
       .catch((err) => console.error(err));
+  }, []);
+
+  useEffect(() => {
+    // Dynamic grade conversion keeps faculty grading aligned with grade_conversion.
+    axios
+      .get(`${API_BASE_URL}/grade-conversion`)
+      .then((res) => setGradeConversions(res.data))
+      .catch((err) => {
+        console.error("Failed to fetch grade conversions:", err);
+        setGradeConversions([]);
+      });
   }, []);
 
   useEffect(() => {
@@ -576,24 +592,9 @@ const GradingSheet = () => {
     return String(num);
   }
 
-  const setRemarksFromRating = (rating) => {
-    switch (rating) {
-      case "1.00":
-      case "1.25":
-      case "1.50":
-      case "1.75":
-      case "2.00":
-      case "2.25":
-      case "2.50":
-      case "2.75":
-      case "3.00":
-        return 1; // PASSED
-      case "5.00":
-        return 2; // FAILED
-      default:
-        return 3; // INCOMPLETE or others
-    }
-  };
+  // Dynamic helpers replace hardcoded grade ranges with grade_conversion records.
+  const setRemarksFromRating = (rating) =>
+    setRemarksFromRatingDynamic(rating, gradeConversions);
 
   // ----------------- GradeSelect component -----------------
   const GradeSelect = ({ value, onChange, placeholder = "" }) => {
@@ -761,30 +762,7 @@ const GradingSheet = () => {
   };
 
   function convertRawToRating(value) {
-    if (value === null || value === undefined || value === "") return "";
-
-    const v = String(value).trim().toUpperCase();
-
-    // Handle INC and DROP
-    if (v === "INC") return "Incomplete";
-    if (v === "DROP" || v === "DRP") return "Dropped";
-
-    // Handle numeric values
-    const num = Number(v);
-    if (isNaN(num) || num === "0.00" || num === 0.0) return ""; // anything invalid
-
-    if (num >= 97 && num <= 100) return "1.00";
-    if (num >= 94 && num <= 96) return "1.25";
-    if (num >= 91 && num <= 93) return "1.50";
-    if (num >= 88 && num <= 90) return "1.75";
-    if (num >= 85 && num <= 87) return "2.00";
-    if (num >= 82 && num <= 84) return "2.25";
-    if (num >= 79 && num <= 81) return "2.50";
-    if (num >= 76 && num <= 78) return "2.75";
-    if (num === 75) return "3.00";
-    if (num < 75) return "5.00";
-
-    return "";
+    return convertRawToRatingDynamic(value, gradeConversions);
   }
 
   const handleSelectCourseChange = (event) => {

@@ -113,6 +113,7 @@ router.get("/student-info/:student_number", async (req, res) => {
           smt.semester_description,
           snt.student_number,
           IFNULL(es.final_grade, "-") as final_grade,
+          IFNULL(es.grades_status, "") as grades_status,
           IFNULL(es.en_remarks, 0) as en_remarks,
           ylt.year_level_description, 
           cst.course_id,
@@ -170,7 +171,7 @@ router.put("/update_student_year_level", async (req, res) => {
     console.log("Internal Server Error: " + err);
     res.status(500).json({ message: "Server error" });
   }
-});
+});  
 
 router.post("/update_student", upload.single("profile_picture"), async (req, res) => {
   const { person_id } = req.body;
@@ -307,6 +308,7 @@ SELECT DISTINCT
   ct.course_description,
   ct.course_code,
   es.en_remarks,
+  es.grades_status,
   es.remarks,
   ct.course_unit,
   ct.lab_unit,
@@ -332,7 +334,7 @@ SELECT DISTINCT
   IFNULL(pft.fname, 'TBA') AS fname,
   IFNULL(pft.lname, 'TBA') AS lname,
 
-  -- ✅ ORIGINAL GRADE
+  -- ✅ ORIGINAL GRADE / RE-EXAM VALUE FOR registrar grade file
   es.final_grade,
 
   -- ✅ ADD THESE (FIX)
@@ -477,7 +479,6 @@ ORDER BY
     });
   }
 });
-
 
 router.get("/api/student/view_latest_grades/:id", async (req, res) => {
   const { id } = req.params;
@@ -1124,8 +1125,6 @@ ORDER BY dt.dprtmnt_code, pgt.program_code, pt.last_name;
   }
 });
 
-
-
 router.get("/student_enrollment", async (req, res) => {
   try {
     const [rows] = await db3.query(
@@ -1202,8 +1201,5 @@ router.get("/student_enrollment/:student_number", async (req, res) => {
     res.status(500).json({ error: "Failed fetching students" });
   }
 });
-
-
-
 
 module.exports = router;

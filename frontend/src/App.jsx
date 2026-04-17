@@ -376,6 +376,7 @@ const CollegeScheduleChecker = lazy(
   () => import("./registrar/CollegeScheduleChecker"),
 );
 const StudentGradeFile = lazy(() => import("./superadmin/StudentGradeFile"));
+const StudentEnrollment = lazy(() => import("./superadmin/StudentEnrollment"));
 const PaymentExportingModule = lazy(
   () => import("./superadmin/PaymentExportingModule"),
 );
@@ -2194,6 +2195,14 @@ function App() {
                         element={
                           <ProtectedRoute>
                             <StudentGradeFile />
+                          </ProtectedRoute>
+                        }
+                      />
+                      <Route
+                        path="/student_enrollment"
+                        element={
+                          <ProtectedRoute>
+                            <StudentEnrollment />
                           </ProtectedRoute>
                         }
                       />

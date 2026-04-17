@@ -117,14 +117,14 @@ const ReportOfGrade = () => {
         axios
             .get(`${API_BASE_URL}/api/person_with_applicant/${personIdFromUrl}`)
             .then((res) => {
-                if (res.data?.applicant_number) {
+                if (res.data?.student_number) {
 
                     // AUTO-INSERT applicant_number into search bar
-                    setSearchQuery(res.data.applicant_number);
+                    setSearchQuery(res.data.student_number);
 
                     // If you have a fetchUploads() or fetchExamScore() — call it
                     if (typeof fetchUploadsByApplicantNumber === "function") {
-                        fetchUploadsByApplicantNumber(res.data.applicant_number);
+                        fetchUploadsByApplicantNumber(res.data.student_number);
                     }
 
                     if (typeof fetchApplicants === "function") {

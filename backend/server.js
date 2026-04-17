@@ -9,6 +9,10 @@ const path = require("path");
 const fs = require("fs");
 const QRCode = require("qrcode");
 const puppeteer = require("puppeteer");
+const {
+  getGradeConversions,
+  getStoredNumericGrade,
+} = require("./utils/gradeConversion");
 
 require("dotenv").config();
 const app = express();
@@ -44,7 +48,7 @@ const allowedOrigins = [
   "http://192.168.50.55:5173",
   "http://192.168.50.211:5173",
   "http://136.239.248.62:5173",
-  "http://192.168.50.66:5173",
+  "http://192.168.0.180:5173",
   "http://192.168.1.9:5173",
 ];
 
@@ -10845,22 +10849,6 @@ app.post("/insert_subject", async (req, res) => {
   }
 });
 
-const convertGradeToNumeric = (grade) => {
-  const gradeMap = {
-    1.0: 100,
-    1.25: 96,
-    0.18: 93,
-    1.75: 90,
-    2.0: 87,
-    2.25: 84,
-    2.5: 81,
-    2.75: 78,
-    3.0: 75,
-    5.0: 0,
-  };
-  return gradeMap[grade] ?? null;
-};
-
 app.put("/update_subject", async (req, res) => {
   const {
     course_id,
@@ -10880,7 +10868,13 @@ app.put("/update_subject", async (req, res) => {
   console.log("School Year", active_school_year_id);
 
   try {
-    const numericGrade = convertGradeToNumeric(parseFloat(final_grade));
+    // Dynamic conversion keeps subject updates aligned with grade_conversion records.
+    const gradeConversions = await getGradeConversions();
+    const numericGrade = getStoredNumericGrade(final_grade, gradeConversions);
+
+    if (numericGrade === null) {
+      return res.status(400).json({ error: "Invalid grade conversion value" });
+    }
 
     const sql = `
       UPDATE enrolled_subject SET final_grade = ? WHERE

@@ -7,6 +7,19 @@ const { db3 } = require("../database/database");
 
 const router = express.Router();
 
+// Shared grade conversion API for frontend grade-entry screens.
+router.get("/grade-conversion", async (req, res) => {
+    try {
+        const [rows] = await db3.query(
+            "SELECT * FROM grade_conversion ORDER BY min_score DESC"
+        );
+        res.json(rows);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: "Failed to fetch grade conversion" });
+    }
+});
+
 async function getSemesterHonor(gwa) {
     const [rows] = await db3.query(
         `SELECT title 
