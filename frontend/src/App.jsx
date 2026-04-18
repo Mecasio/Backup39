@@ -279,6 +279,9 @@ const StudentDashboard2 = lazy(() => import("./student/StudentDashboard2"));
 const StudentDashboard3 = lazy(() => import("./student/StudentDashboard3"));
 const StudentDashboard4 = lazy(() => import("./student/StudentDashboard4"));
 const StudentDashboard5 = lazy(() => import("./student/StudentDashboard5"));
+const StudentSectionOffering = lazy(
+  () => import("./student/StudentSectionOffering"),
+);
 const StudentResetPassword = lazy(
   () => import("./student/StudentResetPassword"),
 );
@@ -2195,6 +2198,14 @@ function App() {
                         element={
                           <ProtectedRoute>
                             <StudentGradeFile />
+                          </ProtectedRoute>
+                        }
+                      />
+                      <Route
+                        path="/student_section_offering"
+                        element={
+                          <ProtectedRoute allowedRoles={"student"}>
+                            <StudentSectionOffering />
                           </ProtectedRoute>
                         }
                       />
