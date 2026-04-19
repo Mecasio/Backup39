@@ -46,6 +46,7 @@ router.get("/programs/availability", async (req, res) => {
         ON ct.program_id = p.program_id
       INNER JOIN year_table AS y
         ON ct.year_id = y.year_id
+      WHERE ct.lock_status = 1
       ORDER BY dt.dprtmnt_name, p.program_description;
     `);
 

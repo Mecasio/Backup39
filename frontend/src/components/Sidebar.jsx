@@ -120,13 +120,13 @@ function buildSidebarStyles(s = {}, hasDepartment = true) {
   
   .sb-section-label {
     font-size: 14px; font-weight: 700; text-transform: uppercase;
-    letter-spacing: .08em; color: #000; padding: 10px 8px 4px;
+    letter-spacing: -.02em; color: #000; padding: 10px 8px 4px;
   }
 
   .sb-item {
     display: flex; align-items: center; gap: 10px;
     padding: 9px 10px; border-radius: 8px; cursor: pointer;
-    color: black; font-size: 18px; font-weight: 400;
+    color: black; font-size: 16px; font-weight: 400;
     transition: background .15s, color .15s;
     text-decoration: none; margin-bottom: 1px;
     white-space: nowrap; overflow: hidden; line-height: 1;
@@ -146,7 +146,7 @@ function buildSidebarStyles(s = {}, hasDepartment = true) {
     display: flex; align-items: center; gap: 8px;
     width: 100%; padding: 8px 10px; border-radius: 8px;
     border: none; background: transparent; cursor: pointer;
-    color: black; font-size: 18px; font-weight: 400;
+    color: black; font-size: 16px; font-weight: 400;
     font-family: 'Poppins', sans-serif; transition: background .15s;
     text-align: left; margin-bottom: 1px; line-height: 1; vertical-align: middle;
   }
@@ -190,14 +190,14 @@ function NavItem({ to, icon: Icon, label, active, onClick, sub = false }) {
   if (onClick) {
     return (
       <div className={cls} onClick={onClick}>
-        {Icon && <span className="sb-icon"><Icon sx={{ fontSize: 18 }} /></span>}
+        {Icon && <span className="sb-icon"><Icon sx={{ fontSize: 16 }} /></span>}
         <span className="sb-item-label">{label}</span>
       </div>
     );
   }
   return (
     <Link to={to} className={cls}>
-      {Icon && <span className="sb-icon"><Icon sx={{ fontSize: 18 }} /></span>}
+      {Icon && <span className="sb-icon"><Icon sx={{ fontSize: 16 }} /></span>}
       <span className="sb-item-label">{label}</span>
     </Link>
   );

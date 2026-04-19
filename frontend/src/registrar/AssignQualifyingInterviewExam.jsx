@@ -154,6 +154,7 @@ const AssignQualifyingInterviewExam = () => {
     const [schedules, setSchedules] = useState([]);
     const [selectedBranch, setSelectedBranch] = useState("");  // selected in form
     const [branches, setBranches] = useState([]);
+    const [activeSchoolYearId, setActiveSchoolYearId] = useState("");
 
     useEffect(() => {
         const fetchSchedules = async () => {
@@ -166,6 +167,19 @@ const AssignQualifyingInterviewExam = () => {
             }
         };
         fetchSchedules();
+    }, []);
+
+    useEffect(() => {
+        const fetchActiveSchoolYearId = async () => {
+            try {
+                const res = await axios.get(`${API_BASE_URL}/active_school_year`);
+                setActiveSchoolYearId(res.data?.[0]?.id || "");
+            } catch (err) {
+                console.error("Error fetching active school year:", err);
+            }
+        };
+
+        fetchActiveSchoolYearId();
     }, []);
 
     const [userID, setUserID] = useState("");
@@ -236,6 +250,7 @@ const AssignQualifyingInterviewExam = () => {
                 end_time: endTime,
                 interviewer,
                 room_quota: roomQuota,
+                active_school_year_id: activeSchoolYearId || undefined,
             };
 
             if (editingSchedule) {

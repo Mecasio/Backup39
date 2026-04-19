@@ -605,7 +605,7 @@ const StudentNumbering = () => {
                 open={authOpen}
                 onClose={() => {
                     setAuthOpen(false);
-                    navigate("/registrar_dashboard"); // or wherever you want to go
+                    navigate("/registrar_dashboard");
                 }}
             >
                 <DialogTitle
@@ -623,7 +623,7 @@ const StudentNumbering = () => {
                         aria-label="close"
                         onClick={() => {
                             setAuthOpen(false);
-                            navigate("/registrar_dashboard"); // optional redirect
+                            navigate("/registrar_dashboard");
                         }}
                         sx={{
                             position: "absolute",
@@ -1341,10 +1341,9 @@ const StudentNumbering = () => {
             </Snackbar>
 
             <Dialog
-                open={authOpen}
+                open={openModal}
                 onClose={() => {
-                    setAuthOpen(false);
-                    navigate("/registrar_dashboard"); // or wherever you want to go
+                    setOpenModal(false);
                 }}
             >
                 <DialogTitle
@@ -1361,8 +1360,7 @@ const StudentNumbering = () => {
                     <IconButton
                         aria-label="close"
                         onClick={() => {
-                            setAuthOpen(false);
-                            navigate("/registrar_dashboard"); // optional redirect
+                            setOpenModal(false);
                         }}
                         sx={{
                             position: "absolute",

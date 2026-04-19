@@ -181,9 +181,11 @@ router.get("/department_section", async (req, res) => {
   try {
     const query = `
       SELECT
+        dst.id as department_section_id,
         pt.program_code,
         pt.program_description,
         pt.major,
+        ct.curriculum_id,
         yt.year_description,
         st.description AS section_description
       FROM dprtmnt_section_table dst

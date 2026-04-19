@@ -437,6 +437,12 @@ const CourseTaggingForCollege = lazy(
 const CourseTaggingForSummer = lazy(
   () => import("./registrar/CourseTaggingForSummer"),
 );
+const NSTPTagging = lazy(
+  () => import("./superadmin/NSTPTagging"),
+);
+const DepartmentSectionTagging = lazy(
+  () => import("./superadmin/DepartmentSectionTagging"),
+);
 const Archived = lazy(() => import("./superadmin/ArchivedModule"));
 const LoadingOverlay = lazy(() => import("./components/LoadingOverlay"));
 
@@ -1132,6 +1138,22 @@ function App() {
                         element={
                           <ProtectedRoute>
                             <CourseTaggingForSummerCollege />
+                          </ProtectedRoute>
+                        }
+                      />
+                      <Route
+                        path="/nstp_tagging"
+                        element={
+                          <ProtectedRoute>
+                            <NSTPTagging/>
+                          </ProtectedRoute>
+                        }
+                      />
+                      <Route
+                        path="/department_section_tagging"
+                        element={
+                          <ProtectedRoute>
+                            <DepartmentSectionTagging/>
                           </ProtectedRoute>
                         }
                       />

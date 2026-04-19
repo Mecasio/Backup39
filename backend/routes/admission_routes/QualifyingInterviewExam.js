@@ -3,6 +3,18 @@ const { db, db3 } = require("../database/database");
 
 const router = express.Router();
 
+const resolveActiveSchoolYearId = async (providedId) => {
+  if (providedId) {
+    return providedId;
+  }
+
+  const [activeRows] = await db3.query(
+    "SELECT id FROM active_school_year_table WHERE astatus = 1 LIMIT 1",
+  );
+
+  return activeRows[0]?.id || null;
+};
+
 // ================== INSERT INTERVIEW SCHEDULE ==================
 router.post("/insert_interview_schedule", async (req, res) => {
   try {
@@ -17,6 +29,9 @@ router.post("/insert_interview_schedule", async (req, res) => {
       room_quota,
       active_school_year_id, // optional if needed
     } = req.body;
+
+    const resolvedActiveSchoolYearId =
+      await resolveActiveSchoolYearId(active_school_year_id);
 
     // Check conflicts for the same branch, building, room, and overlapping time
     const [conflicts] = await db.query(
@@ -59,7 +74,7 @@ router.post("/insert_interview_schedule", async (req, res) => {
         end_time,
         interviewer,
         room_quota,
-        active_school_year_id || null,
+        resolvedActiveSchoolYearId,
       ]
     );
 
@@ -83,7 +98,11 @@ router.put("/update_interview_schedule/:id", async (req, res) => {
       end_time,
       interviewer,
       room_quota,
+      active_school_year_id,
     } = req.body;
+
+    const resolvedActiveSchoolYearId =
+      await resolveActiveSchoolYearId(active_school_year_id);
 
     const [conflicts] = await db.query(
       `SELECT schedule_id
@@ -123,7 +142,8 @@ router.put("/update_interview_schedule/:id", async (req, res) => {
            start_time = ?,
            end_time = ?,
            interviewer = ?,
-           room_quota = ?
+           room_quota = ?,
+           active_school_year_id = ?
        WHERE schedule_id = ?`,
       [
         branch,
@@ -134,6 +154,7 @@ router.put("/update_interview_schedule/:id", async (req, res) => {
         end_time,
         interviewer,
         room_quota,
+        resolvedActiveSchoolYearId,
         id,
       ]
     );
@@ -191,14 +212,18 @@ router.get(
         ees.interviewer,
         ees.room_quota,
         ees.created_at,
-        sy.year_id,
-        sy.semester_id,
+        COALESCE(sy.year_id, current_sy.year_id) AS year_id,
+        COALESCE(sy.semester_id, current_sy.semester_id) AS semester_id,
         COUNT(ea.applicant_id) AS current_occupancy
       FROM admission.interview_exam_schedule ees
-      JOIN enrollment.active_school_year_table sy ON ees.active_school_year_id = sy.id
+      LEFT JOIN enrollment.active_school_year_table sy
+        ON ees.active_school_year_id = sy.id
+      LEFT JOIN enrollment.active_school_year_table current_sy
+        ON current_sy.astatus = 1
       LEFT JOIN admission.interview_applicants ea
         ON ees.schedule_id = ea.schedule_id
-      WHERE sy.year_id = ? AND sy.semester_id = ?${branchClause}
+      WHERE COALESCE(sy.year_id, current_sy.year_id) = ?
+        AND COALESCE(sy.semester_id, current_sy.semester_id) = ?${branchClause}
       GROUP BY ees.schedule_id
       ORDER BY ees.day_description, ees.start_time;
     `,
