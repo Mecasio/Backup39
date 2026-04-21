@@ -1,21 +1,33 @@
 const express = require("express");
 const { db, db3 } = require("../database/database");
-
+const {
+  CanCreate,
+  CanDelete,
+  CanEdit,
+} = require("../../middleware/pagePermissions");
 const router = express.Router();
 
-router.post("/curriculum", async (req, res) => {
+router.post("/curriculum", CanCreate, async (req, res) => {
   const { year_id, program_id } = req.body;
 
   if (!year_id || !program_id) {
-    return res.status(400).json({ error: "Year ID and Program ID are required" });
+    return res
+      .status(400)
+      .json({ error: "Year ID and Program ID are required" });
   }
 
   try {
-    const [rows] = await db3.query('SELECT * FROM curriculum_table WHERE year_id = ? AND program_id = ?', [year_id, program_id])
+    const [rows] = await db3.query(
+      "SELECT * FROM curriculum_table WHERE year_id = ? AND program_id = ?",
+      [year_id, program_id],
+    );
     if (rows.length > 0) {
-      return res.status(400).json({ message: "This curriculum is already existed" });
+      return res
+        .status(400)
+        .json({ message: "This curriculum is already existed" });
     }
-    const sql = "INSERT INTO curriculum_table (year_id, program_id) VALUES (?, ?)";
+    const sql =
+      "INSERT INTO curriculum_table (year_id, program_id) VALUES (?, ?)";
     const [result] = await db3.query(sql, [year_id, program_id]);
 
     res.status(201).json({
@@ -53,17 +65,20 @@ router.get("/get_curriculum", async (req, res) => {
 });
 
 // ✅ UPDATE Curriculum lock_status (0 = inactive, 1 = active)
-router.put("/update_curriculum/:id", async (req, res) => {
+router.put("/update_curriculum/:id", CanEdit, async (req, res) => {
   const { id } = req.params;
   const { lock_status } = req.body;
 
   try {
     // Ensure valid input
     if (lock_status !== 0 && lock_status !== 1) {
-      return res.status(400).json({ message: "Invalid status value (must be 0 or 1)" });
+      return res
+        .status(400)
+        .json({ message: "Invalid status value (must be 0 or 1)" });
     }
 
-    const sql = "UPDATE curriculum_table SET lock_status = ? WHERE curriculum_id = ?";
+    const sql =
+      "UPDATE curriculum_table SET lock_status = ? WHERE curriculum_id = ?";
     const [result] = await db3.query(sql, [lock_status, id]);
 
     if (result.affectedRows === 0) {
@@ -77,7 +92,7 @@ router.put("/update_curriculum/:id", async (req, res) => {
   }
 });
 
-router.put("/update_curriculum_data/:id", async (req, res) => {
+router.put("/update_curriculum_data/:id", CanEdit, async (req, res) => {
   const { id } = req.params;
   const { year_id, program_id } = req.body;
 
@@ -98,7 +113,7 @@ router.put("/update_curriculum_data/:id", async (req, res) => {
   }
 });
 
-router.delete("/delete_curriculum/:id", async (req, res) => {
+router.delete("/delete_curriculum/:id", CanDelete, async (req, res) => {
   const { id } = req.params;
 
   try {
@@ -140,7 +155,9 @@ router.put("/api/update-active-curriculum", async (req, res) => {
   const { studentId, departmentSectionId } = req.body;
 
   if (!studentId || !departmentSectionId) {
-    return res.status(400).json({ error: "studentId and departmentSectionId are required" });
+    return res
+      .status(400)
+      .json({ error: "studentId and departmentSectionId are required" });
   }
 
   const fetchCurriculumQuery = `
@@ -150,7 +167,9 @@ router.put("/api/update-active-curriculum", async (req, res) => {
   `;
 
   try {
-    const [curriculumResult] = await db3.query(fetchCurriculumQuery, [departmentSectionId]);
+    const [curriculumResult] = await db3.query(fetchCurriculumQuery, [
+      departmentSectionId,
+    ]);
 
     if (curriculumResult.length === 0) {
       return res.status(404).json({ error: "Section not found" });
@@ -165,11 +184,10 @@ router.put("/api/update-active-curriculum", async (req, res) => {
     `;
     const result = await db3.query(updateQuery, [curriculumId, studentId]);
     const data = result[0];
-    console.log(data)
+    console.log(data);
     res.status(200).json({
       message: "Active curriculum updated successfully",
     });
-
   } catch (err) {
     console.error("Error updating active curriculum:", err);
     res.status(500).json({ error: "Database error", details: err.message });

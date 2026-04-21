@@ -37,7 +37,7 @@ import SearchIcon from "@mui/icons-material/Search";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import { FaFileExcel } from "react-icons/fa";
-import SaveIcon from '@mui/icons-material/Save';
+import SaveIcon from "@mui/icons-material/Save";
 
 const CoursePanel = () => {
   const settings = useContext(SettingsContext);
@@ -60,7 +60,8 @@ const CoursePanel = () => {
     if (settings.title_color) setTitleColor(settings.title_color);
     if (settings.subtitle_color) setSubtitleColor(settings.subtitle_color);
     if (settings.border_color) setBorderColor(settings.border_color);
-    if (settings.main_button_color) setMainButtonColor(settings.main_button_color);
+    if (settings.main_button_color)
+      setMainButtonColor(settings.main_button_color);
     if (settings.sub_button_color) setSubButtonColor(settings.sub_button_color);
     if (settings.stepper_color) setStepperColor(settings.stepper_color);
 
@@ -72,6 +73,16 @@ const CoursePanel = () => {
     if (settings.short_term) setShortTerm(settings.short_term);
     if (settings.campus_address) setCampusAddress(settings.campus_address);
   }, [settings]);
+
+  const [userID, setUserID] = useState("");
+  const [user, setUser] = useState("");
+  const [userRole, setUserRole] = useState("");
+  const [employeeID, setEmployeeID] = useState("");
+
+  const [hasAccess, setHasAccess] = useState(null);
+  const pageId = 16;
+
+  const [searchQuery, setSearchQuery] = useState("");
 
   const [course, setCourse] = useState({
     course_code: "",
@@ -87,17 +98,30 @@ const CoursePanel = () => {
     include_magna: 1,
     include_cum: 1,
   });
-
   const [courseList, setCourseList] = useState([]);
+  const [honorRules, setHonorRules] = useState([]);
+  
+  const [feeRules, setFeeRules] = useState([]);
+  const [selectedGlobalFees, setSelectedGlobalFees] = useState([]);
+
+  const [canCreate, setCanCreate] = useState(false);
+  const [canEdit, setCanEdit] = useState(false);
+  const [canDelete, setCanDelete] = useState(false);
+
   const [editMode, setEditMode] = useState(false);
   const [editId, setEditId] = useState(null);
+
+  const [openCourseDialog, setOpenCourseDialog] = useState(false);
+  const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
+  const [courseToDelete, setCourseToDelete] = useState(null);
+
+  const [loading, setLoading] = useState(false);
   const [snack, setSnack] = useState({
     open: false,
     message: "",
     severity: "info",
     key: 0,
   });
-
   const showSnack = (message, severity) => {
     setSnack({
       open: true,
@@ -107,62 +131,13 @@ const CoursePanel = () => {
     });
   };
 
-  const [feeRules, setFeeRules] = useState([]);
   const importInputRef = useRef(null);
   const [importingXlsx, setImportingXlsx] = useState(false);
 
-
-
-
-  const fetchFeeRules = async () => {
-    try {
-      const res = await axios.get(
-        `${API_BASE_URL}/api/coursepanel/fee_rules`
-      );
-      setFeeRules(res.data);
-    } catch (err) {
-      console.error("Error fetching fee rules:", err);
-    }
-  };
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 100;
 
   useEffect(() => {
-    fetchFeeRules();
-  }, []);
-
-  const [selectedGlobalFees, setSelectedGlobalFees] = useState([]);
-
-  const programFees = feeRules.filter(
-    fee =>
-      Number(fee.applies_to_all) === 1 &&
-      [
-        "COURSE_WITH_LAB_FEE",
-        "COMPUTER_LABORATORY_FEE",
-        "NSTP_SPECIAL_FEE"
-      ].includes(fee.fee_code)
-  );
-
-  const totalPayment = programFees.reduce(
-    (sum, f) => sum + Number(f.amount),
-    0
-  );
-
-  const globalTotal = feeRules
-    .filter(fee => selectedGlobalFees.includes(fee.fee_rule_id))
-    .reduce((sum, fee) => sum + Number(fee.amount), 0);
-
-
-
-  const [userID, setUserID] = useState("");
-  const [user, setUser] = useState("");
-  const [userRole, setUserRole] = useState("");
-  const [hasAccess, setHasAccess] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const pageId = 16;
-
-  const [employeeID, setEmployeeID] = useState("");
-
-  useEffect(() => {
-
     const storedUser = localStorage.getItem("email");
     const storedRole = localStorage.getItem("role");
     const storedID = localStorage.getItem("person_id");
@@ -184,17 +159,40 @@ const CoursePanel = () => {
     }
   }, []);
 
+  useEffect(() => {
+    fetchFeeRules();
+  }, []);
+
+  useEffect(() => {
+    fetchCourses();
+  }, []);
+
+  useEffect(() => {
+    fetchHonorRules();
+  }, []);
+
   const checkAccess = async (employeeID) => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/api/page_access/${employeeID}/${pageId}`);
+      const response = await axios.get(
+        `${API_BASE_URL}/api/page_access/${employeeID}/${pageId}`,
+      );
       if (response.data && response.data.page_privilege === 1) {
         setHasAccess(true);
+        setCanCreate(Number(response.data?.can_create) === 1);
+        setCanDelete(Number(response.data?.can_delete) === 1);
+        setCanEdit(Number(response.data?.can_edit) === 1);
       } else {
         setHasAccess(false);
+        setCanCreate(false);
+        setCanDelete(false);
+        setCanEdit(false);
       }
     } catch (error) {
-      console.error('Error checking access:', error);
+      console.error("Error checking access:", error);
       setHasAccess(false);
+      setCanCreate(false);
+      setCanDelete(false);
+      setCanEdit(false);
       if (error.response && error.response.data.message) {
         console.log(error.response.data.message);
       } else {
@@ -204,15 +202,10 @@ const CoursePanel = () => {
     }
   };
 
-
-
-
-
-
   const fetchCourses = async () => {
     try {
       const response = await axios.get(`${API_BASE_URL}/course_list`);
-      const data = response.data.map(item => ({
+      const data = response.data.map((item) => ({
         ...item,
         prerequisite: item.prereq || "",
         is_included: item.is_included ?? 1,
@@ -223,10 +216,70 @@ const CoursePanel = () => {
     }
   };
 
+  const fetchFeeRules = async () => {
+    try {
+      const res = await axios.get(`${API_BASE_URL}/api/coursepanel/fee_rules`);
+      setFeeRules(res.data);
+    } catch (err) {
+      console.error("Error fetching fee rules:", err);
+    }
+  };
+
+  const fetchHonorRules = async () => {
+    try {
+      const res = await axios.get(`${API_BASE_URL}/admin/honors-rules`);
+      setHonorRules(res.data);
+    } catch (err) {
+      console.error("Error fetching honor rules:", err);
+    }
+  };
+
+  const programFees = feeRules.filter(
+    (fee) =>
+      Number(fee.applies_to_all) === 1 &&
+      [
+        "COURSE_WITH_LAB_FEE",
+        "COMPUTER_LABORATORY_FEE",
+        "NSTP_SPECIAL_FEE",
+      ].includes(fee.fee_code),
+  );
+
+  const totalPayment = programFees.reduce(
+    (sum, f) => sum + Number(f.amount),
+    0,
+  );
+
+  const globalTotal = feeRules
+    .filter((fee) => selectedGlobalFees.includes(fee.fee_rule_id))
+    .reduce((sum, fee) => sum + Number(fee.amount), 0);
+
+  const filteredCourses = courseList.filter((c) =>
+    [c.course_description, c.course_code, c.prereq, c.course_unit?.toString()]
+      .join(" ")
+      .toLowerCase()
+      .includes(searchQuery.toLowerCase()),
+  );
+
+  const totalPages = Math.min(
+    100,
+    Math.ceil(filteredCourses.length / itemsPerPage),
+  );
+
+  const attachedFees = feeRules.filter(
+    (fee) => Number(fee.applies_to_all) === 1,
+  );
+
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+
+  const currentCourses = filteredCourses.slice(
+    indexOfFirstItem,
+    indexOfLastItem,
+  );
 
   useEffect(() => {
-    fetchCourses();
-  }, []);
+    setCurrentPage(1);
+  }, [searchQuery]);
 
   const handleChangesForEverything = (e) => {
     const { name, value } = e.target;
@@ -246,8 +299,22 @@ const CoursePanel = () => {
     });
   };
 
+  const handleClose = (_, reason) => {
+    if (reason === "clickaway") return;
+    setSnack((prev) => ({ ...prev, open: false }));
+  };
 
   const handleAddingCourse = async () => {
+    if(!course_code || !course_description) {
+      showSnack('Please fill all fields', 'warning');
+      return;
+    }
+
+    if(!canCreate) {
+      showSnack('You do not have permission to create items on this page', 'error')
+      return;
+    }
+    
     try {
       await axios.post(`${API_BASE_URL}/adding_course`, {
         ...course,
@@ -279,50 +346,12 @@ const CoursePanel = () => {
       showSnack("Course successfully added!", "success");
       fetchCourses();
     } catch (err) {
-      showSnack(err.response?.data?.message || "Failed to add course.", "error");
+      showSnack(
+        err.response?.data?.message || "Failed to add course.",
+        "error",
+      );
     }
   };
-
-  const [searchQuery, setSearchQuery] = useState("");
-
-  const filteredCourses = courseList.filter((c) =>
-    [
-      c.course_description,
-      c.course_code,
-      c.prereq,
-      c.course_unit?.toString(),
-
-    ]
-      .join(" ")
-      .toLowerCase()
-      .includes(searchQuery.toLowerCase())
-  );
-
-
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 100; // same behavior
-
-  const totalPages = Math.min(
-    100,
-    Math.ceil(filteredCourses.length / itemsPerPage)
-  );
-
-  const indexOfLastItem = currentPage * itemsPerPage;
-  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-
-  const currentCourses = filteredCourses.slice(
-    indexOfFirstItem,
-    indexOfLastItem
-  );
-
-
-
-
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchQuery]);
-
-  const [openCourseDialog, setOpenCourseDialog] = useState(false);
 
   const handleEdit = (item) => {
     setCourse({
@@ -340,7 +369,6 @@ const CoursePanel = () => {
       include_cum: item.include_cum ?? 1,
     });
 
-
     setEditMode(true);
     setEditId(item.course_id);
     setOpenCourseDialog(true); // ✅ OPEN DIALOG
@@ -349,6 +377,11 @@ const CoursePanel = () => {
   const handleUpdateCourse = async () => {
     if (!editId) {
       showSnack("Invalid course selected.", "error");
+      return;
+    }
+
+    if(!canEdit) {
+      showSnack('You do not have permission to edit anything in this page', 'warning');
       return;
     }
 
@@ -385,25 +418,25 @@ const CoursePanel = () => {
         include_magna: 1,
         include_cum: 1,
       });
-
     } catch (error) {
       showSnack(
         error.response?.data?.message || "Failed to update course.",
-        "error"
+        "error",
       );
     }
   };
 
-
-  const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
-  const [courseToDelete, setCourseToDelete] = useState(null);
-
   const handleDelete = async (id) => {
+    if(!canDelete) {
+      showSnack('You do not have permission to delete in this page.', 'warning');
+      return;
+    }
+
     try {
       await axios.delete(`${API_BASE_URL}/delete_course/${id}`);
 
       setCourseList((prevList) =>
-        prevList.filter((item) => item.course_id !== id)
+        prevList.filter((item) => item.course_id !== id),
       );
 
       showSnack("Course deleted successfully!", "success");
@@ -413,63 +446,48 @@ const CoursePanel = () => {
     }
   };
 
-
-
-
-
-  const handleClose = (_, reason) => {
-    if (reason === "clickaway") return;
-    setSnack((prev) => ({ ...prev, open: false }));
-  };
-
   const handleCourseImport = async (event) => {
     const file = event.target.files?.[0];
     if (!file) return;
+
+    if(!canCreate) {
+      showSnack('You do not have permission to upload a file in this page', 'warning');
+      event.target.value = '';
+      return;
+    }
 
     try {
       setImportingXlsx(true);
       const formData = new FormData();
       formData.append("file", file);
 
-      const response = await axios.post(`${API_BASE_URL}/import-course-xlsx`, formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
+      const response = await axios.post(
+        `${API_BASE_URL}/import-course-xlsx`,
+        formData,
+        {
+          headers: { "Content-Type": "multipart/form-data" },
+        },
+      );
 
       if (response.data?.success) {
-        showSnack(response.data.message || "Course import completed.", "success");
+        showSnack(
+          response.data.message || "Course import completed.",
+          "success",
+        );
         fetchCourses();
       } else {
         showSnack(response.data?.error || "Course import failed.", "error");
       }
     } catch (error) {
-      showSnack(error.response?.data?.error || "Course import failed.", "error");
+      showSnack(
+        error.response?.data?.error || "Course import failed.",
+        "error",
+      );
     } finally {
       setImportingXlsx(false);
       event.target.value = "";
     }
   };
-
-
-  const [honorRules, setHonorRules] = useState([]);
-
-  const fetchHonorRules = async () => {
-    try {
-      const res = await axios.get(`${API_BASE_URL}/admin/honors-rules`);
-      setHonorRules(res.data);
-    } catch (err) {
-      console.error("Error fetching honor rules:", err);
-    }
-  };
-
-  useEffect(() => {
-    fetchHonorRules();
-  }, []);
-
-  const attachedFees = feeRules.filter(
-    fee => Number(fee.applies_to_all) === 1
-  );
-
-
 
   if (loading || hasAccess === null) {
     return <LoadingOverlay open={loading} message="Loading..." />;
@@ -479,7 +497,6 @@ const CoursePanel = () => {
     return <Unauthorized />;
   }
 
-  // ✅ Move dynamic styles inside the component so borderColor works
   const styles = {
     section: {
       padding: 16,
@@ -489,7 +506,6 @@ const CoursePanel = () => {
       backgroundColor: "#fff",
     },
     tableContainer: {
-
       overflowY: "auto",
       border: "1px solid #ccc",
       borderRadius: "4px",
@@ -505,7 +521,6 @@ const CoursePanel = () => {
       textAlign: "center",
     },
   };
-
 
   return (
     <Box
@@ -539,7 +554,15 @@ const CoursePanel = () => {
           COURSE PANEL
         </Typography>
 
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap", justifyContent: "flex-end" }}>
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            gap: 1,
+            flexWrap: "wrap",
+            justifyContent: "flex-end",
+          }}
+        >
           <TextField
             variant="outlined"
             placeholder="Search Year / Program Code / Description / Major"
@@ -569,8 +592,14 @@ const CoursePanel = () => {
           <Button
             variant="contained"
             onClick={() => importInputRef.current?.click()}
-            disabled={importingXlsx}
-            sx={{ height: 40, mb: 2, textTransform: "none", fontWeight: "bold", minWidth: 165 }}
+            disabled={!canCreate || importingXlsx}
+            sx={{
+              height: 40,
+              mb: 2,
+              textTransform: "none",
+              fontWeight: "bold",
+              minWidth: 165,
+            }}
           >
             <FaFileExcel style={{ marginRight: 8 }} />
             {importingXlsx ? "Importing..." : "Import Course"}
@@ -580,8 +609,14 @@ const CoursePanel = () => {
               window.location.href = `${API_BASE_URL}/course_panel_template`;
             }}
             sx={{
-              height: 40, mb: 2, color: "black", border: "2px solid black",
-              backgroundColor: "#f0f0f0", textTransform: "none", fontWeight: "bold", minWidth: 165
+              height: 40,
+              mb: 2,
+              color: "black",
+              border: "2px solid black",
+              backgroundColor: "#f0f0f0",
+              textTransform: "none",
+              fontWeight: "bold",
+              minWidth: 165,
             }}
           >
             📥 Download Template
@@ -593,13 +628,9 @@ const CoursePanel = () => {
       <br />
       <br />
 
-
-
-
-
-      <TableContainer component={Paper} sx={{ width: '100%' }}>
+      <TableContainer component={Paper} sx={{ width: "100%" }}>
         <Table size="small">
-          <TableHead sx={{ backgroundColor: '#6D2323', color: "white" }}>
+          <TableHead sx={{ backgroundColor: "#6D2323", color: "white" }}>
             <TableRow>
               <TableCell
                 colSpan={10}
@@ -617,12 +648,16 @@ const CoursePanel = () => {
                   flexWrap="wrap"
                   gap={1}
                 >
-
                   <Typography fontSize="14px" fontWeight="bold" color="white">
                     Total Subjects: {filteredCourses.length}
                   </Typography>
                   {/* Right side: Pagination / Filtering Controls */}
-                  <Box display="flex" alignItems="center" gap={1} flexWrap="wrap">
+                  <Box
+                    display="flex"
+                    alignItems="center"
+                    gap={1}
+                    flexWrap="wrap"
+                  >
                     <Button
                       onClick={() => setCurrentPage(1)}
                       disabled={currentPage === 1}
@@ -633,23 +668,25 @@ const CoursePanel = () => {
                         color: "white",
                         borderColor: "white",
                         backgroundColor: "transparent",
-                        '&:hover': {
-                          borderColor: 'white',
-                          backgroundColor: 'rgba(255,255,255,0.1)',
+                        "&:hover": {
+                          borderColor: "white",
+                          backgroundColor: "rgba(255,255,255,0.1)",
                         },
-                        '&.Mui-disabled': {
+                        "&.Mui-disabled": {
                           color: "white",
                           borderColor: "white",
                           backgroundColor: "transparent",
                           opacity: 1,
-                        }
+                        },
                       }}
                     >
                       First
                     </Button>
 
                     <Button
-                      onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                      onClick={() =>
+                        setCurrentPage((prev) => Math.max(prev - 1, 1))
+                      }
                       disabled={currentPage === 1}
                       variant="outlined"
                       size="small"
@@ -658,16 +695,16 @@ const CoursePanel = () => {
                         color: "white",
                         borderColor: "white",
                         backgroundColor: "transparent",
-                        '&:hover': {
-                          borderColor: 'white',
-                          backgroundColor: 'rgba(255,255,255,0.1)',
+                        "&:hover": {
+                          borderColor: "white",
+                          backgroundColor: "rgba(255,255,255,0.1)",
                         },
-                        '&.Mui-disabled': {
+                        "&.Mui-disabled": {
                           color: "white",
                           borderColor: "white",
                           backgroundColor: "transparent",
                           opacity: 1,
-                        }
+                        },
                       }}
                     >
                       Prev
@@ -680,18 +717,26 @@ const CoursePanel = () => {
                         onChange={(e) => setCurrentPage(Number(e.target.value))}
                         displayEmpty
                         sx={{
-                          fontSize: '12px',
+                          fontSize: "12px",
                           height: 36,
-                          color: 'white',
-                          border: '1px solid white',
-                          backgroundColor: 'transparent',
-                          '.MuiOutlinedInput-notchedOutline': { borderColor: 'white' },
-                          '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: 'white' },
-                          '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: 'white' },
-                          '& svg': { color: 'white' }
+                          color: "white",
+                          border: "1px solid white",
+                          backgroundColor: "transparent",
+                          ".MuiOutlinedInput-notchedOutline": {
+                            borderColor: "white",
+                          },
+                          "&:hover .MuiOutlinedInput-notchedOutline": {
+                            borderColor: "white",
+                          },
+                          "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                            borderColor: "white",
+                          },
+                          "& svg": { color: "white" },
                         }}
                         MenuProps={{
-                          PaperProps: { sx: { maxHeight: 200, backgroundColor: '#fff' } }
+                          PaperProps: {
+                            sx: { maxHeight: 200, backgroundColor: "#fff" },
+                          },
                         }}
                       >
                         {Array.from({ length: totalPages }, (_, i) => (
@@ -703,11 +748,13 @@ const CoursePanel = () => {
                     </FormControl>
 
                     <Typography fontSize="11px" color="white">
-                      of {totalPages} page{totalPages > 1 ? 's' : ''}
+                      of {totalPages} page{totalPages > 1 ? "s" : ""}
                     </Typography>
 
                     <Button
-                      onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                      onClick={() =>
+                        setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                      }
                       disabled={currentPage === totalPages}
                       variant="outlined"
                       size="small"
@@ -716,8 +763,16 @@ const CoursePanel = () => {
                         color: "white",
                         borderColor: "white",
                         backgroundColor: "transparent",
-                        '&:hover': { borderColor: 'white', backgroundColor: 'rgba(255,255,255,0.1)' },
-                        '&.Mui-disabled': { color: "white", borderColor: "white", backgroundColor: "transparent", opacity: 1 }
+                        "&:hover": {
+                          borderColor: "white",
+                          backgroundColor: "rgba(255,255,255,0.1)",
+                        },
+                        "&.Mui-disabled": {
+                          color: "white",
+                          borderColor: "white",
+                          backgroundColor: "transparent",
+                          opacity: 1,
+                        },
                       }}
                     >
                       Next
@@ -733,8 +788,16 @@ const CoursePanel = () => {
                         color: "white",
                         borderColor: "white",
                         backgroundColor: "transparent",
-                        '&:hover': { borderColor: 'white', backgroundColor: 'rgba(255,255,255,0.1)' },
-                        '&.Mui-disabled': { color: "white", borderColor: "white", backgroundColor: "transparent", opacity: 1 }
+                        "&:hover": {
+                          borderColor: "white",
+                          backgroundColor: "rgba(255,255,255,0.1)",
+                        },
+                        "&.Mui-disabled": {
+                          color: "white",
+                          borderColor: "white",
+                          backgroundColor: "transparent",
+                          opacity: 1,
+                        },
                       }}
                     >
                       Last
@@ -767,25 +830,20 @@ const CoursePanel = () => {
                         textTransform: "none",
                         px: 2,
                         mr: "15px",
-                        '&:hover': {
-                          backgroundColor: "#1565c0" // darker blue hover
-                        }
+                        "&:hover": {
+                          backgroundColor: "#1565c0", // darker blue hover
+                        },
                       }}
                     >
                       + Add Course
                     </Button>
                   </Box>
-
                 </Box>
-
               </TableCell>
             </TableRow>
           </TableHead>
         </Table>
       </TableContainer>
-
-
-
 
       <div style={styles.tableContainer}>
         <table style={styles.table}>
@@ -826,7 +884,7 @@ const CoursePanel = () => {
           <tbody>
             {currentCourses.map((c, index) => {
               // decide fee per course
-              const courseFee = feeRules.find(fee => {
+              const courseFee = feeRules.find((fee) => {
                 if (fee.fee_code === "NSTP_SPECIAL_FEE") {
                   return Number(c.is_nstp) === 1;
                 }
@@ -839,7 +897,6 @@ const CoursePanel = () => {
                 return false;
               });
 
-
               return (
                 <tr key={c.course_id}>
                   <td style={styles.tableCell}>{index + 1}</td>
@@ -850,8 +907,12 @@ const CoursePanel = () => {
                   <td style={styles.tableCell}>{c.course_unit}</td>
                   <td style={styles.tableCell}>{c.prereq}</td>
                   <td style={styles.tableCell}>{c.corequisite}</td>
-                  <td style={styles.tableCell}>{c.iscomputer_lab ? "YES" : "NO"}</td>
-                  <td style={styles.tableCell}>{c.isnon_computer_lab ? "YES" : "NO"}</td>
+                  <td style={styles.tableCell}>
+                    {c.iscomputer_lab ? "YES" : "NO"}
+                  </td>
+                  <td style={styles.tableCell}>
+                    {c.isnon_computer_lab ? "YES" : "NO"}
+                  </td>
                   <td style={styles.tableCell}>
                     <span>{Number(c.is_included) === 1 ? "YES" : "NO"}</span>
                   </td>
@@ -877,8 +938,15 @@ const CoursePanel = () => {
                     </td> */}
 
                   <td style={styles.tableCell}>
-                    <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
+                    <div
+                      style={{
+                        display: "flex",
+                        gap: 8,
+                        justifyContent: "center",
+                      }}
+                    >
                       <button
+                        disabled = {!canEdit}
                         onClick={() => handleEdit(c)}
                         style={{
                           backgroundColor: "green",
@@ -886,7 +954,6 @@ const CoursePanel = () => {
                           border: "none",
                           borderRadius: "5px",
                           padding: "8px 14px",
-
                           cursor: "pointer",
                           width: "100px",
                           height: "40px",
@@ -894,18 +961,17 @@ const CoursePanel = () => {
                           alignItems: "center",
                           justifyContent: "center",
                           gap: "5px",
-
                         }}
                       >
                         <EditIcon fontSize="small" /> Edit
                       </button>
                       <button
+                        disabled = {!canEdit}
                         onClick={() => {
                           setCourseToDelete(c);
                           setOpenDeleteDialog(true);
                         }}
                         style={{
-
                           backgroundColor: "#9E0000",
                           color: "white",
                           border: "none",
@@ -922,20 +988,17 @@ const CoursePanel = () => {
                       >
                         <DeleteIcon fontSize="small" /> Delete
                       </button>
-
                     </div>
                   </td>
                 </tr>
               );
             })}
           </tbody>
-
         </table>
-
       </div>
-      <TableContainer component={Paper} sx={{ width: '100%' }}>
+      <TableContainer component={Paper} sx={{ width: "100%" }}>
         <Table size="small">
-          <TableHead sx={{ backgroundColor: '#6D2323', color: "white" }}>
+          <TableHead sx={{ backgroundColor: "#6D2323", color: "white" }}>
             <TableRow>
               <TableCell
                 colSpan={10}
@@ -953,12 +1016,16 @@ const CoursePanel = () => {
                   flexWrap="wrap"
                   gap={1}
                 >
-
                   <Typography fontSize="14px" fontWeight="bold" color="white">
                     Total Subjects: {filteredCourses.length}
                   </Typography>
                   {/* Right side: Pagination / Filtering Controls */}
-                  <Box display="flex" alignItems="center" gap={1} flexWrap="wrap">
+                  <Box
+                    display="flex"
+                    alignItems="center"
+                    gap={1}
+                    flexWrap="wrap"
+                  >
                     <Button
                       onClick={() => setCurrentPage(1)}
                       disabled={currentPage === 1}
@@ -969,23 +1036,25 @@ const CoursePanel = () => {
                         color: "white",
                         borderColor: "white",
                         backgroundColor: "transparent",
-                        '&:hover': {
-                          borderColor: 'white',
-                          backgroundColor: 'rgba(255,255,255,0.1)',
+                        "&:hover": {
+                          borderColor: "white",
+                          backgroundColor: "rgba(255,255,255,0.1)",
                         },
-                        '&.Mui-disabled': {
+                        "&.Mui-disabled": {
                           color: "white",
                           borderColor: "white",
                           backgroundColor: "transparent",
                           opacity: 1,
-                        }
+                        },
                       }}
                     >
                       First
                     </Button>
 
                     <Button
-                      onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                      onClick={() =>
+                        setCurrentPage((prev) => Math.max(prev - 1, 1))
+                      }
                       disabled={currentPage === 1}
                       variant="outlined"
                       size="small"
@@ -994,16 +1063,16 @@ const CoursePanel = () => {
                         color: "white",
                         borderColor: "white",
                         backgroundColor: "transparent",
-                        '&:hover': {
-                          borderColor: 'white',
-                          backgroundColor: 'rgba(255,255,255,0.1)',
+                        "&:hover": {
+                          borderColor: "white",
+                          backgroundColor: "rgba(255,255,255,0.1)",
                         },
-                        '&.Mui-disabled': {
+                        "&.Mui-disabled": {
                           color: "white",
                           borderColor: "white",
                           backgroundColor: "transparent",
                           opacity: 1,
-                        }
+                        },
                       }}
                     >
                       Prev
@@ -1016,18 +1085,26 @@ const CoursePanel = () => {
                         onChange={(e) => setCurrentPage(Number(e.target.value))}
                         displayEmpty
                         sx={{
-                          fontSize: '12px',
+                          fontSize: "12px",
                           height: 36,
-                          color: 'white',
-                          border: '1px solid white',
-                          backgroundColor: 'transparent',
-                          '.MuiOutlinedInput-notchedOutline': { borderColor: 'white' },
-                          '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: 'white' },
-                          '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: 'white' },
-                          '& svg': { color: 'white' }
+                          color: "white",
+                          border: "1px solid white",
+                          backgroundColor: "transparent",
+                          ".MuiOutlinedInput-notchedOutline": {
+                            borderColor: "white",
+                          },
+                          "&:hover .MuiOutlinedInput-notchedOutline": {
+                            borderColor: "white",
+                          },
+                          "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                            borderColor: "white",
+                          },
+                          "& svg": { color: "white" },
                         }}
                         MenuProps={{
-                          PaperProps: { sx: { maxHeight: 200, backgroundColor: '#fff' } }
+                          PaperProps: {
+                            sx: { maxHeight: 200, backgroundColor: "#fff" },
+                          },
                         }}
                       >
                         {Array.from({ length: totalPages }, (_, i) => (
@@ -1039,11 +1116,13 @@ const CoursePanel = () => {
                     </FormControl>
 
                     <Typography fontSize="11px" color="white">
-                      of {totalPages} page{totalPages > 1 ? 's' : ''}
+                      of {totalPages} page{totalPages > 1 ? "s" : ""}
                     </Typography>
 
                     <Button
-                      onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                      onClick={() =>
+                        setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                      }
                       disabled={currentPage === totalPages}
                       variant="outlined"
                       size="small"
@@ -1052,8 +1131,16 @@ const CoursePanel = () => {
                         color: "white",
                         borderColor: "white",
                         backgroundColor: "transparent",
-                        '&:hover': { borderColor: 'white', backgroundColor: 'rgba(255,255,255,0.1)' },
-                        '&.Mui-disabled': { color: "white", borderColor: "white", backgroundColor: "transparent", opacity: 1 }
+                        "&:hover": {
+                          borderColor: "white",
+                          backgroundColor: "rgba(255,255,255,0.1)",
+                        },
+                        "&.Mui-disabled": {
+                          color: "white",
+                          borderColor: "white",
+                          backgroundColor: "transparent",
+                          opacity: 1,
+                        },
                       }}
                     >
                       Next
@@ -1069,8 +1156,16 @@ const CoursePanel = () => {
                         color: "white",
                         borderColor: "white",
                         backgroundColor: "transparent",
-                        '&:hover': { borderColor: 'white', backgroundColor: 'rgba(255,255,255,0.1)' },
-                        '&.Mui-disabled': { color: "white", borderColor: "white", backgroundColor: "transparent", opacity: 1 }
+                        "&:hover": {
+                          borderColor: "white",
+                          backgroundColor: "rgba(255,255,255,0.1)",
+                        },
+                        "&.Mui-disabled": {
+                          color: "white",
+                          borderColor: "white",
+                          backgroundColor: "transparent",
+                          opacity: 1,
+                        },
                       }}
                     >
                       Last
@@ -1092,8 +1187,8 @@ const CoursePanel = () => {
         <DialogContent>
           <Typography>
             Are you sure you want to delete the course{" "}
-            <b>{courseToDelete?.course_description}</b>{" "}
-            (<b>{courseToDelete?.course_code}</b>)?
+            <b>{courseToDelete?.course_description}</b> (
+            <b>{courseToDelete?.course_code}</b>)?
           </Typography>
         </DialogContent>
 
@@ -1101,7 +1196,8 @@ const CoursePanel = () => {
           <Button
             color="error"
             variant="outlined"
-            onClick={() => setOpenDeleteDialog(false)}>
+            onClick={() => setOpenDeleteDialog(false)}
+          >
             Cancel
           </Button>
 
@@ -1118,7 +1214,6 @@ const CoursePanel = () => {
           </Button>
         </DialogActions>
       </Dialog>
-
 
       {/* ✅ Snackbar */}
       <Snackbar
@@ -1146,8 +1241,8 @@ const CoursePanel = () => {
           sx: {
             borderRadius: 3,
             overflow: "hidden",
-            boxShadow: 6
-          }
+            boxShadow: 6,
+          },
         }}
       >
         {/* ===== HEADER ===== */}
@@ -1158,7 +1253,7 @@ const CoursePanel = () => {
             fontWeight: 700,
             fontSize: "1.2rem",
             py: 2,
-            mb: 2
+            mb: 2,
           }}
         >
           {editMode ? "Edit Course" : "Add New Course"}
@@ -1167,7 +1262,6 @@ const CoursePanel = () => {
         {/* ===== CONTENT ===== */}
         <DialogContent sx={{ p: 3 }}>
           <Grid container spacing={2}>
-
             <Grid item xs={12} md={4}>
               <Typography fontWeight="bold">Course Code</Typography>
               <TextField
@@ -1253,14 +1347,16 @@ const CoursePanel = () => {
             </Grid>
 
             <Grid item xs={12} md={6}>
-              <Typography fontWeight="bold">Deans Lister / President Lister</Typography>
+              <Typography fontWeight="bold">
+                Deans Lister / President Lister
+              </Typography>
               <Select
                 fullWidth
                 value={course.is_included ?? 1}
                 onChange={(e) =>
-                  setCourse(prev => ({
+                  setCourse((prev) => ({
                     ...prev,
-                    is_included: Number(e.target.value)
+                    is_included: Number(e.target.value),
                   }))
                 }
               >
@@ -1275,9 +1371,9 @@ const CoursePanel = () => {
                 fullWidth
                 value={course.include_summa ?? 1}
                 onChange={(e) =>
-                  setCourse(prev => ({
+                  setCourse((prev) => ({
                     ...prev,
-                    include_summa: e.target.value
+                    include_summa: e.target.value,
                   }))
                 }
               >
@@ -1292,9 +1388,9 @@ const CoursePanel = () => {
                 fullWidth
                 value={course.include_magna ?? 1}
                 onChange={(e) =>
-                  setCourse(prev => ({
+                  setCourse((prev) => ({
                     ...prev,
-                    include_magna: e.target.value
+                    include_magna: e.target.value,
                   }))
                 }
               >
@@ -1309,9 +1405,9 @@ const CoursePanel = () => {
                 fullWidth
                 value={course.include_cum ?? 1}
                 onChange={(e) =>
-                  setCourse(prev => ({
+                  setCourse((prev) => ({
                     ...prev,
-                    include_cum: e.target.value
+                    include_cum: e.target.value,
                   }))
                 }
               >
@@ -1320,8 +1416,6 @@ const CoursePanel = () => {
               </Select>
             </Grid>
           </Grid>
-
-
         </DialogContent>
 
         {/* ===== ACTIONS ===== */}
@@ -1329,15 +1423,13 @@ const CoursePanel = () => {
           sx={{
             px: 3,
             py: 2,
-            borderTop: "1px solid #e0e0e0"
+            borderTop: "1px solid #e0e0e0",
           }}
         >
           <Button
             onClick={() => setOpenCourseDialog(false)}
             color="error"
             variant="outlined"
-
-
           >
             Cancel
           </Button>
@@ -1347,7 +1439,7 @@ const CoursePanel = () => {
             sx={{
               px: 4,
               fontWeight: 600,
-              textTransform: "none"
+              textTransform: "none",
             }}
             onClick={() => {
               if (editMode) {
@@ -1361,7 +1453,6 @@ const CoursePanel = () => {
           </Button>
         </DialogActions>
       </Dialog>
-
     </Box>
   );
 };

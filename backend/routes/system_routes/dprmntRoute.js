@@ -1,10 +1,14 @@
 const express = require("express");
 const { db3 } = require("../database/database");
-
+const {
+  CanCreate,
+  CanDelete,
+  CanEdit,
+} = require("../../middleware/pagePermissions");
 const router = express.Router();
 
 // -------------------- CREATE DEPARTMENT --------------------
-router.post("/department", async (req, res) => {
+router.post("/department", CanCreate, async (req, res) => {
   const { dep_name, dep_code } = req.body;
 
   if (!dep_name || !dep_code) {
@@ -16,7 +20,7 @@ router.post("/department", async (req, res) => {
 
     const [rows] = await db3.query(
       "SELECT dprtmnt_id FROM dprtmnt_table WHERE dprtmnt_code = ?",
-      [normalized_code]
+      [normalized_code],
     );
 
     if (rows.length > 0) {
@@ -27,7 +31,7 @@ router.post("/department", async (req, res) => {
 
     const [result] = await db3.query(
       "INSERT INTO dprtmnt_table (dprtmnt_name, dprtmnt_code) VALUES (?, ?)",
-      [dep_name, normalized_code]
+      [dep_name, normalized_code],
     );
 
     res.status(200).json({
@@ -52,7 +56,7 @@ router.get("/get_department", async (req, res) => {
 });
 
 // -------------------- UPDATE DEPARTMENT --------------------
-router.put("/department/:id", async (req, res) => {
+router.put("/department/:id", CanEdit, async (req, res) => {
   const { id } = req.params;
   const { dep_name, dep_code } = req.body;
 
@@ -65,7 +69,7 @@ router.put("/department/:id", async (req, res) => {
       `UPDATE dprtmnt_table 
        SET dprtmnt_name = ?, dprtmnt_code = ?
        WHERE dprtmnt_id = ?`,
-      [dep_name, dep_code, id]
+      [dep_name, dep_code, id],
     );
 
     if (result.affectedRows === 0) {
@@ -80,13 +84,13 @@ router.put("/department/:id", async (req, res) => {
 });
 
 // -------------------- DELETE DEPARTMENT --------------------
-router.delete("/department/:id", async (req, res) => {
+router.delete("/department/:id", CanDelete, async (req, res) => {
   const { id } = req.params;
 
   try {
     const [result] = await db3.query(
       "DELETE FROM dprtmnt_table WHERE dprtmnt_id = ?",
-      [id]
+      [id],
     );
 
     if (result.affectedRows === 0) {

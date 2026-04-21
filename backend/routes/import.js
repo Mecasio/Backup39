@@ -2,6 +2,7 @@ const express = require("express");
 const multer = require("multer");
 const XLSX = require("xlsx");
 const { db, db3 } = require("./database/database");
+const { CanCreate } = require("../middleware/pagePermissions");
 const {
   getGradeConversions,
   getStoredNumericGrade,
@@ -1369,6 +1370,7 @@ router.post("/import-course-xlsx", upload.single("file"), async (req, res) => {
 
 router.post(
   "/import-program-tagging-xlsx",
+  CanCreate,
   upload.single("file"),
   async (req, res) => {
     try {

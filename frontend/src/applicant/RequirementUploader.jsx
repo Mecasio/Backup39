@@ -13,19 +13,19 @@ import {
   TableHead,
   TableRow,
   Snackbar,
-  Alert
-} from '@mui/material';
-import DeleteIcon from '@mui/icons-material/Delete';
-import VisibilityIcon from '@mui/icons-material/Visibility';
-import CloudUploadIcon from '@mui/icons-material/CloudUpload';
-import axios from 'axios';
+  Alert,
+} from "@mui/material";
+import DeleteIcon from "@mui/icons-material/Delete";
+import VisibilityIcon from "@mui/icons-material/Visibility";
+import CloudUploadIcon from "@mui/icons-material/CloudUpload";
+import axios from "axios";
 import ErrorIcon from "@mui/icons-material/Error";
 import API_BASE_URL from "../apiConfig";
 import {
   Dialog,
   DialogTitle,
   DialogContent,
-  DialogActions
+  DialogActions,
 } from "@mui/material";
 
 const RequirementUploader = () => {
@@ -48,7 +48,8 @@ const RequirementUploader = () => {
     if (settings.title_color) setTitleColor(settings.title_color);
     if (settings.subtitle_color) setSubtitleColor(settings.subtitle_color);
     if (settings.border_color) setBorderColor(settings.border_color);
-    if (settings.main_button_color) setMainButtonColor(settings.main_button_color);
+    if (settings.main_button_color)
+      setMainButtonColor(settings.main_button_color);
 
     // 🏫 Logo
     if (settings.logo_url) {
@@ -66,22 +67,27 @@ const RequirementUploader = () => {
   const [requirements, setRequirements] = useState([]); // ✅ dynamic requirements
 
   const [uploads, setUploads] = useState([]);
-  const [userID, setUserID] = useState('');
+  const [userID, setUserID] = useState("");
   const [selectedFiles, setSelectedFiles] = useState({});
   const [allRequirementsCompleted, setAllRequirementsCompleted] = useState(
-    localStorage.getItem("requirementsCompleted") === "1"
+    localStorage.getItem("requirementsCompleted") === "1",
   );
-  const [snack, setSnack] = useState({ open: false, message: "", severity: "success" });
+  const [snack, setSnack] = useState({
+    open: false,
+    message: "",
+    severity: "success",
+  });
 
   useEffect(() => {
-    const id = localStorage.getItem('person_id');
+    const id = localStorage.getItem("person_id");
     if (id) {
       setUserID(id);
       fetchUploads(id);
     }
 
     // ✅ Fetch all requirements dynamically from backend
-    axios.get(`${API_BASE_URL}/requirements/${id}`)
+    axios
+      .get(`${API_BASE_URL}/requirements/${id}`)
       .then((res) => setRequirements(res.data))
       .catch((err) => console.error("Error loading requirements:", err));
   }, []);
@@ -94,7 +100,7 @@ const RequirementUploader = () => {
       // ✅ Fetch user's uploaded files
       const res = await axios.get(`${API_BASE_URL}/uploads/${personId}`);
       const uploadsData = res.data;
-      console.log(uploadsData)
+      console.log(uploadsData);
       setUploads(uploadsData);
 
       // ✅ Map uploaded files to their requirement IDs
@@ -106,10 +112,12 @@ const RequirementUploader = () => {
 
       // ✅ Get all verifiable requirements from DB
       // ✅ Get ONLY Regular + Verifiable requirements
-      const reqRes = await axios.get(`${API_BASE_URL}/requirements/${personId}`);
+      const reqRes = await axios.get(
+        `${API_BASE_URL}/requirements/${personId}`,
+      );
 
       const verifiableRequirements = reqRes.data.filter(
-        (r) => r.is_verifiable === 1 && r.category === "Main"
+        (r) => r.is_verifiable === 1 && r.category === "Main",
       );
 
       // ✅ Compare uploaded vs required
@@ -119,7 +127,6 @@ const RequirementUploader = () => {
         verifiableRequirements.length > 0 &&
         verifiableRequirements.every((r) => uploadedIds.has(r.id));
 
-
       // ✅ Only show Congratulations if all required are uploaded (not every upload)
       if (!allRequirementsCompleted && allRequiredUploaded) {
         setOpenConfirmModal(true); // ✅ show REVIEW modal first
@@ -127,7 +134,10 @@ const RequirementUploader = () => {
 
       // ✅ Update completion state
       setAllRequirementsCompleted(allRequiredUploaded);
-      localStorage.setItem("requirementsCompleted", allRequiredUploaded ? "1" : "0");
+      localStorage.setItem(
+        "requirementsCompleted",
+        allRequiredUploaded ? "1" : "0",
+      );
     } catch (err) {
       console.error("❌ Fetch uploads failed:", err);
     }
@@ -141,9 +151,7 @@ const RequirementUploader = () => {
     }
   }, []);
 
-
   const [totalRequirements, setTotalRequirements] = useState(0);
-
 
   useEffect(() => {
     const fetchTotalRequirements = async () => {
@@ -158,7 +166,6 @@ const RequirementUploader = () => {
     fetchTotalRequirements();
   }, []);
 
-
   const handleUpload = async (key, file) => {
     if (!file) return;
 
@@ -169,7 +176,7 @@ const RequirementUploader = () => {
       setSnack({
         open: true,
         severity: "error",
-        message: "File must not exceed 4MB"
+        message: "File must not exceed 4MB",
       });
       return; // ❌ STOP upload
     }
@@ -177,18 +184,18 @@ const RequirementUploader = () => {
     setSelectedFiles((prev) => ({ ...prev, [key]: file.name }));
 
     const formData = new FormData();
-    formData.append('file', file);
-    formData.append('requirements_id', key);
-    formData.append('person_id', userID);
+    formData.append("file", file);
+    formData.append("requirements_id", key);
+    formData.append("person_id", userID);
 
     try {
       await axios.post(`${API_BASE_URL}/api/upload`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
+        headers: { "Content-Type": "multipart/form-data" },
       });
 
       fetchUploads(userID);
     } catch (err) {
-      console.error('Upload error:', err);
+      console.error("Upload error:", err);
 
       setSnack({
         open: true,
@@ -198,41 +205,35 @@ const RequirementUploader = () => {
     }
   };
 
-
-
   const handleDelete = async (uploadId) => {
     try {
       await axios.delete(`${API_BASE_URL}/uploads/${uploadId}`, {
-        headers: { 'x-person-id': userID }
+        headers: { "x-person-id": userID },
       });
 
       fetchUploads(userID);
     } catch (err) {
-      console.error('Delete error:', err);
-      alert('Failed to delete. Please try again.');
+      console.error("Delete error:", err);
+      alert("Failed to delete. Please try again.");
     }
   };
 
   const isFormValid = () => {
     // ✅ Get MAIN required requirements
     const requiredMain = requirements.filter(
-      (r) => r.category === "Main" && Number(r.is_required) === 1
+      (r) => r.category === "Main" && Number(r.is_required) === 1,
     );
 
     // ✅ Get uploaded requirement IDs
-    const uploadedIds = new Set(
-      uploads.map((u) => Number(u.requirements_id))
-    );
+    const uploadedIds = new Set(uploads.map((u) => Number(u.requirements_id)));
 
     // ✅ Find missing ones
     const missing = requiredMain.filter(
-      (req) => !uploadedIds.has(Number(req.id))
+      (req) => !uploadedIds.has(Number(req.id)),
     );
 
     if (missing.length > 0) {
-      const names = missing
-        .map((m) => m.description)
-        .join(", ");
+      const names = missing.map((m) => m.description).join(", ");
 
       setSnack({
         open: true,
@@ -246,59 +247,74 @@ const RequirementUploader = () => {
     return true;
   };
 
-
   const handleClose = (_, reason) => {
     if (reason === "clickaway") return;
-    setSnack(prev => ({ ...prev, open: false }));
+    setSnack((prev) => ({ ...prev, open: false }));
   };
 
   const renderRow = (doc) => {
     const uploaded = uploads.find(
-      (u) => Number(u.requirements_id) === Number(doc.id)
+      (u) => Number(u.requirements_id) === Number(doc.id),
     );
-
-
-
 
     return (
       <TableRow key={doc.id}>
-        <TableCell sx={{ fontWeight: 'bold', width: '25%', border: `1px solid ${borderColor}` }}>
+        <TableCell
+          sx={{
+            fontWeight: "bold",
+            width: "25%",
+            border: `1px solid ${borderColor}`,
+          }}
+        >
           {doc.label}
           {doc.is_optional === 1 && (
-            <span style={{ marginLeft: 2 }}>
-              (Optional)
-            </span>
+            <span style={{ marginLeft: 2 }}>(Optional)</span>
           )}
 
           {doc.is_required === 1 && (
             <span style={{ color: "red", marginLeft: 5 }}>*</span>
           )}
         </TableCell>
-        <TableCell sx={{ width: '25%', border: `1px solid ${borderColor}`, textAlign: "Center" }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, width: '100%' }}>
-            <Box sx={{ width: '220px', flexShrink: 0, textAlign: "center" }}>
+        <TableCell
+          sx={{
+            width: "25%",
+            border: `1px solid ${borderColor}`,
+            textAlign: "center",
+            verticalAlign: "middle", // ✅ center vertically in cell
+          }}
+        >
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center", // ✅ center horizontally
+              gap: 1,
+              width: "100%",
+            }}
+          >
+            <Box sx={{ width: "220px", flexShrink: 0, textAlign: "center" }}>
               {selectedFiles[doc.id] ? (
                 <Box
                   sx={{
-                    backgroundColor: '#e0e0e0',
-                    padding: '6px 12px',
-                    borderRadius: '4px',
-                    fontSize: '14px',
-                    fontWeight: 'bold',
-                    height: '40px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    whiteSpace: 'nowrap',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
+                    backgroundColor: "#e0e0e0",
+                    padding: "6px 12px",
+                    borderRadius: "4px",
+                    fontSize: "14px",
+                    fontWeight: "bold",
+                    height: "40px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
                   }}
                   title={selectedFiles[doc.id]}
                 >
                   {selectedFiles[doc.id]}
                 </Box>
               ) : (
-                <Box sx={{ height: '40px' }} />
+                <Box sx={{ height: "40px" }} />
               )}
             </Box>
 
@@ -308,12 +324,12 @@ const RequirementUploader = () => {
                 component="label"
                 startIcon={<CloudUploadIcon />}
                 sx={{
-                  backgroundColor: '#F0C03F',
-                  color: 'white',
-                  fontWeight: 'bold',
-                  height: '40px',
-                  textTransform: 'none',
-                  minWidth: '140px',
+                  backgroundColor: "#F0C03F",
+                  color: "white",
+                  fontWeight: "bold",
+                  height: "40px",
+                  textTransform: "none",
+                  minWidth: "140px",
                 }}
               >
                 Browse File
@@ -323,7 +339,6 @@ const RequirementUploader = () => {
                   type="file"
                   accept=".jpg,.jpeg,.png,.pdf"
                   onChange={(e) => handleUpload(doc.id, e.target.files[0])}
-
                 />
               </Button>
             </Box>
@@ -331,16 +346,17 @@ const RequirementUploader = () => {
         </TableCell>
 
         <TableCell sx={{ width: "25%", border: `1px solid ${borderColor}` }}>
-          {typeof uploaded?.remarks === "string" && uploaded.remarks.trim() !== "" && (
-            <Typography
-              sx={{
-                fontStyle: "normal",
-                color: "inherit",
-              }}
-            >
-              {uploaded.remarks}
-            </Typography>
-          )}
+          {typeof uploaded?.remarks === "string" &&
+            uploaded.remarks.trim() !== "" && (
+              <Typography
+                sx={{
+                  fontStyle: "normal",
+                  color: "inherit",
+                }}
+              >
+                {uploaded.remarks}
+              </Typography>
+            )}
 
           {uploaded?.status == 1 || uploaded?.status == 2 ? (
             <Typography
@@ -356,7 +372,7 @@ const RequirementUploader = () => {
           ) : null}
         </TableCell>
 
-        <TableCell sx={{ width: '10%', border: `1px solid ${borderColor}` }}>
+        <TableCell sx={{ width: "10%", border: `1px solid ${borderColor}` }}>
           {uploaded && (
             <Button
               variant="contained"
@@ -365,10 +381,10 @@ const RequirementUploader = () => {
               target="_blank"
               startIcon={<VisibilityIcon />}
               sx={{
-                height: '40px',
-                textTransform: 'none',
-                minWidth: '100px',
-                width: '100%',
+                height: "40px",
+                textTransform: "none",
+                minWidth: "100px",
+                width: "100%",
               }}
             >
               Preview
@@ -376,21 +392,20 @@ const RequirementUploader = () => {
           )}
         </TableCell>
 
-
-        <TableCell sx={{ width: '10%', border: `1px solid ${borderColor}` }}>
+        <TableCell sx={{ width: "10%", border: `1px solid ${borderColor}` }}>
           {uploaded && (
             <Button
               onClick={() => handleDelete(uploaded.upload_id)}
               startIcon={<DeleteIcon />}
               sx={{
-                backgroundColor: 'maroon',
-                color: 'white',
-                '&:hover': { backgroundColor: '#600000' },
-                fontWeight: 'bold',
-                height: '40px',
-                textTransform: 'none',
-                minWidth: '100px',
-                width: '100%',
+                backgroundColor: "#600000",
+                color: "white",
+                "&:hover": { backgroundColor: "#600000" },
+                fontWeight: "bold",
+                height: "40px",
+                textTransform: "none",
+                minWidth: "100px",
+                width: "100%",
               }}
             >
               Delete
@@ -402,7 +417,16 @@ const RequirementUploader = () => {
   };
 
   return (
-    <Box sx={{ height: "calc(100vh - 150px)", overflowY: "auto", paddingRight: 1, backgroundColor: "transparent", mt: 1, padding: 2 }}>
+    <Box
+      sx={{
+        height: "calc(100vh - 150px)",
+        overflowY: "auto",
+        paddingRight: 1,
+        backgroundColor: "transparent",
+        mt: 1,
+        padding: 2,
+      }}
+    >
       {/* ✅ Snackbar */}
       <Snackbar
         open={snack.open}
@@ -410,7 +434,11 @@ const RequirementUploader = () => {
         onClose={handleClose}
         anchorOrigin={{ vertical: "top", horizontal: "center" }}
       >
-        <Alert severity={snack.severity} onClose={handleClose} sx={{ width: "100%" }}>
+        <Alert
+          severity={snack.severity}
+          onClose={handleClose}
+          sx={{ width: "100%" }}
+        >
           {snack.message}
         </Alert>
       </Snackbar>
@@ -433,12 +461,13 @@ const RequirementUploader = () => {
 
           <Typography sx={{ mt: 2, textAlign: "justify", fontSize: "16px" }}>
             Please wait for the <strong>Admission Office</strong> to contact you
-            regarding the evaluation of your original documents that you uploaded.
+            regarding the evaluation of your original documents that you
+            uploaded.
           </Typography>
 
           <Typography sx={{ mt: 2, textAlign: "justify", fontSize: "15px" }}>
-            Kindly check your Gmail account and Applicant Dashboard regularly for
-            updates regarding your application status.
+            Kindly check your Gmail account and Applicant Dashboard regularly
+            for updates regarding your application status.
           </Typography>
         </DialogContent>
 
@@ -447,7 +476,6 @@ const RequirementUploader = () => {
             variant="contained"
             onClick={() => setOpenModal(false)}
             sx={{
-
               fontWeight: "bold",
               textTransform: "none",
               minWidth: "120px",
@@ -469,7 +497,6 @@ const RequirementUploader = () => {
         </DialogTitle>
 
         <DialogContent>
-
           <Typography sx={{ mb: 2, textAlign: "center" }}>
             Please review your uploaded documents before final submission.
           </Typography>
@@ -479,7 +506,7 @@ const RequirementUploader = () => {
             .filter((r) => r.category === "Main")
             .map((doc) => {
               const uploaded = uploads.find(
-                (u) => Number(u.requirements_id) === Number(doc.id)
+                (u) => Number(u.requirements_id) === Number(doc.id),
               );
 
               return (
@@ -531,23 +558,18 @@ const RequirementUploader = () => {
             }}
           >
             <Typography sx={{ fontSize: "14px" }}>
-              ⚠ <strong>Notice:</strong> Please ensure that all uploaded documents are
-              correct and clear.
+              ⚠ <strong>Notice:</strong> Please ensure that all uploaded
+              documents are correct and clear.
             </Typography>
           </Box>
-
         </DialogContent>
 
         <DialogActions sx={{ justifyContent: "space-between", px: 3, pb: 2 }}>
-
           {/* Cancel */}
           <Button
             variant="contained"
             color="error"
-
-
             onClick={() => setOpenConfirmModal(false)}
-
           >
             Cancel
           </Button>
@@ -577,37 +599,29 @@ const RequirementUploader = () => {
           >
             Submit Requirements
           </Button>
-
         </DialogActions>
       </Dialog>
 
-
       <Box
         sx={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          flexWrap: 'wrap',
-
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          flexWrap: "wrap",
 
           mb: 2,
-
         }}
       >
         <Typography
           variant="h4"
           sx={{
-            fontWeight: 'bold',
+            fontWeight: "bold",
             color: titleColor,
-            fontSize: '36px',
+            fontSize: "36px",
           }}
         >
           UPLOAD REQUIREMENTS
         </Typography>
-
-
-
-
       </Box>
       <hr style={{ border: "1px solid #ccc", width: "100%" }} />
 
@@ -617,7 +631,7 @@ const RequirementUploader = () => {
         sx={{
           display: "flex",
           alignItems: "center",
-          justifyContent: "center", // ✅ Center horizontally
+          justifyContent: "center",
           width: "100%",
           mt: 2,
         }}
@@ -642,7 +656,7 @@ const RequirementUploader = () => {
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              backgroundColor: "#6D2323",
+              backgroundColor: "#600000",
               borderRadius: "8px",
               width: 50,
               height: 50,
@@ -655,27 +669,30 @@ const RequirementUploader = () => {
           {/* Text */}
           <Typography
             sx={{
-              fontSize: "16px",
+              fontSize: "18px",
               fontFamily: "Poppins, sans-serif",
               color: "#3e3e3e",
               lineHeight: 1.6,
             }}
           >
-            <strong style={{ color: "#6D2323" }}>Notice:</strong>{" "}
-            Only files in <strong>JPG, JPEG, PNG, or PDF</strong> format are allowed for
-            upload. Please make sure that the file you are submitting does not exceed
-            the <strong>maximum file size of 4 MB</strong>. Any file that goes beyond
-            the allowed size limit or is not in the required format will not be accepted
-            by the system.
+            <strong style={{ color: "#600000" }}>Notice:</strong> Applicants are
+            required to submit all{" "}
+            <strong>Main Requirements (required) documents</strong> to proceed
+            with the application. <strong>Optional documents</strong> are not
+            required but may be uploaded if available. Only files in{" "}
+            <strong>JPG, JPEG, PNG, or PDF</strong> format are allowed for
+            upload. Please make sure that the file you are submitting does not
+            exceed the <strong>maximum file size of 4 MB</strong>. Any file that
+            goes beyond the allowed size limit or is not in the required format
+            will not be accepted by the system.
             <br />
             <br />
-            To avoid delays in the processing of your application, kindly review and
-            verify the file’s format and size before uploading. Thank you for your
-            cooperation.
+            To avoid delays in the processing of your application, kindly review
+            and verify the file’s format and size before uploading. Thank you
+            for your cooperation.
           </Typography>
         </Box>
       </Box>
-
 
       <Box sx={{ px: 2, marginLeft: "-10px" }}>
         {Object.entries(
@@ -684,7 +701,7 @@ const RequirementUploader = () => {
             if (!acc[cat]) acc[cat] = [];
             acc[cat].push(r);
             return acc;
-          }, {})
+          }, {}),
         ).map(([category, docs]) => (
           <Box key={category} sx={{ mt: 4 }}>
             <Container>
@@ -716,7 +733,8 @@ const RequirementUploader = () => {
                   }}
                 >
                   <div style={{ textAlign: "center" }}>
-                    Complete the applicant form to secure your place for the upcoming academic year at{" "}
+                    Complete the applicant form to secure your place for the
+                    upcoming academic year at{" "}
                     {shortTerm ? (
                       <>
                         <strong>{shortTerm.toUpperCase()}</strong> <br />
@@ -736,13 +754,53 @@ const RequirementUploader = () => {
               sx={{ width: "95%", mt: 2, border: `1px solid ${borderColor}` }}
             >
               <Table>
-                <TableHead sx={{ backgroundColor: settings?.header_color || "#1976d2", border: `1px solid ${borderColor}` }}>
+                <TableHead
+                  sx={{
+                    backgroundColor: settings?.header_color || "#1976d2",
+                    border: `1px solid ${borderColor}`,
+                  }}
+                >
                   <TableRow>
-                    <TableCell sx={{ color: "white", border: `1px solid ${borderColor}` }}>Document</TableCell>
-                    <TableCell sx={{ color: "white", border: `1px solid ${borderColor}` }}>Upload</TableCell>
-                    <TableCell sx={{ color: "white", border: `1px solid ${borderColor}` }}>Remarks</TableCell>
-                    <TableCell sx={{ color: "white", border: `1px solid ${borderColor}` }}>Preview</TableCell>
-                    <TableCell sx={{ color: "white", border: `1px solid ${borderColor}` }}>Delete</TableCell>
+                    <TableCell
+                      sx={{
+                        color: "white",
+                        border: `1px solid ${borderColor}`,
+                      }}
+                    >
+                      Document
+                    </TableCell>
+                    <TableCell
+                      sx={{
+                        color: "white",
+                        border: `1px solid ${borderColor}`,
+                      }}
+                    >
+                      Upload
+                    </TableCell>
+                    <TableCell
+                      sx={{
+                        color: "white",
+                        border: `1px solid ${borderColor}`,
+                      }}
+                    >
+                      Remarks
+                    </TableCell>
+                    <TableCell
+                      sx={{
+                        color: "white",
+                        border: `1px solid ${borderColor}`,
+                      }}
+                    >
+                      Preview
+                    </TableCell>
+                    <TableCell
+                      sx={{
+                        color: "white",
+                        border: `1px solid ${borderColor}`,
+                      }}
+                    >
+                      Delete
+                    </TableCell>
                   </TableRow>
                 </TableHead>
 
@@ -752,20 +810,15 @@ const RequirementUploader = () => {
                       id: doc.id,
                       label: doc.description,
                       is_required: doc.is_required,
-                      is_optional: doc.is_optional
-                    })
+                      is_optional: doc.is_optional,
+                    }),
                   )}
-
                 </TableBody>
-
               </Table>
             </TableContainer>
           </Box>
         ))}
       </Box>
-
-
-
     </Box>
   );
 };

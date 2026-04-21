@@ -2,9 +2,28 @@ import React, { useState, useEffect, useContext, useRef } from "react";
 import { SettingsContext } from "../App";
 import axios from "axios";
 import {
-  Box, Typography, Button, Snackbar, FormControl, Select, InputLabel, MenuItem, Grid,
-  Alert, Card, Paper, CardContent, TableContainer, Table, TableHead, TableCell, TableRow, TableBody, Switch,
-  Autocomplete, TextField
+  Box,
+  Typography,
+  Button,
+  Snackbar,
+  FormControl,
+  Select,
+  InputLabel,
+  MenuItem,
+  Grid,
+  Alert,
+  Card,
+  Paper,
+  CardContent,
+  TableContainer,
+  Table,
+  TableHead,
+  TableCell,
+  TableRow,
+  TableBody,
+  Switch,
+  Autocomplete,
+  TextField,
 } from "@mui/material";
 import Unauthorized from "../components/Unauthorized";
 import LoadingOverlay from "../components/LoadingOverlay";
@@ -19,7 +38,7 @@ import {
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import { FaFileExcel } from "react-icons/fa";
-import SaveIcon from '@mui/icons-material/Save';
+import SaveIcon from "@mui/icons-material/Save";
 
 const CurriculumPanel = () => {
   const settings = useContext(SettingsContext);
@@ -28,8 +47,8 @@ const CurriculumPanel = () => {
   const [subtitleColor, setSubtitleColor] = useState("#555555");
   const [borderColor, setBorderColor] = useState("#000000");
   const [mainButtonColor, setMainButtonColor] = useState("#1976d2");
-  const [subButtonColor, setSubButtonColor] = useState("#ffffff");   // ✅ NEW
-  const [stepperColor, setStepperColor] = useState("#000000");       // ✅ NEW
+  const [subButtonColor, setSubButtonColor] = useState("#ffffff");
+  const [stepperColor, setStepperColor] = useState("#000000");
 
   const [fetchedLogo, setFetchedLogo] = useState(null);
   const [companyName, setCompanyName] = useState("");
@@ -44,15 +63,14 @@ const CurriculumPanel = () => {
     if (settings.title_color) setTitleColor(settings.title_color);
     if (settings.subtitle_color) setSubtitleColor(settings.subtitle_color);
     if (settings.border_color) setBorderColor(settings.border_color);
-    if (settings.main_button_color) setMainButtonColor(settings.main_button_color);
-    if (settings.sub_button_color) setSubButtonColor(settings.sub_button_color);   // ✅ NEW
-    if (settings.stepper_color) setStepperColor(settings.stepper_color);           // ✅ NEW
+    if (settings.main_button_color)
+      setMainButtonColor(settings.main_button_color);
+    if (settings.sub_button_color) setSubButtonColor(settings.sub_button_color);
+    if (settings.stepper_color) setStepperColor(settings.stepper_color);
 
     // 🏫 Logo
     if (settings.logo_url) {
       setFetchedLogo(`${API_BASE_URL}${settings.logo_url}`);
-    } else {
-      setFetchedLogo(EaristLogo);
     }
 
     // 🏷️ School Information
@@ -73,8 +91,6 @@ const CurriculumPanel = () => {
     } else {
       setBranches([]);
     }
-
-
   }, [settings]);
 
   const [curriculum, setCurriculum] = useState({ year_id: "", program_id: "" });
@@ -95,14 +111,15 @@ const CurriculumPanel = () => {
   const [hasAccess, setHasAccess] = useState(null);
   const [loading, setLoading] = useState(false);
 
-
+  // ✅ ADD PERMISSION STATES
+  const [canCreate, setCanCreate] = useState(false);
+  const [canDelete, setCanDelete] = useState(false);
+  const [canEdit, setCanEdit] = useState(false);
 
   const pageId = 18;
-
   const [employeeID, setEmployeeID] = useState("");
 
   useEffect(() => {
-
     const storedUser = localStorage.getItem("email");
     const storedRole = localStorage.getItem("role");
     const storedID = localStorage.getItem("person_id");
@@ -124,17 +141,29 @@ const CurriculumPanel = () => {
     }
   }, []);
 
+  // ✅ UPDATED checkAccess to include permissions
   const checkAccess = async (employeeID) => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/api/page_access/${employeeID}/${pageId}`);
+      const response = await axios.get(
+        `${API_BASE_URL}/api/page_access/${employeeID}/${pageId}`,
+      );
       if (response.data && response.data.page_privilege === 1) {
         setHasAccess(true);
+        setCanCreate(Number(response.data?.can_create) === 1);
+        setCanDelete(Number(response.data?.can_delete) === 1);
+        setCanEdit(Number(response.data?.can_edit) === 1);
       } else {
         setHasAccess(false);
+        setCanCreate(false);
+        setCanDelete(false);
+        setCanEdit(false);
       }
     } catch (error) {
-      console.error('Error checking access:', error);
+      console.error("Error checking access:", error);
       setHasAccess(false);
+      setCanCreate(false);
+      setCanDelete(false);
+      setCanEdit(false);
       if (error.response && error.response.data.message) {
         console.log(error.response.data.message);
       } else {
@@ -159,8 +188,6 @@ const CurriculumPanel = () => {
     }
   };
 
-
-
   const fetchProgram = async () => {
     try {
       const res = await axios.get(`${API_BASE_URL}/get_program`);
@@ -180,8 +207,10 @@ const CurriculumPanel = () => {
   };
 
   const getBranchLabel = (branchId) => {
-    const branch = branches.find((item) => Number(item.id) === Number(branchId));
-    return branch?.branch || "�";
+    const branch = branches.find(
+      (item) => Number(item.id) === Number(branchId),
+    );
+    return branch?.branch || "—";
   };
 
   const handleChange = (e) => {
@@ -189,11 +218,31 @@ const CurriculumPanel = () => {
     setCurriculum((prev) => ({ ...prev, [name]: value }));
   };
 
+  // ✅ UPDATED handleAddCurriculum with permission checks
   const handleAddCurriculum = async () => {
     if (!curriculum.year_id || !curriculum.program_id) {
       setSnackbar({
         open: true,
         message: "Please fill all fields",
+        severity: "warning",
+      });
+      return;
+    }
+
+    // ✅ Check permissions
+    if (editingId && !canEdit) {
+      setSnackbar({
+        open: true,
+        message: "You do not have permission to edit this item",
+        severity: "error",
+      });
+      return;
+    }
+
+    if (!editingId && !canCreate) {
+      setSnackbar({
+        open: true,
+        message: "You do not have permission to create items on this page",
         severity: "error",
       });
       return;
@@ -201,7 +250,10 @@ const CurriculumPanel = () => {
 
     try {
       if (editingId) {
-        await axios.put(`${API_BASE_URL}/update_curriculum_data/${editingId}`, curriculum);
+        await axios.put(
+          `${API_BASE_URL}/update_curriculum_data/${editingId}`,
+          curriculum,
+        );
 
         setSnackbar({
           open: true,
@@ -222,7 +274,6 @@ const CurriculumPanel = () => {
 
       setCurriculum({ year_id: "", program_id: "" });
       fetchCurriculum();
-
     } catch (err) {
       console.error(err);
       setSnackbar({
@@ -236,7 +287,17 @@ const CurriculumPanel = () => {
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
   const [curriculumToDelete, setCurriculumToDelete] = useState(null);
 
+  // ✅ UPDATED confirmDelete with permission check
   const confirmDelete = (item) => {
+    if (!canDelete) {
+      setSnackbar({
+        open: true,
+        message: "You do not have permission to delete this item",
+        severity: "error",
+      });
+      return;
+    }
+
     setCurriculumToDelete(item);
     setOpenDeleteDialog(true);
   };
@@ -246,7 +307,7 @@ const CurriculumPanel = () => {
 
     try {
       await axios.delete(
-        `${API_BASE_URL}/delete_curriculum/${curriculumToDelete.curriculum_id}`
+        `${API_BASE_URL}/delete_curriculum/${curriculumToDelete.curriculum_id}`,
       );
 
       setSnackbar({
@@ -271,35 +332,52 @@ const CurriculumPanel = () => {
   };
 
   const [editingId, setEditingId] = useState(null);
-
   const [openCurriculumDialog, setOpenCurriculumDialog] = useState(false);
 
+  // ✅ UPDATED handleEdit with permission check
   const handleEdit = (item) => {
+    if (!canEdit) {
+      setSnackbar({
+        open: true,
+        message: "You do not have permission to edit this item",
+        severity: "error",
+      });
+      return;
+    }
+
     setCurriculum({
       year_id: item.year_id,
       program_id: item.program_id,
     });
 
     setEditingId(item.curriculum_id);
-    setOpenCurriculumDialog(true); // ✅ ADD THIS
+    setOpenCurriculumDialog(true);
   };
 
-  // ✅ Updated with instant UI response
+  // ✅ UPDATED handleUpdateStatus with permission check
   const handleUpdateStatus = async (id, currentStatus) => {
+    if (!canEdit) {
+      setSnackbar({
+        open: true,
+        message: "You do not have permission to edit this item",
+        severity: "error",
+      });
+      return;
+    }
+
     const newStatus = currentStatus === 1 ? 0 : 1;
 
     // Instantly update UI
     setCurriculumList((prevList) =>
       prevList.map((item) =>
-        item.curriculum_id === id ? { ...item, lock_status: newStatus } : item
-      )
+        item.curriculum_id === id ? { ...item, lock_status: newStatus } : item,
+      ),
     );
 
     // Show instant feedback
     setSnackbar({
       open: true,
-      message: `Curriculum #${id} is now ${newStatus === 1 ? "Active" : "Inactive"
-        }`,
+      message: `Curriculum #${id} is now ${newStatus === 1 ? "Active" : "Inactive"}`,
       severity: "info",
     });
 
@@ -311,8 +389,7 @@ const CurriculumPanel = () => {
       // Confirm success
       setSnackbar({
         open: true,
-        message: `Curriculum #${id} successfully set to ${newStatus === 1 ? "Active" : "Inactive"
-          }`,
+        message: `Curriculum #${id} successfully set to ${newStatus === 1 ? "Active" : "Inactive"}`,
         severity: "success",
       });
     } catch (err) {
@@ -323,8 +400,8 @@ const CurriculumPanel = () => {
         prevList.map((item) =>
           item.curriculum_id === id
             ? { ...item, lock_status: currentStatus }
-            : item
-        )
+            : item,
+        ),
       );
 
       setSnackbar({
@@ -335,18 +412,33 @@ const CurriculumPanel = () => {
     }
   };
 
+  // ✅ UPDATED handleCurriculumImport with permission check
   const handleCurriculumImport = async (event) => {
     const file = event.target.files?.[0];
     if (!file) return;
+
+    if (!canCreate) {
+      setSnackbar({
+        open: true,
+        message: "You do not have permission to create items on this page.",
+        severity: "error",
+      });
+      event.target.value = "";
+      return;
+    }
 
     try {
       setImportingXlsx(true);
       const formData = new FormData();
       formData.append("file", file);
 
-      const response = await axios.post(`${API_BASE_URL}/import-curriculum-xlsx`, formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
+      const response = await axios.post(
+        `${API_BASE_URL}/import-curriculum-xlsx`,
+        formData,
+        {
+          headers: { "Content-Type": "multipart/form-data" },
+        },
+      );
 
       if (response.data?.success) {
         setSnackbar({
@@ -377,12 +469,11 @@ const CurriculumPanel = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
 
-
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearch(searchQuery);
-      setCurrentPage(1); // reset to first page when searching
-    }, 300); // 300ms delay
+      setCurrentPage(1);
+    }, 300);
 
     return () => clearTimeout(timer);
   }, [searchQuery]);
@@ -390,7 +481,6 @@ const CurriculumPanel = () => {
   const formatAcademicYear = (year) => {
     if (!year) return "";
 
-    // If already formatted like "2024-2025"
     if (typeof year === "string" && year.includes("-")) {
       return year;
     }
@@ -413,43 +503,43 @@ const CurriculumPanel = () => {
   const filteredCurriculumList = curriculumList.filter((item) => {
     const words = searchQuery.trim().toLowerCase().split(" ").filter(Boolean);
 
-    return words.every((word) =>
-      String(formatAcademicYear(item.year_description))
-        .toLowerCase()
-        .includes(word) ||
-      String(item.program_code ?? "").toLowerCase().includes(word) ||
-      String(item.program_description ?? "").toLowerCase().includes(word) ||
-      String(item.major ?? "").toLowerCase().includes(word)
+    return words.every(
+      (word) =>
+        String(formatAcademicYear(item.year_description))
+          .toLowerCase()
+          .includes(word) ||
+        String(item.program_code ?? "")
+          .toLowerCase()
+          .includes(word) ||
+        String(item.program_description ?? "")
+          .toLowerCase()
+          .includes(word) ||
+        String(item.major ?? "")
+          .toLowerCase()
+          .includes(word),
     );
   });
 
-
-
-
-  // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(20); // adjust as needed
+  const [itemsPerPage, setItemsPerPage] = useState(20);
 
-  // Compute total pages
   const totalPages = Math.ceil(filteredCurriculumList.length / itemsPerPage);
 
-  // Slice data for current page
   const paginatedCurriculum = filteredCurriculumList.slice(
     (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
+    currentPage * itemsPerPage,
   );
-
 
   const buttonStyles = {
     minWidth: 70,
     color: "white",
     borderColor: "white",
     backgroundColor: "transparent",
-    '&:hover': {
-      borderColor: 'white',
-      backgroundColor: 'rgba(255,255,255,0.1)',
+    "&:hover": {
+      borderColor: "white",
+      backgroundColor: "rgba(255,255,255,0.1)",
     },
-    '&.Mui-disabled': {
+    "&.Mui-disabled": {
       color: "white",
       borderColor: "white",
       backgroundColor: "transparent",
@@ -458,18 +548,16 @@ const CurriculumPanel = () => {
   };
 
   const selectStyles = {
-    fontSize: '12px',
+    fontSize: "12px",
     height: 36,
-    color: 'white',
-    border: '1px solid white',
-    backgroundColor: 'transparent',
-    '.MuiOutlinedInput-notchedOutline': { borderColor: 'white' },
-    '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: 'white' },
-    '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: 'white' },
-    '& svg': { color: 'white' },
+    color: "white",
+    border: "1px solid white",
+    backgroundColor: "transparent",
+    ".MuiOutlinedInput-notchedOutline": { borderColor: "white" },
+    "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: "white" },
+    "&.Mui-focused .MuiOutlinedInput-notchedOutline": { borderColor: "white" },
+    "& svg": { color: "white" },
   };
-
-
 
   if (loading || hasAccess === null) {
     return <LoadingOverlay open={loading} message="Loading..." />;
@@ -480,7 +568,16 @@ const CurriculumPanel = () => {
   }
 
   return (
-    <Box sx={{ height: "calc(100vh - 150px)", overflowY: "auto", paddingRight: 1, backgroundColor: "transparent", mt: 1, padding: 2 }}>
+    <Box
+      sx={{
+        height: "calc(100vh - 150px)",
+        overflowY: "auto",
+        paddingRight: 1,
+        backgroundColor: "transparent",
+        mt: 1,
+        padding: 2,
+      }}
+    >
       <Box
         sx={{
           display: "flex",
@@ -492,12 +589,25 @@ const CurriculumPanel = () => {
       >
         <Typography
           variant="h4"
-          sx={{ fontWeight: "bold", color: titleColor, fontSize: "36px", mb: 2 }}
+          sx={{
+            fontWeight: "bold",
+            color: titleColor,
+            fontSize: "36px",
+            mb: 2,
+          }}
         >
           CURRICULUM PANEL
         </Typography>
 
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap", justifyContent: "flex-end" }}>
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            gap: 1,
+            flexWrap: "wrap",
+            justifyContent: "flex-end",
+          }}
+        >
           <TextField
             variant="outlined"
             placeholder="Search Year / Program Code / Description / Major"
@@ -528,8 +638,13 @@ const CurriculumPanel = () => {
           <Button
             variant="contained"
             onClick={() => importInputRef.current?.click()}
-            disabled={importingXlsx}
-            sx={{ height: 40, textTransform: "none", fontWeight: "bold", minWidth: 185 }}
+            disabled={importingXlsx || !canCreate}
+            sx={{
+              height: 40,
+              textTransform: "none",
+              fontWeight: "bold",
+              minWidth: 185,
+            }}
           >
             <FaFileExcel style={{ marginRight: 8 }} />
             {importingXlsx ? "Importing..." : "Import Curriculum"}
@@ -539,8 +654,13 @@ const CurriculumPanel = () => {
               window.location.href = `${API_BASE_URL}/curriculum_panel_template`;
             }}
             sx={{
-              height: 40, color: "black", border: "2px solid black",
-              backgroundColor: "#f0f0f0", textTransform: "none", fontWeight: "bold", minWidth: 165
+              height: 40,
+              color: "black",
+              border: "2px solid black",
+              backgroundColor: "#f0f0f0",
+              textTransform: "none",
+              fontWeight: "bold",
+              minWidth: 165,
             }}
           >
             📥 Download Template
@@ -553,9 +673,11 @@ const CurriculumPanel = () => {
       <br />
 
       {/* TOTAL + PAGINATION HEADER */}
-      <TableContainer component={Paper} sx={{ width: '100%', mt: 2 }}>
+      <TableContainer component={Paper} sx={{ width: "100%", mt: 2 }}>
         <Table size="small">
-          <TableHead sx={{ backgroundColor: settings?.header_color || "#6D2323" }}>
+          <TableHead
+            sx={{ backgroundColor: settings?.header_color || "#6D2323" }}
+          >
             <TableRow>
               <TableCell
                 colSpan={5}
@@ -573,13 +695,16 @@ const CurriculumPanel = () => {
                   flexWrap="wrap"
                   sx={{ px: 1 }}
                 >
-                  {/* LEFT SIDE - TOTAL CURRICULUM */}
                   <Typography fontSize="14px" fontWeight="bold" color="white">
                     Total Curriculum: {filteredCurriculumList.length}
                   </Typography>
 
-                  {/* RIGHT SIDE - PAGINATION */}
-                  <Box display="flex" alignItems="center" gap={1} flexWrap="wrap">
+                  <Box
+                    display="flex"
+                    alignItems="center"
+                    gap={1}
+                    flexWrap="wrap"
+                  >
                     <Button
                       onClick={() => setCurrentPage(1)}
                       disabled={currentPage === 1}
@@ -591,7 +716,9 @@ const CurriculumPanel = () => {
                     </Button>
 
                     <Button
-                      onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                      onClick={() =>
+                        setCurrentPage((prev) => Math.max(prev - 1, 1))
+                      }
                       disabled={currentPage === 1}
                       variant="outlined"
                       size="small"
@@ -600,7 +727,6 @@ const CurriculumPanel = () => {
                       Prev
                     </Button>
 
-                    {/* Page Select */}
                     <FormControl size="small" sx={{ minWidth: 80 }}>
                       <Select
                         value={currentPage}
@@ -609,7 +735,7 @@ const CurriculumPanel = () => {
                         sx={selectStyles}
                         MenuProps={{
                           PaperProps: {
-                            sx: { maxHeight: 200, backgroundColor: '#fff' },
+                            sx: { maxHeight: 200, backgroundColor: "#fff" },
                           },
                         }}
                       >
@@ -622,11 +748,13 @@ const CurriculumPanel = () => {
                     </FormControl>
 
                     <Typography fontSize="11px" color="white">
-                      of {totalPages} page{totalPages > 1 ? 's' : ''}
+                      of {totalPages} page{totalPages > 1 ? "s" : ""}
                     </Typography>
 
                     <Button
-                      onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                      onClick={() =>
+                        setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                      }
                       disabled={currentPage === totalPages}
                       variant="outlined"
                       size="small"
@@ -646,8 +774,9 @@ const CurriculumPanel = () => {
                     </Button>
                     <Button
                       variant="contained"
+                      disabled={!canCreate}
                       sx={{
-                        backgroundColor: "#1976d2", // ✅ Blue
+                        backgroundColor: "#1976d2",
                         color: "#fff",
                         fontWeight: "bold",
                         borderRadius: "8px",
@@ -655,11 +784,22 @@ const CurriculumPanel = () => {
                         textTransform: "none",
                         px: 2,
                         mr: "15px",
-                        '&:hover': {
-                          backgroundColor: "#1565c0" // darker blue hover
-                        }
+                        "&:hover": {
+                          backgroundColor: "#1565c0",
+                        },
                       }}
-                      onClick={() => setOpenCurriculumDialog(true)}
+                      onClick={() => {
+                        if (!canCreate) {
+                          setSnackbar({
+                            open: true,
+                            message:
+                              "You do not have permission to create items on this page",
+                            severity: "error",
+                          });
+                          return;
+                        }
+                        setOpenCurriculumDialog(true);
+                      }}
                     >
                       + Add Curriculum
                     </Button>
@@ -670,37 +810,59 @@ const CurriculumPanel = () => {
           </TableHead>
         </Table>
       </TableContainer>
+
       <TableContainer>
         <Table size="small">
           <TableHead>
             <TableRow>
-              <TableCell sx={{
-
-                border: `1px solid ${borderColor}`, textAlign: "center",
-                color: "black",
-              }}>ID</TableCell>
-              <TableCell sx={{
-
-                border: `1px solid ${borderColor}`, textAlign: "center",
-                color: "black",
-              }}>Year</TableCell>
-              <TableCell sx={{
-
-                border: `1px solid ${borderColor}`, textAlign: "center",
-                color: "black",
-              }}>Program</TableCell>
-              <TableCell sx={{
-
-                border: `1px solid ${borderColor}`, textAlign: "center",
-                color: "black",
-              }} align="center">Active</TableCell>
-              <TableCell sx={{
-
-                border: `1px solid ${borderColor}`, textAlign: "center",
-                color: "black",
-              }} align="center">Actions</TableCell>
+              <TableCell
+                sx={{
+                  border: `1px solid ${borderColor}`,
+                  textAlign: "center",
+                  color: "black",
+                }}
+              >
+                ID
+              </TableCell>
+              <TableCell
+                sx={{
+                  border: `1px solid ${borderColor}`,
+                  textAlign: "center",
+                  color: "black",
+                }}
+              >
+                Year
+              </TableCell>
+              <TableCell
+                sx={{
+                  border: `1px solid ${borderColor}`,
+                  textAlign: "center",
+                  color: "black",
+                }}
+              >
+                Program
+              </TableCell>
+              <TableCell
+                sx={{
+                  border: `1px solid ${borderColor}`,
+                  textAlign: "center",
+                  color: "black",
+                }}
+                align="center"
+              >
+                Active
+              </TableCell>
+              <TableCell
+                sx={{
+                  border: `1px solid ${borderColor}`,
+                  textAlign: "center",
+                  color: "black",
+                }}
+                align="center"
+              >
+                Actions
+              </TableCell>
             </TableRow>
-
           </TableHead>
 
           <TableBody>
@@ -710,28 +872,40 @@ const CurriculumPanel = () => {
                 hover
                 sx={{ "&:last-child td": { borderBottom: 0 } }}
               >
-                <TableCell sx={{ border: `1px solid ${borderColor}`, textAlign: "center" }}> {index + 1}</TableCell>
-                <TableCell sx={{ border: `1px solid ${borderColor}`, textAlign: "center" }}>
+                <TableCell
+                  sx={{
+                    border: `1px solid ${borderColor}`,
+                    textAlign: "center",
+                  }}
+                >
+                  {(currentPage - 1) * itemsPerPage + index + 1}
+                </TableCell>
+                <TableCell
+                  sx={{
+                    border: `1px solid ${borderColor}`,
+                    textAlign: "center",
+                  }}
+                >
                   {formatAcademicYear(item.year_description)}
-                </TableCell >
+                </TableCell>
                 <TableCell sx={{ border: `1px solid ${borderColor}` }}>
                   <Typography fontWeight={500}>
-
                     {`(${item.program_code}): ${item.program_description} (${getBranchLabel(item.components)})`}
                   </Typography>
                   <Typography variant="caption" color="text.secondary">
                     {item.major ? ` (${item.major})` : ""}
                   </Typography>
                 </TableCell>
-                <TableCell sx={{ border: `1px solid ${borderColor}` }} align="center">
+                <TableCell
+                  sx={{ border: `1px solid ${borderColor}` }}
+                  align="center"
+                >
                   <Switch
                     checked={item.lock_status === 1}
                     onChange={() =>
-                      handleUpdateStatus(
-                        item.curriculum_id,
-                        item.lock_status
-                      )
+                      handleUpdateStatus(item.curriculum_id, item.lock_status)
                     }
+                    disabled={!canEdit}
                     color="success"
                   />
                 </TableCell>
@@ -743,6 +917,7 @@ const CurriculumPanel = () => {
                     variant="contained"
                     startIcon={<EditIcon />}
                     onClick={() => handleEdit(item)}
+                    disabled={!canEdit}
                     sx={{
                       backgroundColor: "green",
                       width: "100px",
@@ -750,8 +925,10 @@ const CurriculumPanel = () => {
                       marginRight: "15px",
                       borderRadius: "5px",
                       textTransform: "none",
+                      opacity: canEdit ? 1 : 0.5,
+                      cursor: canEdit ? "pointer" : "not-allowed",
                       "&:hover": {
-                        backgroundColor: "darkgreen",
+                        backgroundColor: canEdit ? "darkgreen" : "green",
                       },
                     }}
                   >
@@ -762,29 +939,34 @@ const CurriculumPanel = () => {
                     variant="contained"
                     startIcon={<DeleteIcon />}
                     onClick={() => confirmDelete(item)}
+                    disabled={!canDelete}
                     sx={{
                       backgroundColor: "#9E0000",
                       width: "100px",
                       height: "40px",
                       borderRadius: "5px",
                       textTransform: "none",
+                      opacity: canDelete ? 1 : 0.5,
+                      cursor: canDelete ? "pointer" : "not-allowed",
                       "&:hover": {
-                        backgroundColor: "#7A0000",
+                        backgroundColor: canDelete ? "#7A0000" : "#9E0000",
                       },
                     }}
                   >
                     Delete
                   </Button>
-
                 </TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
       </TableContainer>
-      <TableContainer component={Paper} sx={{ width: '100%', }}>
+
+      <TableContainer component={Paper} sx={{ width: "100%" }}>
         <Table size="small">
-          <TableHead sx={{ backgroundColor: settings?.header_color || "#6D2323" }}>
+          <TableHead
+            sx={{ backgroundColor: settings?.header_color || "#6D2323" }}
+          >
             <TableRow>
               <TableCell
                 colSpan={5}
@@ -802,13 +984,16 @@ const CurriculumPanel = () => {
                   flexWrap="wrap"
                   sx={{ px: 1 }}
                 >
-                  {/* LEFT SIDE - TOTAL CURRICULUM */}
                   <Typography fontSize="14px" fontWeight="bold" color="white">
                     Total Curriculum: {filteredCurriculumList.length}
                   </Typography>
 
-                  {/* RIGHT SIDE - PAGINATION */}
-                  <Box display="flex" alignItems="center" gap={1} flexWrap="wrap">
+                  <Box
+                    display="flex"
+                    alignItems="center"
+                    gap={1}
+                    flexWrap="wrap"
+                  >
                     <Button
                       onClick={() => setCurrentPage(1)}
                       disabled={currentPage === 1}
@@ -820,7 +1005,9 @@ const CurriculumPanel = () => {
                     </Button>
 
                     <Button
-                      onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                      onClick={() =>
+                        setCurrentPage((prev) => Math.max(prev - 1, 1))
+                      }
                       disabled={currentPage === 1}
                       variant="outlined"
                       size="small"
@@ -829,7 +1016,6 @@ const CurriculumPanel = () => {
                       Prev
                     </Button>
 
-                    {/* Page Select */}
                     <FormControl size="small" sx={{ minWidth: 80 }}>
                       <Select
                         value={currentPage}
@@ -838,7 +1024,7 @@ const CurriculumPanel = () => {
                         sx={selectStyles}
                         MenuProps={{
                           PaperProps: {
-                            sx: { maxHeight: 200, backgroundColor: '#fff' },
+                            sx: { maxHeight: 200, backgroundColor: "#fff" },
                           },
                         }}
                       >
@@ -851,11 +1037,13 @@ const CurriculumPanel = () => {
                     </FormControl>
 
                     <Typography fontSize="11px" color="white">
-                      of {totalPages} page{totalPages > 1 ? 's' : ''}
+                      of {totalPages} page{totalPages > 1 ? "s" : ""}
                     </Typography>
 
                     <Button
-                      onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                      onClick={() =>
+                        setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                      }
                       disabled={currentPage === totalPages}
                       variant="outlined"
                       size="small"
@@ -881,7 +1069,6 @@ const CurriculumPanel = () => {
         </Table>
       </TableContainer>
 
-
       <Dialog
         open={openDeleteDialog}
         onClose={() => setOpenDeleteDialog(false)}
@@ -896,7 +1083,7 @@ const CurriculumPanel = () => {
             <b>
               {curriculumToDelete &&
                 `${formatAcademicYear(
-                  curriculumToDelete.year_description
+                  curriculumToDelete.year_description,
                 )} — (${curriculumToDelete.program_code})`}
             </b>
           </Typography>
@@ -904,10 +1091,8 @@ const CurriculumPanel = () => {
 
         <DialogActions>
           <Button
-            variant="contained"
+            variant="outlined"
             color="error"
-
-
             onClick={() => {
               setOpenDeleteDialog(false);
               setCurriculumToDelete(null);
@@ -918,6 +1103,7 @@ const CurriculumPanel = () => {
 
           <Button
             variant="contained"
+            color="error"
             onClick={handleDeleteConfirmed}
           >
             Yes, Delete
@@ -925,7 +1111,6 @@ const CurriculumPanel = () => {
         </DialogActions>
       </Dialog>
 
-      {/* Snackbar */}
       <Snackbar
         open={snackbar.open}
         autoHideDuration={3000}
@@ -950,28 +1135,24 @@ const CurriculumPanel = () => {
           sx: {
             borderRadius: 3,
             overflow: "hidden",
-            boxShadow: 6
-          }
+            boxShadow: 6,
+          },
         }}
       >
-        {/* ===== HEADER ===== */}
         <DialogTitle
           sx={{
             background: settings?.header_color || "#1976d2",
             color: "#fff",
             fontWeight: 700,
             fontSize: "1.2rem",
-            py: 2
+            py: 2,
           }}
         >
           {editingId ? "Edit Curriculum" : "Add Curriculum"}
         </DialogTitle>
 
-        {/* ===== CONTENT ===== */}
         <DialogContent sx={{ p: 3 }}>
           <Grid container spacing={2}>
-
-            {/* YEAR */}
             <Grid item xs={12} sx={{ marginTop: "20px" }}>
               <Typography fontWeight="bold">Curriculum Year</Typography>
               <TextField
@@ -983,7 +1164,10 @@ const CurriculumPanel = () => {
               >
                 <MenuItem value="">Select Year</MenuItem>
                 {[...yearList]
-                  .sort((a, b) => Number(a.year_description) - Number(b.year_description))
+                  .sort(
+                    (a, b) =>
+                      Number(a.year_description) - Number(b.year_description),
+                  )
                   .map((year) => (
                     <MenuItem key={year.year_id} value={year.year_id}>
                       {formatAcademicYear(year.year_description)}
@@ -992,7 +1176,6 @@ const CurriculumPanel = () => {
               </TextField>
             </Grid>
 
-            {/* PROGRAM */}
             <Grid item xs={12}>
               <Typography fontWeight="bold">Program</Typography>
 
@@ -1001,7 +1184,7 @@ const CurriculumPanel = () => {
                 options={programList}
                 value={
                   programList.find(
-                    (program) => program.program_id === curriculum.program_id
+                    (program) => program.program_id === curriculum.program_id,
                   ) || null
                 }
                 onChange={(event, newValue) => {
@@ -1018,23 +1201,22 @@ const CurriculumPanel = () => {
                     .filter(Boolean);
 
                   return options.filter((program) =>
-                    words.every((word) =>
-                      getYearLabel(program.year_id)
-                        .toLowerCase()
-                        .includes(word) ||
-                      (program.program_code || "")
-                        .toLowerCase()
-                        .includes(word) ||
-                      (program.program_description || "")
-                        .toLowerCase()
-                        .includes(word) ||
-                      (program.major || "")
-                        .toLowerCase()
-                        .includes(word) ||
-                      getBranchLabel(program.components)
-                        .toLowerCase()
-                        .includes(word)
-                    )
+                    words.every(
+                      (word) =>
+                        getYearLabel(program.year_id)
+                          .toLowerCase()
+                          .includes(word) ||
+                        (program.program_code || "")
+                          .toLowerCase()
+                          .includes(word) ||
+                        (program.program_description || "")
+                          .toLowerCase()
+                          .includes(word) ||
+                        (program.major || "").toLowerCase().includes(word) ||
+                        getBranchLabel(program.components)
+                          .toLowerCase()
+                          .includes(word),
+                    ),
                   );
                 }}
                 getOptionLabel={(program) =>
@@ -1044,26 +1226,18 @@ const CurriculumPanel = () => {
                   `(${getBranchLabel(program.components)})`
                 }
                 renderInput={(params) => (
-                  <TextField
-                    {...params}
-                    label="Select Program"
-                    fullWidth
-                  />
+                  <TextField {...params} label="Select Program" fullWidth />
                 )}
               />
             </Grid>
-
-
-
           </Grid>
         </DialogContent>
 
-        {/* ===== ACTIONS ===== */}
         <DialogActions
           sx={{
             px: 3,
             py: 2,
-            borderTop: "1px solid #e0e0e0"
+            borderTop: "1px solid #e0e0e0",
           }}
         >
           <Button
@@ -1083,14 +1257,14 @@ const CurriculumPanel = () => {
             sx={{
               px: 4,
               fontWeight: 600,
-              textTransform: "none"
+              textTransform: "none",
             }}
             onClick={() => {
               handleAddCurriculum();
               setOpenCurriculumDialog(false);
             }}
           >
-            <SaveIcon fontSize="small" /> Save
+            <SaveIcon fontSize="small" sx={{ mr: 1 }} /> Save
           </Button>
         </DialogActions>
       </Dialog>
@@ -1099,4 +1273,3 @@ const CurriculumPanel = () => {
 };
 
 export default CurriculumPanel;
-

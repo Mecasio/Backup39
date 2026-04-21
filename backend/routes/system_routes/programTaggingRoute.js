@@ -1,6 +1,6 @@
-const express = require('express');
+const express = require("express");
 const multer = require("multer");
-const { db, db3 } = require('../database/database');
+const { db, db3 } = require("../database/database");
 
 const router = express.Router();
 
@@ -44,7 +44,6 @@ JOIN semester_table s ON pt.semester_id = s.semester_id;
 
 `;
 
-
   try {
     const [result] = await db3.query(readQuery);
     res.status(200).json(result);
@@ -59,7 +58,7 @@ async function getLatestTosf() {
     `SELECT *
      FROM tosf
      ORDER BY tosf_id DESC
-     LIMIT 1`
+     LIMIT 1`,
   );
 
   if (!rows.length) {
@@ -90,7 +89,7 @@ router.post("/program_tagging", async (req, res) => {
          AND year_level_id = ?
          AND semester_id = ?
          AND course_id = ?`,
-      [curriculum_id, year_level_id, semester_id, course_id]
+      [curriculum_id, year_level_id, semester_id, course_id],
     );
 
     if (existing.length > 0) {
@@ -101,7 +100,8 @@ router.post("/program_tagging", async (req, res) => {
 
     let amount = 0;
     if (Number(iscomputer_lab) === 1) amount = Number(tosf.computer_fees);
-    else if (Number(islaboratory_fee) === 1) amount = Number(tosf.laboratory_fees);
+    else if (Number(islaboratory_fee) === 1)
+      amount = Number(tosf.laboratory_fees);
     else if (Number(is_nstp) === 1) amount = Number(tosf.nstp_fees);
 
     const [result] = await db3.query(
@@ -127,21 +127,19 @@ router.post("/program_tagging", async (req, res) => {
         Number(iscomputer_lab) || 0,
         Number(islaboratory_fee) || 0,
         Number(is_nstp) || 0,
-        amount
-      ]
+        amount,
+      ],
     );
 
     res.status(201).json({
       insertId: result.insertId,
-      amount
+      amount,
     });
-
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: err.message });
   }
 });
-
 
 router.put("/program_tagging/:id", async (req, res) => {
   const { id } = req.params;
@@ -162,7 +160,8 @@ router.put("/program_tagging/:id", async (req, res) => {
 
     let amount = 0;
     if (Number(iscomputer_lab) === 1) amount = Number(tosf.computer_fees);
-    else if (Number(islaboratory_fee) === 1) amount = Number(tosf.laboratory_fees);
+    else if (Number(islaboratory_fee) === 1)
+      amount = Number(tosf.laboratory_fees);
     else if (Number(is_nstp) === 1) amount = Number(tosf.nstp_fees);
 
     const [result] = await db3.query(
@@ -189,23 +188,22 @@ router.put("/program_tagging/:id", async (req, res) => {
         Number(islaboratory_fee) || 0,
         Number(is_nstp) || 0,
         amount,
-        id
-      ]
+        id,
+      ],
     );
 
     res.json({ success: true, amount });
-
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-
 router.delete("/program_tagging/:id", async (req, res) => {
   const { id } = req.params;
 
   try {
-    const query = "DELETE FROM program_tagging_table WHERE program_tagging_id = ?";
+    const query =
+      "DELETE FROM program_tagging_table WHERE program_tagging_id = ?";
     const [result] = await db3.query(query, [id]);
 
     if (result.affectedRows === 0)
@@ -213,7 +211,9 @@ router.delete("/program_tagging/:id", async (req, res) => {
 
     res.status(200).json({ message: "Program tag deleted successfully" });
   } catch (err) {
-    res.status(500).json({ error: "Failed to delete program tag", details: err.message });
+    res
+      .status(500)
+      .json({ error: "Failed to delete program tag", details: err.message });
   }
 });
 

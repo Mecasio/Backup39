@@ -14,7 +14,7 @@ const createPermissionMiddleware = (permissionKey, actionLabel) => {
 
     try {
       const [rows] = await db3.query(
-        `SELECT page_privilege, can_delete, can_edit
+        `SELECT page_privilege, can_create, can_delete, can_edit
          FROM page_access
          WHERE user_id = ? AND page_id = ?
          LIMIT 1`,
@@ -47,10 +47,13 @@ const createPermissionMiddleware = (permissionKey, actionLabel) => {
   };
 };
 
+const CanCreate = createPermissionMiddleware("can_create", "create items on this page");
 const CanDelete = createPermissionMiddleware("can_delete", "delete this item");
 const CanEdit = createPermissionMiddleware("can_edit", "edit this item");
 
 module.exports = {
+  CanCreate,
   CanDelete,
   CanEdit,
 };
+  

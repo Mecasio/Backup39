@@ -1,6 +1,6 @@
 const express = require('express');
 const { db, db3 } = require('../database/database');
-
+const {CanCreate, CanEdit, CanDelete} = require('../../middleware/pagePermissions');
 const router = express.Router();
 
 /* ===================== GET COURSE LIST ===================== */
@@ -19,7 +19,7 @@ router.get("/course_list", async (req, res) => {
   }
 });
 
-router.post("/adding_course", async (req, res) => {
+router.post("/adding_course", CanCreate, async (req, res) => {
   const {
     course_code,
     course_description,
@@ -118,7 +118,7 @@ router.post("/adding_course", async (req, res) => {
   }
 });
 
-router.put("/update_course/:id", async (req, res) => {
+router.put("/update_course/:id", CanEdit, async (req, res) => {
   const { id } = req.params;
   const {
     course_code,
@@ -233,8 +233,7 @@ router.put("/update_course/:id", async (req, res) => {
   }
 });
 
-/* ===================== DELETE COURSE ===================== */
-router.delete("/delete_course/:id", async (req, res) => {
+router.delete("/delete_course/:id", CanDelete, async (req, res) => {
   const { id } = req.params;
 
   try {

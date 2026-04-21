@@ -108,7 +108,7 @@ router.post("/api/page_access/:userId/:pageId", async (req, res) => {
     await db3.query(
       `INSERT INTO page_access (user_id, page_id, page_privilege, can_create, can_edit, can_delete)
        VALUES (?, ?, 1, 1, 1, 1)`,
-      [userId, pageId]
+      [userId, pageId],
     );
 
     // ✅ If query succeeded (affected rows > 0)
@@ -218,9 +218,7 @@ router.post("/api/page_access/grant-all", async (req, res) => {
 
   try {
     // get all pages
-    const [pages] = await db3.query(
-      "SELECT id FROM page_table"
-    );
+    const [pages] = await db3.query("SELECT id FROM page_table");
 
     if (!pages.length) {
       return res.json({ success: true });
@@ -250,25 +248,19 @@ router.post("/api/page_access/grant-all", async (req, res) => {
     }
 
     res.json({ success: true });
-
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Database error" });
   }
 });
 
-
 router.post("/api/page_access/revoke-all", async (req, res) => {
   const { userId } = req.body;
 
   try {
-    await db3.query(
-      "DELETE FROM page_access WHERE user_id = ?",
-      [userId]
-    );
+    await db3.query("DELETE FROM page_access WHERE user_id = ?", [userId]);
 
     res.json({ success: true });
-
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Database error" });
@@ -276,5 +268,3 @@ router.post("/api/page_access/revoke-all", async (req, res) => {
 });
 
 module.exports = router;
-
-

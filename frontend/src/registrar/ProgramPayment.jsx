@@ -24,8 +24,6 @@ const CurriculumCourseMap = () => {
   const [selectedYearLevel, setSelectedYearLevel] = useState("");
   const [selectedSemester, setSelectedSemester] = useState("");
 
-
-
   useEffect(() => {
     if (!settings) return;
 

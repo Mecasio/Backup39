@@ -1,10 +1,14 @@
 const express = require("express");
 const { db3 } = require("../database/database");
-
+const {
+  CanCreate,
+  CanDelete,
+  CanEdit,
+} = require("../../middleware/pagePermissions");
 const router = express.Router();
 
 // ---------------------------- CREATE PROGRAM ----------------------------------
-router.post("/program", async (req, res) => {
+router.post("/program", CanCreate, async (req, res) => {
   const { name, code, major, components, academic_program } = req.body;
 
   try {
@@ -12,9 +16,8 @@ router.post("/program", async (req, res) => {
       `INSERT INTO program_table 
    (program_description, program_code, major, components, academic_program)
    VALUES (?, ?, ?, ?, ?)`,
-      [name, code, major, components, academic_program]
+      [name, code, major, components, academic_program],
     );
-
 
     res.status(200).json({ message: "Program created successfully" });
   } catch (err) {
@@ -35,9 +38,9 @@ router.get("/get_program", async (req, res) => {
 });
 
 // -------------------- UPDATE PROGRAM --------------------
-router.put("/program/:id", async (req, res) => {
+router.put("/program/:id", CanEdit, async (req, res) => {
   const { id } = req.params;
-  const { name, code, major, components, academic_program } = req.body
+  const { name, code, major, components, academic_program } = req.body;
 
   try {
     const [result] = await db3.query(
@@ -48,8 +51,7 @@ router.put("/program/:id", async (req, res) => {
      components = ?,
      academic_program = ?
  WHERE program_id = ?`,
-      [name, code, major, components, academic_program, id]
-
+      [name, code, major, components, academic_program, id],
     );
 
     if (result.affectedRows === 0) {
@@ -64,13 +66,13 @@ router.put("/program/:id", async (req, res) => {
 });
 
 // -------------------- DELETE PROGRAM --------------------
-router.delete("/program/:id", async (req, res) => {
+router.delete("/program/:id", CanDelete, async (req, res) => {
   const { id } = req.params;
 
   try {
     const [result] = await db3.query(
       "DELETE FROM program_table WHERE program_id = ?",
-      [id]
+      [id],
     );
 
     if (result.affectedRows === 0) {
@@ -97,7 +99,7 @@ router.put("/update_program/:id", async (req, res) => {
            major = ?, 
            components = ?
        WHERE program_id = ?`,
-      [name, code, major, components, id]
+      [name, code, major, components, id],
     );
 
     if (result.affectedRows === 0) {
@@ -118,7 +120,7 @@ router.delete("/delete_program/:id", async (req, res) => {
   try {
     const [result] = await db3.query(
       "DELETE FROM program_table WHERE program_id = ?",
-      [id]
+      [id],
     );
 
     if (result.affectedRows === 0) {

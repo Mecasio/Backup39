@@ -1,13 +1,7 @@
 import React, { useState, useEffect, useContext, useRef } from "react";
 import { SettingsContext } from "../App";
 import axios from "axios";
-import {
-  Box,
-  Typography,
-  Snackbar,
-  Alert,
-  Button,
-} from "@mui/material";
+import { Box, Typography, Snackbar, Alert, Button } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import Unauthorized from "../components/Unauthorized";
@@ -28,20 +22,20 @@ import {
   TableCell,
   Paper,
   Grid,
-  FormControl, Select, MenuItem
+  FormControl,
+  Select,
+  MenuItem,
 } from "@mui/material";
-import SaveIcon from '@mui/icons-material/Save';
+import SaveIcon from "@mui/icons-material/Save";
 
 const ProgramPanel = () => {
   const settings = useContext(SettingsContext);
-
   const [titleColor, setTitleColor] = useState("#000000");
   const [subtitleColor, setSubtitleColor] = useState("#555555");
   const [borderColor, setBorderColor] = useState("#000000");
   const [mainButtonColor, setMainButtonColor] = useState("#1976d2");
   const [subButtonColor, setSubButtonColor] = useState("#ffffff");
   const [stepperColor, setStepperColor] = useState("#000000");
-
   const [fetchedLogo, setFetchedLogo] = useState(null);
   const [companyName, setCompanyName] = useState("");
   const [shortTerm, setShortTerm] = useState("");
@@ -50,18 +44,16 @@ const ProgramPanel = () => {
 
   useEffect(() => {
     if (!settings) return;
-
     if (settings.title_color) setTitleColor(settings.title_color);
     if (settings.subtitle_color) setSubtitleColor(settings.subtitle_color);
     if (settings.border_color) setBorderColor(settings.border_color);
-    if (settings.main_button_color) setMainButtonColor(settings.main_button_color);
+    if (settings.main_button_color)
+      setMainButtonColor(settings.main_button_color);
     if (settings.sub_button_color) setSubButtonColor(settings.sub_button_color);
     if (settings.stepper_color) setStepperColor(settings.stepper_color);
-
     if (settings.logo_url) {
       setFetchedLogo(`${API_BASE_URL}${settings.logo_url}`);
     }
-
     if (settings.company_name) setCompanyName(settings.company_name);
     if (settings.short_term) setShortTerm(settings.short_term);
     if (settings.campus_address) setCampusAddress(settings.campus_address);
@@ -86,26 +78,24 @@ const ProgramPanel = () => {
     code: "",
     major: "",
     components: "",
-    academic_program: "",  // ✅ new
+    academic_program: "",
   });
 
-
   const [programs, setPrograms] = useState([]);
+  const [canCreate, setCanCreate] = useState(false);
+  const [canDelete, setCanDelete] = useState(false);
+  const [canEdit, setCanEdit] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [editId, setEditId] = useState(null);
-
   const [userID, setUserID] = useState("");
   const [user, setUser] = useState("");
   const [userRole, setUserRole] = useState("");
   const [hasAccess, setHasAccess] = useState(null);
   const [loading, setLoading] = useState(false);
-
   const pageId = 34;
-
   const [employeeID, setEmployeeID] = useState("");
 
   useEffect(() => {
-
     const storedUser = localStorage.getItem("email");
     const storedRole = localStorage.getItem("role");
     const storedID = localStorage.getItem("person_id");
@@ -116,7 +106,6 @@ const ProgramPanel = () => {
       setUserRole(storedRole);
       setUserID(storedID);
       setEmployeeID(storedEmployeeID);
-
       if (storedRole === "registrar") {
         checkAccess(storedEmployeeID);
       } else {
@@ -129,15 +118,26 @@ const ProgramPanel = () => {
 
   const checkAccess = async (employeeID) => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/api/page_access/${employeeID}/${pageId}`);
+      const response = await axios.get(
+        `${API_BASE_URL}/api/page_access/${employeeID}/${pageId}`,
+      );
       if (response.data && response.data.page_privilege === 1) {
         setHasAccess(true);
+        setCanCreate(Number(response.data?.can_create) === 1);
+        setCanDelete(Number(response.data?.can_delete) === 1);
+        setCanEdit(Number(response.data?.can_edit) === 1);
       } else {
         setHasAccess(false);
+        setCanCreate(false);
+        setCanDelete(false);
+        setCanEdit(false);
       }
     } catch (error) {
-      console.error('Error checking access:', error);
+      console.error("Error checking access:", error);
       setHasAccess(false);
+      setCanCreate(false);
+      setCanDelete(false);
+      setCanEdit(false);
       if (error.response && error.response.data.message) {
         console.log(error.response.data.message);
       } else {
@@ -147,12 +147,12 @@ const ProgramPanel = () => {
     }
   };
 
-
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: "",
     severity: "success",
   });
+
   const importInputRef = useRef(null);
   const [importingXlsx, setImportingXlsx] = useState(false);
 
@@ -184,6 +184,25 @@ const ProgramPanel = () => {
       return;
     }
 
+    // ✅ Fixed: Changed editingId to editId
+    if (editId && !canEdit) {
+      setSnackbar({
+        open: true,
+        message: "You do not have permission to edit this item",
+        severity: "error",
+      });
+      return;
+    }
+
+    if (!editId && !canCreate) {
+      setSnackbar({
+        open: true,
+        message: "You do not have permission to create items on this page",
+        severity: "error",
+      });
+      return;
+    }
+
     try {
       if (editMode) {
         await axios.put(`${API_BASE_URL}/program/${editId}`, program);
@@ -200,15 +219,13 @@ const ProgramPanel = () => {
           severity: "success",
         });
       }
-
       setProgram({
         name: "",
         code: "",
         major: "",
         components: "",
-        academic_program: "", // ✅
+        academic_program: "",
       });
-
       setEditMode(false);
       setEditId(null);
       fetchPrograms();
@@ -225,26 +242,41 @@ const ProgramPanel = () => {
   const [openProgramDialog, setOpenProgramDialog] = useState(false);
 
   const handleEdit = (prog) => {
+    // ✅ Added permission check
+    if (!canEdit) {
+      setSnackbar({
+        open: true,
+        message: "You do not have permission to edit this item",
+        severity: "error",
+      });
+      return;
+    }
+
     setProgram({
       name: prog.program_description,
       code: prog.program_code,
       major: prog.major || "",
       components: String(prog.components || ""),
-      academic_program: String(prog.academic_program || ""), // ✅
+      academic_program: String(prog.academic_program || ""),
     });
-
     setEditMode(true);
     setEditId(prog.program_id);
     setOpenProgramDialog(true);
   };
 
-
-
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
   const [programToDelete, setProgramToDelete] = useState(null);
 
-
   const handleDelete = async (id) => {
+    if (!canDelete) {
+      setSnackbar({
+        open: true,
+        message: "You do not have permission to delete this item",
+        severity: "error",
+      });
+      return;
+    }
+
     try {
       await axios.delete(`${API_BASE_URL}/program/${id}`);
       fetchPrograms();
@@ -263,27 +295,24 @@ const ProgramPanel = () => {
     }
   };
 
-
   const [searchQuery, setSearchQuery] = useState("");
+
   const getCampusName = (components) => {
     const branch = branches.find(
-      (item) => Number(item.id) === Number(components)
+      (item) => Number(item.id) === Number(components),
     );
     return branch?.branch || "—";
   };
 
   const filteredPrograms = programs.filter((prog) => {
     const q = searchQuery.toLowerCase();
-
     return (
       prog.program_description?.toLowerCase().includes(q) ||
       prog.program_code?.toLowerCase().includes(q) ||
       prog.major?.toLowerCase().includes(q) ||
       getCampusName(prog.components).toLowerCase().includes(q)
-
     );
   });
-
 
   const handleCloseSnackbar = () => {
     setSnackbar((prev) => ({ ...prev, open: false }));
@@ -293,15 +322,27 @@ const ProgramPanel = () => {
     const file = event.target.files?.[0];
     if (!file) return;
 
+    if (!canCreate) {
+      setSnackbar({
+        open: true,
+        message: "You do not have permission to create items on this page.",
+        severity: "error",
+      });
+      event.target.value = "";
+      return;
+    }
+
     try {
       setImportingXlsx(true);
       const formData = new FormData();
       formData.append("file", file);
-
-      const response = await axios.post(`${API_BASE_URL}/import-program-xlsx`, formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-
+      const response = await axios.post(
+        `${API_BASE_URL}/import-program-xlsx`,
+        formData,
+        {
+          headers: { "Content-Type": "multipart/form-data" },
+        },
+      );
       if (response.data?.success) {
         setSnackbar({
           open: true,
@@ -328,20 +369,18 @@ const ProgramPanel = () => {
     }
   };
 
-
-
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 20; // adjust how many programs per page
+  const itemsPerPage = 20;
 
-  // Recalculate total pages dynamically based on filteredPrograms
   const totalPages = Math.ceil(filteredPrograms.length / itemsPerPage);
 
-  // Calculate current slice of programs to display
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentPrograms = filteredPrograms.slice(indexOfFirstItem, indexOfLastItem);
+  const currentPrograms = filteredPrograms.slice(
+    indexOfFirstItem,
+    indexOfLastItem,
+  );
 
-  // Reset to first page when search query changes
   useEffect(() => {
     setCurrentPage(1);
   }, [searchQuery]);
@@ -362,8 +401,6 @@ const ProgramPanel = () => {
       gap: "20px",
       flexWrap: "wrap",
     },
-
-
     formGroup: { marginBottom: "20px" },
     label: {
       display: "block",
@@ -379,16 +416,14 @@ const ProgramPanel = () => {
       borderRadius: "5px",
       border: "1px solid #ccc",
     },
-
     table: { width: "100%", borderCollapse: "collapse" },
     th: {
-
       padding: "8px",
       textAlign: "center",
       fontWeight: "bold",
       border: `1px solid ${borderColor}`,
       fontSize: "16px",
-      color: "#000"
+      color: "#000",
     },
     td: {
       padding: "8px",
@@ -411,6 +446,7 @@ const ProgramPanel = () => {
       alignItems: "center",
       justifyContent: "center",
       gap: "5px",
+      transition: "opacity 0.2s",
     },
     deleteButton: {
       backgroundColor: "#9E0000",
@@ -425,11 +461,21 @@ const ProgramPanel = () => {
       alignItems: "center",
       justifyContent: "center",
       gap: "5px",
+      transition: "opacity 0.2s",
     },
   };
 
   return (
-    <Box sx={{ height: "calc(100vh - 150px)", overflowY: "auto", paddingRight: 1, backgroundColor: "transparent", mt: 1, padding: 2 }}>
+    <Box
+      sx={{
+        height: "calc(100vh - 150px)",
+        overflowY: "auto",
+        paddingRight: 1,
+        backgroundColor: "transparent",
+        mt: 1,
+        padding: 2,
+      }}
+    >
       <Box
         sx={{
           display: "flex",
@@ -445,7 +491,15 @@ const ProgramPanel = () => {
         >
           PROGRAM PANEL
         </Typography>
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap", justifyContent: "flex-end" }}>
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            gap: 1,
+            flexWrap: "wrap",
+            justifyContent: "flex-end",
+          }}
+        >
           <TextField
             variant="outlined"
             placeholder="Search Program Description / Code / Major"
@@ -476,8 +530,13 @@ const ProgramPanel = () => {
           <Button
             variant="contained"
             onClick={() => importInputRef.current?.click()}
-            disabled={importingXlsx}
-            sx={{ height: 40, textTransform: "none", fontWeight: "bold", minWidth: 170 }}
+            disabled={importingXlsx || !canCreate}
+            sx={{
+              height: 40,
+              textTransform: "none",
+              fontWeight: "bold",
+              minWidth: 170,
+            }}
           >
             <FaFileExcel style={{ marginRight: 8 }} />
             {importingXlsx ? "Importing..." : "Import Program"}
@@ -487,27 +546,36 @@ const ProgramPanel = () => {
               window.location.href = `${API_BASE_URL}/program_panel_template`;
             }}
             sx={{
-              height: 40, color: "black", border: "2px solid black",
-              backgroundColor: "#f0f0f0", textTransform: "none", fontWeight: "bold", minWidth: 165
+              height: 40,
+              color: "black",
+              border: "2px solid black",
+              backgroundColor: "#f0f0f0",
+              textTransform: "none",
+              fontWeight: "bold",
+              minWidth: 165,
             }}
           >
             📥 Download Template
           </Button>
         </Box>
-
       </Box>
-
       <hr style={{ border: "1px solid #ccc", width: "100%" }} />
       <br />
       <br />
-
       <div style={styles.formSection}>
-
-        <TableContainer component={Paper} sx={{ width: '100%', }}>
+        <TableContainer component={Paper} sx={{ width: "100%" }}>
           <Table size="small">
-            <TableHead sx={{ backgroundColor: '#6D2323', color: "white" }}>
+            <TableHead sx={{ backgroundColor: "#6D2323", color: "white" }}>
               <TableRow>
-                <TableCell colSpan={20} sx={{ border: `1px solid ${borderColor}`, py: 0.5, backgroundColor: settings?.header_color || "#1976d2", color: "white" }}>
+                <TableCell
+                  colSpan={20}
+                  sx={{
+                    border: `1px solid ${borderColor}`,
+                    py: 0.5,
+                    backgroundColor: settings?.header_color || "#1976d2",
+                    color: "white",
+                  }}
+                >
                   <Box
                     display="flex"
                     justifyContent="space-between"
@@ -519,7 +587,6 @@ const ProgramPanel = () => {
                     <Typography fontSize="14px" fontWeight="bold" color="white">
                       Total Program: {filteredPrograms.length}
                     </Typography>
-
                     {/* RIGHT SIDE - PAGINATION */}
                     <Box
                       display="flex"
@@ -537,23 +604,24 @@ const ProgramPanel = () => {
                           color: "white",
                           borderColor: "white",
                           backgroundColor: "transparent",
-                          '&:hover': {
-                            borderColor: 'white',
-                            backgroundColor: 'rgba(255,255,255,0.1)',
+                          "&:hover": {
+                            borderColor: "white",
+                            backgroundColor: "rgba(255,255,255,0.1)",
                           },
-                          '&.Mui-disabled': {
+                          "&.Mui-disabled": {
                             color: "white",
                             borderColor: "white",
                             backgroundColor: "transparent",
                             opacity: 1,
-                          }
+                          },
                         }}
                       >
                         First
                       </Button>
-
                       <Button
-                        onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                        onClick={() =>
+                          setCurrentPage((prev) => Math.max(prev - 1, 1))
+                        }
                         disabled={currentPage === 1}
                         variant="outlined"
                         size="small"
@@ -562,54 +630,54 @@ const ProgramPanel = () => {
                           color: "white",
                           borderColor: "white",
                           backgroundColor: "transparent",
-                          '&:hover': {
-                            borderColor: 'white',
-                            backgroundColor: 'rgba(255,255,255,0.1)',
+                          "&:hover": {
+                            borderColor: "white",
+                            backgroundColor: "rgba(255,255,255,0.1)",
                           },
-                          '&.Mui-disabled': {
+                          "&.Mui-disabled": {
                             color: "white",
                             borderColor: "white",
                             backgroundColor: "transparent",
                             opacity: 1,
-                          }
+                          },
                         }}
                       >
                         Prev
                       </Button>
-
-
                       {/* Page Dropdown */}
                       <FormControl size="small" sx={{ minWidth: 80 }}>
                         <Select
                           value={currentPage}
-                          onChange={(e) => setCurrentPage(Number(e.target.value))}
+                          onChange={(e) =>
+                            setCurrentPage(Number(e.target.value))
+                          }
                           displayEmpty
                           sx={{
-                            fontSize: '12px',
+                            fontSize: "12px",
                             height: 36,
-                            color: 'white',
-                            border: '1px solid white',
-                            backgroundColor: 'transparent',
-                            '.MuiOutlinedInput-notchedOutline': {
-                              borderColor: 'white',
+                            color: "white",
+                            border: "1px solid white",
+                            backgroundColor: "transparent",
+                            ".MuiOutlinedInput-notchedOutline": {
+                              borderColor: "white",
                             },
-                            '&:hover .MuiOutlinedInput-notchedOutline': {
-                              borderColor: 'white',
+                            "&:hover .MuiOutlinedInput-notchedOutline": {
+                              borderColor: "white",
                             },
-                            '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                              borderColor: 'white',
+                            "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                              borderColor: "white",
                             },
-                            '& svg': {
-                              color: 'white', // dropdown arrow icon color
-                            }
+                            "& svg": {
+                              color: "white",
+                            },
                           }}
                           MenuProps={{
                             PaperProps: {
                               sx: {
                                 maxHeight: 200,
-                                backgroundColor: '#fff', // dropdown background
-                              }
-                            }
+                                backgroundColor: "#fff",
+                              },
+                            },
                           }}
                         >
                           {Array.from({ length: totalPages }, (_, i) => (
@@ -619,15 +687,16 @@ const ProgramPanel = () => {
                           ))}
                         </Select>
                       </FormControl>
-
                       <Typography fontSize="11px" color="white">
-                        of {totalPages} page{totalPages > 1 ? 's' : ''}
+                        of {totalPages} page{totalPages > 1 ? "s" : ""}
                       </Typography>
-
-
                       {/* Next & Last */}
                       <Button
-                        onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                        onClick={() =>
+                          setCurrentPage((prev) =>
+                            Math.min(prev + 1, totalPages),
+                          )
+                        }
                         disabled={currentPage === totalPages}
                         variant="outlined"
                         size="small"
@@ -636,21 +705,20 @@ const ProgramPanel = () => {
                           color: "white",
                           borderColor: "white",
                           backgroundColor: "transparent",
-                          '&:hover': {
-                            borderColor: 'white',
-                            backgroundColor: 'rgba(255,255,255,0.1)',
+                          "&:hover": {
+                            borderColor: "white",
+                            backgroundColor: "rgba(255,255,255,0.1)",
                           },
-                          '&.Mui-disabled': {
+                          "&.Mui-disabled": {
                             color: "white",
                             borderColor: "white",
                             backgroundColor: "transparent",
                             opacity: 1,
-                          }
+                          },
                         }}
                       >
                         Next
                       </Button>
-
                       <Button
                         onClick={() => setCurrentPage(totalPages)}
                         disabled={currentPage === totalPages}
@@ -661,25 +729,24 @@ const ProgramPanel = () => {
                           color: "white",
                           borderColor: "white",
                           backgroundColor: "transparent",
-                          '&:hover': {
-                            borderColor: 'white',
-                            backgroundColor: 'rgba(255,255,255,0.1)',
+                          "&:hover": {
+                            borderColor: "white",
+                            backgroundColor: "rgba(255,255,255,0.1)",
                           },
-                          '&.Mui-disabled': {
+                          "&.Mui-disabled": {
                             color: "white",
                             borderColor: "white",
                             backgroundColor: "transparent",
                             opacity: 1,
-                          }
+                          },
                         }}
                       >
                         Last
                       </Button>
-
                       <Button
                         variant="contained"
                         sx={{
-                          backgroundColor: "#1976d2", // ✅ Blue
+                          backgroundColor: "#1976d2",
                           color: "#fff",
                           fontWeight: "bold",
                           borderRadius: "8px",
@@ -687,11 +754,21 @@ const ProgramPanel = () => {
                           textTransform: "none",
                           px: 2,
                           mr: "15px",
-                          '&:hover': {
-                            backgroundColor: "#1565c0" // darker blue hover
-                          }
+                          "&:hover": {
+                            backgroundColor: "#1565c0",
+                          },
                         }}
+                        disabled={!canCreate}
                         onClick={() => {
+                          if (!canCreate) {
+                            setSnackbar({
+                              open: true,
+                              message:
+                                "You do not have permission to create items on this page",
+                              severity: "error",
+                            });
+                            return;
+                          }
                           setProgram({
                             name: "",
                             code: "",
@@ -705,8 +782,6 @@ const ProgramPanel = () => {
                       >
                         + Add Program
                       </Button>
-
-
                     </Box>
                   </Box>
                 </TableCell>
@@ -718,26 +793,32 @@ const ProgramPanel = () => {
           <thead>
             <tr>
               <th style={{ ...styles.th, backgroundColor: "#f5f5f5" }}>ID</th>
-              <th style={{ ...styles.th, backgroundColor: "#f5f5f5" }}>Description</th>
+              <th style={{ ...styles.th, backgroundColor: "#f5f5f5" }}>
+                Description
+              </th>
               <th style={{ ...styles.th, backgroundColor: "#f5f5f5" }}>Code</th>
-              <th style={{ ...styles.th, backgroundColor: "#f5f5f5" }}>Major</th>
-              <th style={{ ...styles.th, backgroundColor: "#f5f5f5" }}>Campus</th>
-              <th style={{ ...styles.th, backgroundColor: "#f5f5f5" }}>Academic Program</th>
-
-              <th style={{ ...styles.th, backgroundColor: "#f5f5f5" }}>Actions</th>
+              <th style={{ ...styles.th, backgroundColor: "#f5f5f5" }}>
+                Major
+              </th>
+              <th style={{ ...styles.th, backgroundColor: "#f5f5f5" }}>
+                Campus
+              </th>
+              <th style={{ ...styles.th, backgroundColor: "#f5f5f5" }}>
+                Academic Program
+              </th>
+              <th style={{ ...styles.th, backgroundColor: "#f5f5f5" }}>
+                Actions
+              </th>
             </tr>
           </thead>
           <tbody>
             {currentPrograms.map((prog, index) => (
-
               <tr key={prog.program_id}>
-                <td style={styles.td}>{index + 1}</td>
+                <td style={styles.td}>{indexOfFirstItem + index + 1}</td>
                 <td style={styles.td}>{prog.program_description}</td>
                 <td style={styles.td}>{prog.program_code}</td>
                 <td style={styles.td}>{prog.major || "—"}</td>
-                <td style={styles.td}>
-                  {getCampusName(prog.components)}
-                </td>
+                <td style={styles.td}>{getCampusName(prog.components)}</td>
                 <td style={styles.td}>
                   {prog.academic_program === 0
                     ? "Undergraduate"
@@ -747,23 +828,44 @@ const ProgramPanel = () => {
                         ? "Techvoc"
                         : "—"}
                 </td>
-
-
                 <td style={{ ...styles.td, textAlign: "center" }}>
-                  <div style={{ display: "flex", justifyContent: "center", gap: "8px" }}>
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "center",
+                      gap: "8px",
+                    }}
+                  >
                     <button
                       onClick={() => handleEdit(prog)}
-                      style={styles.editButton}
+                      style={{
+                        ...styles.editButton,
+                        opacity: canEdit ? 1 : 0.5,
+                        cursor: canEdit ? "pointer" : "not-allowed",
+                      }}
+                      disabled={!canEdit}
                     >
                       <EditIcon fontSize="small" /> Edit
                     </button>
-
                     <button
                       onClick={() => {
+                        if (!canDelete) {
+                          setSnackbar({
+                            open: true,
+                            message: "You do not have permission to delete this item",
+                            severity: "error",
+                          });
+                          return;
+                        }
                         setProgramToDelete(prog);
                         setOpenDeleteDialog(true);
                       }}
-                      style={styles.deleteButton}
+                      style={{
+                        ...styles.deleteButton,
+                        opacity: canDelete ? 1 : 0.5,
+                        cursor: canDelete ? "pointer" : "not-allowed",
+                      }}
+                      disabled={!canDelete}
                     >
                       <DeleteIcon fontSize="small" /> Delete
                     </button>
@@ -772,14 +874,21 @@ const ProgramPanel = () => {
               </tr>
             ))}
           </tbody>
-
         </table>
         {programs.length === 0 && <p>No programs available.</p>}
-        <TableContainer component={Paper} sx={{ width: '100%', }}>
+        <TableContainer component={Paper} sx={{ width: "100%" }}>
           <Table size="small">
-            <TableHead sx={{ backgroundColor: '#6D2323', color: "white" }}>
+            <TableHead sx={{ backgroundColor: "#6D2323", color: "white" }}>
               <TableRow>
-                <TableCell colSpan={20} sx={{ border: `1px solid ${borderColor}`, py: 0.5, backgroundColor: settings?.header_color || "#1976d2", color: "white" }}>
+                <TableCell
+                  colSpan={20}
+                  sx={{
+                    border: `1px solid ${borderColor}`,
+                    py: 0.5,
+                    backgroundColor: settings?.header_color || "#1976d2",
+                    color: "white",
+                  }}
+                >
                   <Box
                     display="flex"
                     justifyContent="space-between"
@@ -791,7 +900,6 @@ const ProgramPanel = () => {
                     <Typography fontSize="14px" fontWeight="bold" color="white">
                       Total Program: {filteredPrograms.length}
                     </Typography>
-
                     {/* RIGHT SIDE - PAGINATION */}
                     <Box
                       display="flex"
@@ -809,23 +917,24 @@ const ProgramPanel = () => {
                           color: "white",
                           borderColor: "white",
                           backgroundColor: "transparent",
-                          '&:hover': {
-                            borderColor: 'white',
-                            backgroundColor: 'rgba(255,255,255,0.1)',
+                          "&:hover": {
+                            borderColor: "white",
+                            backgroundColor: "rgba(255,255,255,0.1)",
                           },
-                          '&.Mui-disabled': {
+                          "&.Mui-disabled": {
                             color: "white",
                             borderColor: "white",
                             backgroundColor: "transparent",
                             opacity: 1,
-                          }
+                          },
                         }}
                       >
                         First
                       </Button>
-
                       <Button
-                        onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                        onClick={() =>
+                          setCurrentPage((prev) => Math.max(prev - 1, 1))
+                        }
                         disabled={currentPage === 1}
                         variant="outlined"
                         size="small"
@@ -834,54 +943,54 @@ const ProgramPanel = () => {
                           color: "white",
                           borderColor: "white",
                           backgroundColor: "transparent",
-                          '&:hover': {
-                            borderColor: 'white',
-                            backgroundColor: 'rgba(255,255,255,0.1)',
+                          "&:hover": {
+                            borderColor: "white",
+                            backgroundColor: "rgba(255,255,255,0.1)",
                           },
-                          '&.Mui-disabled': {
+                          "&.Mui-disabled": {
                             color: "white",
                             borderColor: "white",
                             backgroundColor: "transparent",
                             opacity: 1,
-                          }
+                          },
                         }}
                       >
                         Prev
                       </Button>
-
-
                       {/* Page Dropdown */}
                       <FormControl size="small" sx={{ minWidth: 80 }}>
                         <Select
                           value={currentPage}
-                          onChange={(e) => setCurrentPage(Number(e.target.value))}
+                          onChange={(e) =>
+                            setCurrentPage(Number(e.target.value))
+                          }
                           displayEmpty
                           sx={{
-                            fontSize: '12px',
+                            fontSize: "12px",
                             height: 36,
-                            color: 'white',
-                            border: '1px solid white',
-                            backgroundColor: 'transparent',
-                            '.MuiOutlinedInput-notchedOutline': {
-                              borderColor: 'white',
+                            color: "white",
+                            border: "1px solid white",
+                            backgroundColor: "transparent",
+                            ".MuiOutlinedInput-notchedOutline": {
+                              borderColor: "white",
                             },
-                            '&:hover .MuiOutlinedInput-notchedOutline': {
-                              borderColor: 'white',
+                            "&:hover .MuiOutlinedInput-notchedOutline": {
+                              borderColor: "white",
                             },
-                            '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                              borderColor: 'white',
+                            "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                              borderColor: "white",
                             },
-                            '& svg': {
-                              color: 'white', // dropdown arrow icon color
-                            }
+                            "& svg": {
+                              color: "white",
+                            },
                           }}
                           MenuProps={{
                             PaperProps: {
                               sx: {
                                 maxHeight: 200,
-                                backgroundColor: '#fff', // dropdown background
-                              }
-                            }
+                                backgroundColor: "#fff",
+                              },
+                            },
                           }}
                         >
                           {Array.from({ length: totalPages }, (_, i) => (
@@ -891,15 +1000,16 @@ const ProgramPanel = () => {
                           ))}
                         </Select>
                       </FormControl>
-
                       <Typography fontSize="11px" color="white">
-                        of {totalPages} page{totalPages > 1 ? 's' : ''}
+                        of {totalPages} page{totalPages > 1 ? "s" : ""}
                       </Typography>
-
-
                       {/* Next & Last */}
                       <Button
-                        onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                        onClick={() =>
+                          setCurrentPage((prev) =>
+                            Math.min(prev + 1, totalPages),
+                          )
+                        }
                         disabled={currentPage === totalPages}
                         variant="outlined"
                         size="small"
@@ -908,21 +1018,20 @@ const ProgramPanel = () => {
                           color: "white",
                           borderColor: "white",
                           backgroundColor: "transparent",
-                          '&:hover': {
-                            borderColor: 'white',
-                            backgroundColor: 'rgba(255,255,255,0.1)',
+                          "&:hover": {
+                            borderColor: "white",
+                            backgroundColor: "rgba(255,255,255,0.1)",
                           },
-                          '&.Mui-disabled': {
+                          "&.Mui-disabled": {
                             color: "white",
                             borderColor: "white",
                             backgroundColor: "transparent",
                             opacity: 1,
-                          }
+                          },
                         }}
                       >
                         Next
                       </Button>
-
                       <Button
                         onClick={() => setCurrentPage(totalPages)}
                         disabled={currentPage === totalPages}
@@ -933,23 +1042,20 @@ const ProgramPanel = () => {
                           color: "white",
                           borderColor: "white",
                           backgroundColor: "transparent",
-                          '&:hover': {
-                            borderColor: 'white',
-                            backgroundColor: 'rgba(255,255,255,0.1)',
+                          "&:hover": {
+                            borderColor: "white",
+                            backgroundColor: "rgba(255,255,255,0.1)",
                           },
-                          '&.Mui-disabled': {
+                          "&.Mui-disabled": {
                             color: "white",
                             borderColor: "white",
                             backgroundColor: "transparent",
                             opacity: 1,
-                          }
+                          },
                         }}
                       >
                         Last
                       </Button>
-
-
-
                     </Box>
                   </Box>
                 </TableCell>
@@ -957,12 +1063,8 @@ const ProgramPanel = () => {
             </TableHead>
           </Table>
         </TableContainer>
-
-
-
-
-
       </div>
+
       <Dialog
         open={openProgramDialog}
         onClose={() => setOpenProgramDialog(false)}
@@ -972,8 +1074,8 @@ const ProgramPanel = () => {
           sx: {
             borderRadius: 3,
             overflow: "hidden",
-            boxShadow: 6
-          }
+            boxShadow: 6,
+          },
         }}
       >
         {/* ===== HEADER ===== */}
@@ -983,16 +1085,14 @@ const ProgramPanel = () => {
             color: "#fff",
             fontWeight: 700,
             fontSize: "1.2rem",
-            py: 2
+            py: 2,
           }}
         >
           {editMode ? "Edit Program" : "Add Program"}
         </DialogTitle>
-
         {/* ===== CONTENT ===== */}
         <DialogContent sx={{ p: 3 }}>
           <Grid container spacing={2}>
-
             {/* DESCRIPTION */}
             <Grid item xs={12} sx={{ marginTop: "20px" }}>
               <Typography fontWeight="bold">Program Description</Typography>
@@ -1004,7 +1104,6 @@ const ProgramPanel = () => {
                 placeholder="Enter Program Description"
               />
             </Grid>
-
             {/* CODE */}
             <Grid item xs={12}>
               <Typography fontWeight="bold">Program Code</Typography>
@@ -1016,7 +1115,6 @@ const ProgramPanel = () => {
                 placeholder="Enter Program Code"
               />
             </Grid>
-
             {/* MAJOR */}
             <Grid item xs={12}>
               <Typography fontWeight="bold">Major</Typography>
@@ -1028,7 +1126,6 @@ const ProgramPanel = () => {
                 placeholder="Optional (e.g., Marketing Management)"
               />
             </Grid>
-
             {/* CAMPUS */}
             <Grid item xs={12}>
               <Typography fontWeight="bold">Campus</Typography>
@@ -1047,7 +1144,6 @@ const ProgramPanel = () => {
                 ))}
               </TextField>
             </Grid>
-
             {/* ACADEMIC PROGRAM */}
             <Grid item xs={12}>
               <Typography fontWeight="bold">Academic Program</Typography>
@@ -1064,16 +1160,14 @@ const ProgramPanel = () => {
                 <MenuItem value="2">Techvoc</MenuItem>
               </TextField>
             </Grid>
-
           </Grid>
         </DialogContent>
-
         {/* ===== ACTIONS ===== */}
         <DialogActions
           sx={{
             px: 3,
             py: 2,
-            borderTop: "1px solid #e0e0e0"
+            borderTop: "1px solid #e0e0e0",
           }}
         >
           <Button
@@ -1087,21 +1181,19 @@ const ProgramPanel = () => {
           >
             Cancel
           </Button>
-
           <Button
             variant="contained"
             sx={{
               px: 4,
               fontWeight: 600,
-              textTransform: "none"
+              textTransform: "none",
             }}
             onClick={() => {
               handleAddingProgram();
               setOpenProgramDialog(false);
             }}
           >
-     <SaveIcon fontSize="small" /> Save
-
+            <SaveIcon fontSize="small" sx={{ mr: 1 }} /> Save
           </Button>
         </DialogActions>
       </Dialog>
@@ -1111,24 +1203,21 @@ const ProgramPanel = () => {
         onClose={() => setOpenDeleteDialog(false)}
       >
         <DialogTitle>Confirm Delete Program</DialogTitle>
-
         <DialogContent>
           <Typography>
             Are you sure you want to delete the program{" "}
-            <b>{programToDelete?.program_description}</b>{" "}
-            (<b>{programToDelete?.program_code}</b>)?
+            <b>{programToDelete?.program_description}</b> (
+            <b>{programToDelete?.program_code}</b>)?
           </Typography>
         </DialogContent>
-
         <DialogActions>
           <Button
             color="error"
             variant="outlined"
-
-            onClick={() => setOpenDeleteDialog(false)}>
+            onClick={() => setOpenDeleteDialog(false)}
+          >
             Cancel
           </Button>
-
           <Button
             color="error"
             variant="contained"
@@ -1142,7 +1231,6 @@ const ProgramPanel = () => {
           </Button>
         </DialogActions>
       </Dialog>
-
 
       <Snackbar
         open={snackbar.open}

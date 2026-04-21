@@ -33,7 +33,7 @@ import LoadingOverlay from "../components/LoadingOverlay";
 import API_BASE_URL from "../apiConfig";
 import SearchIcon from "@mui/icons-material/Search";
 import EditIcon from "@mui/icons-material/Edit";
-import SaveIcon from '@mui/icons-material/Save';
+import SaveIcon from "@mui/icons-material/Save";
 
 const UserPageAccess = () => {
   const settings = useContext(SettingsContext);
@@ -460,10 +460,10 @@ const UserPageAccess = () => {
         prev.map((level) =>
           Number(level.access_id) === Number(editAccessId)
             ? {
-              ...level,
-              access_description: editAccessDescription,
-              access_page: selectedPages,
-            }
+                ...level,
+                access_description: editAccessDescription,
+                access_page: selectedPages,
+              }
             : level,
         ),
       );
@@ -525,14 +525,9 @@ const UserPageAccess = () => {
     if (!selectedUser) return;
 
     try {
-
-      await axios.post(
-        `${API_BASE_URL}/api/page_access/grant-all`,
-        {
-          userId: selectedUser.employee_id,
-        }
-      );
-
+      await axios.post(`${API_BASE_URL}/api/page_access/grant-all`, {
+        userId: selectedUser.employee_id,
+      });
 
       const newAccess = {};
       pages.forEach((p) => {
@@ -551,24 +546,18 @@ const UserPageAccess = () => {
         severity: "success",
         message: "All access granted",
       });
-
     } catch (err) {
       console.error(err);
     }
   };
 
-
   const revokeAllAccess = async () => {
     if (!selectedUser) return;
 
     try {
-
-      await axios.post(
-        `${API_BASE_URL}/api/page_access/revoke-all`,
-        {
-          userId: selectedUser.employee_id,
-        }
-      );
+      await axios.post(`${API_BASE_URL}/api/page_access/revoke-all`, {
+        userId: selectedUser.employee_id,
+      });
 
       const newAccess = {};
       pages.forEach((p) => {
@@ -587,7 +576,6 @@ const UserPageAccess = () => {
         severity: "success",
         message: "All access removed",
       });
-
     } catch (err) {
       console.error(err);
     }
@@ -615,7 +603,9 @@ const UserPageAccess = () => {
       console.error(err);
       // Rollback on failure
       setAllUsers((prev) =>
-        prev.map((u) => (u.id === userId ? { ...u, status: currentStatus } : u)),
+        prev.map((u) =>
+          u.id === userId ? { ...u, status: currentStatus } : u,
+        ),
       );
       setSnack({
         open: true,
@@ -1024,7 +1014,7 @@ const UserPageAccess = () => {
                       sx={{
                         display: "flex",
                         justifyContent: "center",
-                        alignItems: "center"
+                        alignItems: "center",
                       }}
                     >
                       <Button
@@ -1323,6 +1313,17 @@ const UserPageAccess = () => {
                       }}
                       align="center"
                     >
+                      CREATE
+                    </TableCell>
+                    <TableCell
+                      sx={{
+                        color: "white",
+                        textAlign: "center",
+                        fontWeight: "bold",
+                        border: `1px solid ${borderColor}`,
+                      }}
+                      align="center"
+                    >
                       EDIT
                     </TableCell>
                     <TableCell
@@ -1396,8 +1397,26 @@ const UserPageAccess = () => {
                         align="center"
                       >
                         <Switch
+                          checked={pageAccess[p.id]?.can_create || false}
+                          onChange={() =>
+                            handlePermissionToggle(p.id, "can_create")
+                          }
+                          disabled={!pageAccess[p.id]?.access}
+                        />
+                      </TableCell>
+                      <TableCell
+                        sx={{
+                          color: "black",
+                          textAlign: "center",
+                          border: `1px solid ${borderColor}`,
+                        }}
+                        align="center"
+                      >
+                        <Switch
                           checked={pageAccess[p.id]?.can_edit || false}
-                          onChange={() => handlePermissionToggle(p.id, "can_edit")}
+                          onChange={() =>
+                            handlePermissionToggle(p.id, "can_edit")
+                          }
                           disabled={!pageAccess[p.id]?.access}
                         />
                       </TableCell>
@@ -1411,7 +1430,9 @@ const UserPageAccess = () => {
                       >
                         <Switch
                           checked={pageAccess[p.id]?.can_delete || false}
-                          onChange={() => handlePermissionToggle(p.id, "can_delete")}
+                          onChange={() =>
+                            handlePermissionToggle(p.id, "can_delete")
+                          }
                           disabled={!pageAccess[p.id]?.access}
                         />
                       </TableCell>
@@ -1427,7 +1448,6 @@ const UserPageAccess = () => {
           <Button
             color="error"
             variant="outlined"
-
             onClick={() => setOpenModal(false)}
           >
             Cancel
@@ -1445,8 +1465,6 @@ const UserPageAccess = () => {
 
         <DialogContent dividers>
           <Box display="flex" gap={2} mb={2}>
-
-
             <TextField
               label="Description"
               fullWidth
@@ -1459,7 +1477,7 @@ const UserPageAccess = () => {
               sx={{
                 px: 4,
                 fontWeight: 600,
-                textTransform: "none"
+                textTransform: "none",
               }}
               onClick={handleCreateAssignAll}
             >
@@ -1537,20 +1555,21 @@ const UserPageAccess = () => {
           <Button
             color="error"
             variant="outlined"
-
-
             onClick={() => setOpenCreateModal(false)}
           >
             Cancel
           </Button>
 
-          <Button variant="contained" sx={{
-            px: 4,
-            fontWeight: 600,
-            textTransform: "none"
-          }} onClick={saveAccess}>
+          <Button
+            variant="contained"
+            sx={{
+              px: 4,
+              fontWeight: 600,
+              textTransform: "none",
+            }}
+            onClick={saveAccess}
+          >
             <SaveIcon fontSize="small" /> Save
-
           </Button>
         </DialogActions>
       </Dialog>
@@ -1561,9 +1580,7 @@ const UserPageAccess = () => {
         maxWidth="md"
         fullWidth
       >
-        <DialogTitle sx={{ fontWeight: "bold" }}>
-          Edit Access Level
-        </DialogTitle>
+        <DialogTitle sx={{ fontWeight: "bold" }}>Edit Access Level</DialogTitle>
 
         <DialogContent dividers>
           <FormControl fullWidth sx={{ mb: 2 }}>
@@ -1684,8 +1701,6 @@ const UserPageAccess = () => {
           <Button
             color="error"
             variant="outlined"
-
-
             onClick={() => setOpenEditAccessModal(false)}
           >
             Cancel
@@ -1696,7 +1711,7 @@ const UserPageAccess = () => {
             sx={{
               px: 4,
               fontWeight: 600,
-              textTransform: "none"
+              textTransform: "none",
             }}
             onClick={saveEditedAccess}
           >

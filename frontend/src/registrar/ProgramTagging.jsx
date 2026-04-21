@@ -2,13 +2,21 @@ import React, { useState, useEffect, useContext, useRef } from "react";
 import { SettingsContext } from "../App";
 import axios from "axios";
 import {
-  Box, Typography, Button, Snackbar, Alert, FormControl, Select, MenuItem, TableContainer,
+  Box,
+  Typography,
+  Button,
+  Snackbar,
+  Alert,
+  FormControl,
+  Select,
+  MenuItem,
+  TableContainer,
   Table,
   TableHead,
   TableRow,
   TableCell,
   Paper,
-  Grid
+  Grid,
 } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
@@ -18,9 +26,14 @@ import API_BASE_URL from "../apiConfig";
 import { Autocomplete, TextField } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import ProgramTaggingFilter from "../registrar/ProgramTaggingFilter";
-import { Dialog, DialogTitle, DialogContent, DialogActions } from "@mui/material";
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+} from "@mui/material";
 import { FaFileExcel } from "react-icons/fa";
-import SaveIcon from '@mui/icons-material/Save';
+import SaveIcon from "@mui/icons-material/Save";
 
 const ProgramTagging = () => {
   const settings = useContext(SettingsContext);
@@ -28,8 +41,8 @@ const ProgramTagging = () => {
   const [subtitleColor, setSubtitleColor] = useState("#555555");
   const [borderColor, setBorderColor] = useState("#000000");
   const [mainButtonColor, setMainButtonColor] = useState("#1976d2");
-  const [subButtonColor, setSubButtonColor] = useState("#ffffff");   // ✅ NEW
-  const [stepperColor, setStepperColor] = useState("#000000");       // ✅ NEW
+  const [subButtonColor, setSubButtonColor] = useState("#ffffff"); // ✅ NEW
+  const [stepperColor, setStepperColor] = useState("#000000"); // ✅ NEW
 
   const [fetchedLogo, setFetchedLogo] = useState(null);
   const [companyName, setCompanyName] = useState("");
@@ -43,6 +56,10 @@ const ProgramTagging = () => {
 
   const [filteredPrograms, setFilteredPrograms] = useState([]);
 
+  const [canCreate, setCanCreate] = useState(false);
+  const [canDelete, setCanDelete] = useState(false);
+  const [canEdit, setCanEdit] = useState(false);
+
   useEffect(() => {
     if (!settings) return;
 
@@ -50,9 +67,10 @@ const ProgramTagging = () => {
     if (settings.title_color) setTitleColor(settings.title_color);
     if (settings.subtitle_color) setSubtitleColor(settings.subtitle_color);
     if (settings.border_color) setBorderColor(settings.border_color);
-    if (settings.main_button_color) setMainButtonColor(settings.main_button_color);
-    if (settings.sub_button_color) setSubButtonColor(settings.sub_button_color);   // ✅ NEW
-    if (settings.stepper_color) setStepperColor(settings.stepper_color);           // ✅ NEW
+    if (settings.main_button_color)
+      setMainButtonColor(settings.main_button_color);
+    if (settings.sub_button_color) setSubButtonColor(settings.sub_button_color); // ✅ NEW
+    if (settings.stepper_color) setStepperColor(settings.stepper_color); // ✅ NEW
 
     // 🏫 Logo
     if (settings.logo_url) {
@@ -79,7 +97,6 @@ const ProgramTagging = () => {
     } else {
       setBranches([]);
     }
-
   }, [settings]);
 
   const [userID, setUserID] = useState("");
@@ -102,7 +119,6 @@ const ProgramTagging = () => {
   const [openFormDialog, setOpenFormDialog] = useState(false);
 
   useEffect(() => {
-
     const storedUser = localStorage.getItem("email");
     const storedRole = localStorage.getItem("role");
     const storedID = localStorage.getItem("person_id");
@@ -126,15 +142,26 @@ const ProgramTagging = () => {
 
   const checkAccess = async (employeeID) => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/api/page_access/${employeeID}/${pageId}`);
+      const response = await axios.get(
+        `${API_BASE_URL}/api/page_access/${employeeID}/${pageId}`,
+      );
       if (response.data && response.data.page_privilege === 1) {
         setHasAccess(true);
+        setCanCreate(Number(response.data?.can_create) === 1);
+        setCanDelete(Number(response.data?.can_delete) === 1);
+        setCanEdit(Number(response.data?.can_edit) === 1);
       } else {
         setHasAccess(false);
+        setCanCreate(false);
+        setCanDelete(false);
+        setCanEdit(false);
       }
     } catch (error) {
-      console.error('Error checking access:', error);
+      console.error("Error checking access:", error);
       setHasAccess(false);
+      setCanCreate(false);
+      setCanDelete(false);
+      setCanEdit(false);
       if (error.response && error.response.data.message) {
         console.log(error.response.data.message);
       } else {
@@ -157,8 +184,6 @@ const ProgramTagging = () => {
     amount: 0,
   });
 
-
-
   const [courseList, setCourseList] = useState([]);
   const [yearLevelList, setYearlevelList] = useState([]);
   const [semesterList, setSemesterList] = useState([]);
@@ -169,6 +194,22 @@ const ProgramTagging = () => {
   const [courseSearch, setCourseSearch] = useState("");
   const [curriculumSearch, setCurriculumSearch] = useState("");
 
+  const showSnackbar = (message, severity = "info") => {
+    setSnackbar({
+      open: true,
+      message,
+      severity,
+    });
+  };
+
+  const getPermissionHeaders = (extraHeaders = {}) => ({
+    headers: {
+      ...extraHeaders,
+      "x-employee-id": employeeID,
+      "x-page-id": pageId,
+    },
+  });
+
   useEffect(() => {
     // Start with all programs
     let filtered = taggedPrograms;
@@ -176,38 +217,44 @@ const ProgramTagging = () => {
     // ✅ Filter by dropdowns safely (convert both sides to Number)
     if (selectedCurriculum) {
       filtered = filtered.filter(
-        (p) => Number(p.curriculum_id) === Number(selectedCurriculum)
+        (p) => Number(p.curriculum_id) === Number(selectedCurriculum),
       );
     }
     if (selectedYearLevel) {
       filtered = filtered.filter(
-        (p) => Number(p.year_level_id) === Number(selectedYearLevel)
+        (p) => Number(p.year_level_id) === Number(selectedYearLevel),
       );
     }
     if (selectedSemester) {
       filtered = filtered.filter(
-        (p) => Number(p.semester_id) === Number(selectedSemester)
+        (p) => Number(p.semester_id) === Number(selectedSemester),
       );
     }
 
     // ✅ Filter by search query (case-insensitive)
     if (searchQuery) {
       const q = searchQuery.toLowerCase().trim();
-      filtered = filtered.filter((p) =>
-        (p.curriculum_description || "").toLowerCase().includes(q) ||
-        (p.program_code || "").toLowerCase().includes(q) ||
-        (p.major || "").toLowerCase().includes(q) ||
-        (p.course_description || "").toLowerCase().includes(q) ||
-        (p.year_level_description || "").toLowerCase().includes(q) ||
-        (p.semester_description || "").toLowerCase().includes(q)
+      filtered = filtered.filter(
+        (p) =>
+          (p.curriculum_description || "").toLowerCase().includes(q) ||
+          (p.program_code || "").toLowerCase().includes(q) ||
+          (p.major || "").toLowerCase().includes(q) ||
+          (p.course_description || "").toLowerCase().includes(q) ||
+          (p.year_level_description || "").toLowerCase().includes(q) ||
+          (p.semester_description || "").toLowerCase().includes(q),
       );
     }
 
     // ✅ Update state
     setFilteredPrograms(filtered);
     setCurrentPage(1);
-  }, [searchQuery, selectedCurriculum, selectedYearLevel, selectedSemester, taggedPrograms]);
-
+  }, [
+    searchQuery,
+    selectedCurriculum,
+    selectedYearLevel,
+    selectedSemester,
+    taggedPrograms,
+  ]);
 
   const filteredCourses = courseList.filter((course) => {
     const words = courseSearch.toLowerCase().split(" ");
@@ -216,11 +263,13 @@ const ProgramTagging = () => {
     const courseDesc = (course.course_description || "").toLowerCase();
     const coursePreq = (course.prereq || "").toLowerCase();
 
-    return words.every((word) =>
-      courseCode.includes(word) || courseDesc.includes(word) || coursePreq.includes(word)
+    return words.every(
+      (word) =>
+        courseCode.includes(word) ||
+        courseDesc.includes(word) ||
+        coursePreq.includes(word),
     );
   });
-
 
   useEffect(() => {
     fetchYearLevel();
@@ -263,10 +312,11 @@ const ProgramTagging = () => {
       // 🔽 SORT COURSES alphabetically (course_code)
       setCourseList(
         res.data.sort((a, b) =>
-          a.course_code.localeCompare(b.course_code, undefined, { numeric: true })
-        )
+          a.course_code.localeCompare(b.course_code, undefined, {
+            numeric: true,
+          }),
+        ),
       );
-
     } catch (err) {
       console.log(err);
     }
@@ -284,7 +334,7 @@ const ProgramTagging = () => {
     try {
       const res = await axios.get(`${API_BASE_URL}/program_tagging_list`);
 
-      const normalized = res.data.map(p => ({
+      const normalized = res.data.map((p) => ({
         ...p,
         iscomputer_lab: Number(p.iscomputer_lab ?? 0),
         islaboratory_fee: Number(p.islaboratory_fee ?? 0),
@@ -295,7 +345,7 @@ const ProgramTagging = () => {
       const unique = [];
       const seen = new Set();
 
-      normalized.forEach(p => {
+      normalized.forEach((p) => {
         const key = `${p.curriculum_id}-${p.year_level_id}-${p.semester_id}-${p.course_id}`;
 
         if (!seen.has(key)) {
@@ -306,7 +356,6 @@ const ProgramTagging = () => {
 
       setTaggedPrograms(unique);
       setFilteredPrograms(unique);
-
     } catch (err) {
       console.log(err);
     }
@@ -321,8 +370,25 @@ const ProgramTagging = () => {
     }));
   };
 
-
   const handleInsertingProgTag = async () => {
+    if (!employeeID) {
+      showSnackbar("Employee ID is required to continue.", "error");
+      return false;
+    }
+
+    if (editingId && !canEdit) {
+      showSnackbar("You do not have permission to edit this item.", "error");
+      return false;
+    }
+
+    if (!editingId && !canCreate) {
+      showSnackbar(
+        "You do not have permission to create items on this page.",
+        "error",
+      );
+      return false;
+    }
+
     const {
       curriculum_id,
       year_level_id,
@@ -338,22 +404,14 @@ const ProgramTagging = () => {
 
     // ✅ Required fields
     if (!curriculum_id || !year_level_id || !semester_id || !course_id) {
-      setSnackbar({
-        open: true,
-        message: "Please fill all fields",
-        severity: "error",
-      });
-      return;
+      showSnackbar("Please fill all fields", "error");
+      return false;
     }
 
     // ✅ Fee validation
     if (lec_fee < 0 || lab_fee < 0) {
-      setSnackbar({
-        open: true,
-        message: "Fees cannot be negative",
-        severity: "error",
-      });
-      return;
+      showSnackbar("Fees cannot be negative", "error");
+      return false;
     }
 
     // 🔍 Prevent duplicate (ignore self when editing)
@@ -363,65 +421,65 @@ const ProgramTagging = () => {
         Number(p.year_level_id) === Number(year_level_id) &&
         Number(p.semester_id) === Number(semester_id) &&
         Number(p.course_id) === Number(course_id) &&
-        Number(p.program_tagging_id) !== Number(editingId)
+        Number(p.program_tagging_id) !== Number(editingId),
     );
 
     if (isDuplicate) {
-      setSnackbar({
-        open: true,
-        message: "This program tag already exists!",
-        severity: "error",
-      });
-      return;
+      showSnackbar("This program tag already exists!", "error");
+      return false;
     }
 
     try {
       if (editingId) {
         // ✅ Update existing program tag
-        await axios.put(`${API_BASE_URL}/program_tagging/${editingId}`, {
-          curriculum_id,
-          year_level_id,
-          semester_id,
-          course_id,
-          lec_fee: Number(lec_fee) || 0,
-          lab_fee: Number(lab_fee) || 0,
-          iscomputer_lab: Number(iscomputer_lab),
-          islaboratory_fee: Number(islaboratory_fee),
-          is_nstp: Number(is_nstp),
-        });
+        await axios.put(
+          `${API_BASE_URL}/program_tagging/${editingId}`,
+          {
+            curriculum_id,
+            year_level_id,
+            semester_id,
+            course_id,
+            lec_fee: Number(lec_fee) || 0,
+            lab_fee: Number(lab_fee) || 0,
+            iscomputer_lab: Number(iscomputer_lab),
+            islaboratory_fee: Number(islaboratory_fee),
+            is_nstp: Number(is_nstp),
+          },
+          getPermissionHeaders(),
+        );
 
         // 🔥 Update state locally instead of refetch
-        setTaggedPrograms(prev =>
-          prev.map(p =>
+        setTaggedPrograms((prev) =>
+          prev.map((p) =>
             p.program_tagging_id === editingId
               ? {
-                ...p,
-                ...progTag,
-              }
-              : p
-          )
+                  ...p,
+                  ...progTag,
+                }
+              : p,
+          ),
         );
 
         fetchTaggedPrograms();
 
-        setSnackbar({
-          open: true,
-          message: "Program tag updated successfully!",
-          severity: "success",
-        });
+        showSnackbar("Program tag updated successfully!", "success");
       } else {
         // ✅ Insert new program tag
-        const { data } = await axios.post(`${API_BASE_URL}/program_tagging`, {
-          curriculum_id,
-          year_level_id,
-          semester_id,
-          course_id,
-          lec_fee: Number(lec_fee) || 0,
-          lab_fee: Number(lab_fee) || 0,
-          iscomputer_lab: Number(iscomputer_lab),
-          islaboratory_fee: Number(islaboratory_fee),
-          is_nstp: Number(is_nstp),
-        });
+        const { data } = await axios.post(
+          `${API_BASE_URL}/program_tagging`,
+          {
+            curriculum_id,
+            year_level_id,
+            semester_id,
+            course_id,
+            lec_fee: Number(lec_fee) || 0,
+            lab_fee: Number(lab_fee) || 0,
+            iscomputer_lab: Number(iscomputer_lab),
+            islaboratory_fee: Number(islaboratory_fee),
+            is_nstp: Number(is_nstp),
+          },
+          getPermissionHeaders(),
+        );
 
         // 🔥 Add new tag to state immediately
         setTaggedPrograms((prev) => [
@@ -442,11 +500,7 @@ const ProgramTagging = () => {
         ]);
 
         fetchTaggedPrograms();
-        setSnackbar({
-          open: true,
-          message: "Program tag inserted successfully!",
-          severity: "success",
-        });
+        showSnackbar("Program tag inserted successfully!", "success");
       }
 
       // ✅ Reset form
@@ -464,17 +518,13 @@ const ProgramTagging = () => {
       });
 
       setEditingId(null);
+      return true;
     } catch (err) {
       console.error(err);
-      setSnackbar({
-        open: true,
-        message: err.response?.data?.error || "Error saving data.",
-        severity: "error",
-      });
+      showSnackbar(err.response?.data?.error || "Error saving data.", "error");
+      return false;
     }
   };
-
-
 
   const handleEdit = (program) => {
     setEditingId(program.program_tagging_id);
@@ -490,9 +540,7 @@ const ProgramTagging = () => {
       islaboratory_fee: program.islaboratory_fee ?? 0,
       is_nstp: program.is_nstp ?? 0,
       amount: program.amount ?? 0,
-
     });
-
   };
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
   const [deleteId, setDeleteId] = useState(null);
@@ -503,59 +551,74 @@ const ProgramTagging = () => {
   const [deleteAllFilter, setDeleteAllFilter] = useState(null);
 
   const handleDeleteAllTagged = async () => {
+    if (!employeeID) {
+      showSnackbar("Employee ID is required to continue.", "error");
+      return;
+    }
+
+    if (!canDelete) {
+      showSnackbar("You do not have permission to delete this item.", "error");
+      return;
+    }
+
     if (!deleteAllFilter) return;
 
     try {
       await axios.delete(`${API_BASE_URL}/program_tagging/delete_all`, {
-        data: deleteAllFilter, // send filter as body
+        ...getPermissionHeaders(),
+        data: deleteAllFilter,
       });
 
       // Remove from frontend state immediately
-      setTaggedPrograms(prev =>
-        prev.filter(p =>
-          !(
-            Number(p.curriculum_id) === Number(deleteAllFilter.curriculum_id) &&
-            Number(p.year_level_id) === Number(deleteAllFilter.year_level_id) &&
-            Number(p.semester_id) === Number(deleteAllFilter.semester_id)
-          )
-        )
+      setTaggedPrograms((prev) =>
+        prev.filter(
+          (p) =>
+            !(
+              Number(p.curriculum_id) ===
+                Number(deleteAllFilter.curriculum_id) &&
+              Number(p.year_level_id) ===
+                Number(deleteAllFilter.year_level_id) &&
+              Number(p.semester_id) === Number(deleteAllFilter.semester_id)
+            ),
+        ),
       );
 
-      setSnackbar({
-        open: true,
-        message: "All matching program tags deleted successfully!",
-        severity: "success",
-      });
-
+      showSnackbar(
+        "All matching program tags deleted successfully!",
+        "success",
+      );
     } catch (err) {
-      setSnackbar({
-        open: true,
-        message: "Error deleting all tagged programs.",
-        severity: "error",
-      });
+      showSnackbar("Error deleting all tagged programs.", "error");
     }
   };
 
-
   const handleDelete = async (id) => {
-    try {
-      await axios.delete(`${API_BASE_URL}/program_tagging/${id}`);
+    if (!employeeID) {
+      showSnackbar("Employee ID is required to continue.", "error");
+      return;
+    }
 
-      setTaggedPrograms(prev =>
-        prev.filter(p => p.program_tagging_id !== id)
+    if (!canDelete) {
+      showSnackbar("You do not have permission to delete this item.", "error");
+      return;
+    }
+
+    try {
+      await axios.delete(
+        `${API_BASE_URL}/program_tagging/${id}`,
+        getPermissionHeaders(),
       );
 
-      setSnackbar({
-        open: true,
-        message: "Program tag deleted successfully!",
-        severity: "success",
-      });
+      setTaggedPrograms((prev) =>
+        prev.filter((p) => p.program_tagging_id !== id),
+      );
+
+      showSnackbar("Program tag deleted successfully!", "success");
     } catch (err) {
-      setSnackbar({
-        open: true,
-        message: "Error deleting program tag.",
-        severity: "error",
-      });
+      showSnackbar(
+        err.response?.data?.error || "Error deleting program tag.",
+        "error",
+      );
     }
   };
 
@@ -563,35 +626,49 @@ const ProgramTagging = () => {
     const file = event.target.files?.[0];
     if (!file) return;
 
+    if (!employeeID) {
+      showSnackbar("Employee ID is required to continue.", "error");
+      event.target.value = "";
+      return;
+    }
+
+    if (!canCreate) {
+      showSnackbar(
+        "You do not have permission to create items on this page.",
+        "error",
+      );
+      event.target.value = "";
+      return;
+    }
+
     try {
       setImportingXlsx(true);
       const formData = new FormData();
       formData.append("file", file);
 
-      const response = await axios.post(`${API_BASE_URL}/import-program-tagging-xlsx`, formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
+      const response = await axios.post(
+        `${API_BASE_URL}/import-program-tagging-xlsx`,
+        formData,
+        getPermissionHeaders({ "Content-Type": "multipart/form-data" }),
+      );
 
       if (response.data?.success) {
-        setSnackbar({
-          open: true,
-          message: response.data.message || "Program tagging import completed.",
-          severity: "success",
-        });
+        showSnackbar(
+          response.data.message || "Program tagging import completed.",
+          "success",
+        );
         fetchTaggedPrograms();
       } else {
-        setSnackbar({
-          open: true,
-          message: response.data?.error || "Program tagging import failed.",
-          severity: "error",
-        });
+        showSnackbar(
+          response.data?.error || "Program tagging import failed.",
+          "error",
+        );
       }
     } catch (error) {
-      setSnackbar({
-        open: true,
-        message: error.response?.data?.error || "Program tagging import failed.",
-        severity: "error",
-      });
+      showSnackbar(
+        error.response?.data?.error || "Program tagging import failed.",
+        "error",
+      );
     } finally {
       setImportingXlsx(false);
       event.target.value = "";
@@ -604,7 +681,7 @@ const ProgramTagging = () => {
   // total pages (cap at 100 like your original)
   const totalPages = Math.min(
     100,
-    Math.ceil(filteredPrograms.length / itemsPerPage)
+    Math.ceil(filteredPrograms.length / itemsPerPage),
   );
 
   const indexOfLastItem = currentPage * itemsPerPage;
@@ -612,26 +689,27 @@ const ProgramTagging = () => {
 
   const currentPrograms = filteredPrograms.slice(
     indexOfFirstItem,
-    indexOfLastItem
+    indexOfLastItem,
   );
 
   useEffect(() => {
     setCurrentPage(1);
   }, [searchQuery, selectedCurriculum, selectedYearLevel, selectedSemester]);
 
-
   const [selectedCampus, setSelectedCampus] = useState("");
   const [selectedAcademicProgram, setSelectedAcademicProgram] = useState("");
 
   const getBranchLabel = (branchId) => {
-    const branch = branches.find((item) => Number(item.id) === Number(branchId));
+    const branch = branches.find(
+      (item) => Number(item.id) === Number(branchId),
+    );
     return branch?.branch || "�";
   };
 
   const filteredCurriculumList = Array.from(
     new Map(
       curriculumList
-        .filter(item => {
+        .filter((item) => {
           if (selectedCampus !== "") {
             if (Number(item.components) !== Number(selectedCampus))
               return false;
@@ -639,16 +717,15 @@ const ProgramTagging = () => {
 
           if (selectedAcademicProgram !== "") {
             if (
-              Number(item.academic_program) !==
-              Number(selectedAcademicProgram)
+              Number(item.academic_program) !== Number(selectedAcademicProgram)
             )
               return false;
           }
 
           return true;
         })
-        .map(item => [item.curriculum_id, item])
-    ).values()
+        .map((item) => [item.curriculum_id, item]),
+    ).values(),
   );
 
   const formatSchoolYear = (yearDesc) => {
@@ -657,7 +734,6 @@ const ProgramTagging = () => {
     if (isNaN(startYear)) return yearDesc;
     return `${startYear} - ${startYear + 1}`;
   };
-
 
   if (loading || hasAccess === null) {
     return <LoadingOverlay open={loading} message="Loading..." />;
@@ -668,7 +744,16 @@ const ProgramTagging = () => {
   }
 
   return (
-    <Box sx={{ height: "calc(100vh - 150px)", overflowY: "auto", paddingRight: 1, backgroundColor: "transparent", mt: 1, padding: 2 }}>
+    <Box
+      sx={{
+        height: "calc(100vh - 150px)",
+        overflowY: "auto",
+        paddingRight: 1,
+        backgroundColor: "transparent",
+        mt: 1,
+        padding: 2,
+      }}
+    >
       <Box
         sx={{
           display: "flex",
@@ -684,7 +769,15 @@ const ProgramTagging = () => {
           PROGRAM AND COURSE MANAGEMENT
         </Typography>
 
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap", justifyContent: "flex-end" }}>
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            gap: 1,
+            flexWrap: "wrap",
+            justifyContent: "flex-end",
+          }}
+        >
           <TextField
             variant="outlined"
             placeholder="Search Curriculum / Course / Year / Semester"
@@ -715,8 +808,17 @@ const ProgramTagging = () => {
           <Button
             variant="contained"
             onClick={() => importInputRef.current?.click()}
-            disabled={importingXlsx}
-            sx={{ height: 40, textTransform: "none", fontWeight: "bold", minWidth: 210 }}
+            disabled={importingXlsx || !canCreate}
+            sx={{
+              height: 40,
+              textTransform: "none",
+              fontWeight: "bold",
+              minWidth: 210,
+              "&.Mui-disabled": {
+                backgroundColor: "#C9C9C9",
+                color: "#666666",
+              },
+            }}
           >
             <FaFileExcel style={{ marginRight: 8 }} />
             {importingXlsx ? "Importing..." : "Import Program Tagging"}
@@ -726,46 +828,60 @@ const ProgramTagging = () => {
               window.location.href = `${API_BASE_URL}/program_tagging_template`;
             }}
             sx={{
-              height: 40, color: "black", border: "2px solid black",
-              backgroundColor: "#f0f0f0", textTransform: "none", fontWeight: "bold", minWidth: 165
+              height: 40,
+              color: "black",
+              border: "2px solid black",
+              backgroundColor: "#f0f0f0",
+              textTransform: "none",
+              fontWeight: "bold",
+              minWidth: 165,
             }}
           >
             📥 Download Template
           </Button>
         </Box>
-
-
       </Box>
 
       <hr style={{ border: "1px solid #ccc", width: "100%" }} />
       <br />
 
       <div style={styles.container}>
-
-
-
-
-
-        <TableContainer component={Paper} sx={{ width: '100%', border: `1px solid ${borderColor}`, mb: "-30px" }}>
+        <TableContainer
+          component={Paper}
+          sx={{
+            width: "100%",
+            border: `1px solid ${borderColor}`,
+            mb: "-30px",
+          }}
+        >
           <Table>
-            <TableHead sx={{ backgroundColor: settings?.header_color || "#1976d2", }}>
+            <TableHead
+              sx={{ backgroundColor: settings?.header_color || "#1976d2" }}
+            >
               <TableRow>
                 <Box
                   sx={{
                     display: "flex",
                     justifyContent: "space-between",
                     alignItems: "center",
-                    width: "100%"
+                    width: "100%",
                   }}
                 >
                   <TableCell sx={{ color: "white", textAlign: "center" }}>
                     Existing Schedules
                   </TableCell>
 
-
                   <Button
                     variant="contained"
                     onClick={() => {
+                      if (!canCreate) {
+                        showSnackbar(
+                          "You do not have permission to create items on this page.",
+                          "error",
+                        );
+                        return;
+                      }
+
                       setEditingId(null);
 
                       setProgTag({
@@ -783,6 +899,7 @@ const ProgramTagging = () => {
 
                       setOpenFormDialog(true);
                     }}
+                    disabled={!canCreate}
                     sx={{
                       backgroundColor: "#1976d2", // ✅ Blue
                       color: "#fff",
@@ -792,9 +909,13 @@ const ProgramTagging = () => {
                       textTransform: "none",
                       px: 2,
                       mr: "15px",
-                      '&:hover': {
-                        backgroundColor: "#1565c0" // darker blue hover
-                      }
+                      "&:hover": {
+                        backgroundColor: "#1565c0", // darker blue hover
+                      },
+                      "&.Mui-disabled": {
+                        backgroundColor: "#C9C9C9",
+                        color: "#666666",
+                      },
                     }}
                   >
                     + Insert Program Tag
@@ -804,27 +925,29 @@ const ProgramTagging = () => {
             </TableHead>
           </Table>
         </TableContainer>
-        <div style={{ ...styles.displaySection, border: `1px solid ${borderColor}` }}>
+        <div
+          style={{
+            ...styles.displaySection,
+            border: `1px solid ${borderColor}`,
+          }}
+        >
           <ProgramTaggingFilter
             curriculumList={curriculumList}
             yearLevelList={yearLevelList}
             semesterList={semesterList}
             taggedPrograms={taggedPrograms}
-
             selectedCurriculum={selectedCurriculum}
             selectedYearLevel={selectedYearLevel}
             selectedSemester={selectedSemester}
-
             setSelectedCurriculum={setSelectedCurriculum}
             setSelectedYearLevel={setSelectedYearLevel}
             setSelectedSemester={setSelectedSemester}
-
             setFilteredPrograms={setFilteredPrograms}
           />
 
-          <TableContainer component={Paper} sx={{ width: '100%', mt: 4 }}>
+          <TableContainer component={Paper} sx={{ width: "100%", mt: 4 }}>
             <Table size="small">
-              <TableHead sx={{ backgroundColor: '#6D2323', color: "white" }}>
+              <TableHead sx={{ backgroundColor: "#6D2323", color: "white" }}>
                 <TableRow>
                   <TableCell
                     colSpan={10}
@@ -843,12 +966,21 @@ const ProgramTagging = () => {
                       gap={1}
                     >
                       {/* Left side: Total Tagged Programs */}
-                      <Typography fontSize="14px" fontWeight="bold" color="white">
+                      <Typography
+                        fontSize="14px"
+                        fontWeight="bold"
+                        color="white"
+                      >
                         Total Tagged Programs: {filteredPrograms.length}
                       </Typography>
 
                       {/* Right side: Pagination / Filtering Controls */}
-                      <Box display="flex" alignItems="center" gap={1} flexWrap="wrap">
+                      <Box
+                        display="flex"
+                        alignItems="center"
+                        gap={1}
+                        flexWrap="wrap"
+                      >
                         <Button
                           onClick={() => setCurrentPage(1)}
                           disabled={currentPage === 1}
@@ -859,23 +991,25 @@ const ProgramTagging = () => {
                             color: "white",
                             borderColor: "white",
                             backgroundColor: "transparent",
-                            '&:hover': {
-                              borderColor: 'white',
-                              backgroundColor: 'rgba(255,255,255,0.1)',
+                            "&:hover": {
+                              borderColor: "white",
+                              backgroundColor: "rgba(255,255,255,0.1)",
                             },
-                            '&.Mui-disabled': {
+                            "&.Mui-disabled": {
                               color: "white",
                               borderColor: "white",
                               backgroundColor: "transparent",
                               opacity: 1,
-                            }
+                            },
                           }}
                         >
                           First
                         </Button>
 
                         <Button
-                          onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                          onClick={() =>
+                            setCurrentPage((prev) => Math.max(prev - 1, 1))
+                          }
                           disabled={currentPage === 1}
                           variant="outlined"
                           size="small"
@@ -884,16 +1018,16 @@ const ProgramTagging = () => {
                             color: "white",
                             borderColor: "white",
                             backgroundColor: "transparent",
-                            '&:hover': {
-                              borderColor: 'white',
-                              backgroundColor: 'rgba(255,255,255,0.1)',
+                            "&:hover": {
+                              borderColor: "white",
+                              backgroundColor: "rgba(255,255,255,0.1)",
                             },
-                            '&.Mui-disabled': {
+                            "&.Mui-disabled": {
                               color: "white",
                               borderColor: "white",
                               backgroundColor: "transparent",
                               opacity: 1,
-                            }
+                            },
                           }}
                         >
                           Prev
@@ -903,21 +1037,30 @@ const ProgramTagging = () => {
                         <FormControl size="small" sx={{ minWidth: 80 }}>
                           <Select
                             value={currentPage}
-                            onChange={(e) => setCurrentPage(Number(e.target.value))}
+                            onChange={(e) =>
+                              setCurrentPage(Number(e.target.value))
+                            }
                             displayEmpty
                             sx={{
-                              fontSize: '12px',
+                              fontSize: "12px",
                               height: 36,
-                              color: 'white',
-                              border: '1px solid white',
-                              backgroundColor: 'transparent',
-                              '.MuiOutlinedInput-notchedOutline': { borderColor: 'white' },
-                              '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: 'white' },
-                              '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: 'white' },
-                              '& svg': { color: 'white' }
+                              color: "white",
+                              border: "1px solid white",
+                              backgroundColor: "transparent",
+                              ".MuiOutlinedInput-notchedOutline": {
+                                borderColor: "white",
+                              },
+                              "&:hover .MuiOutlinedInput-notchedOutline": {
+                                borderColor: "white",
+                              },
+                              "&.Mui-focused .MuiOutlinedInput-notchedOutline":
+                                { borderColor: "white" },
+                              "& svg": { color: "white" },
                             }}
                             MenuProps={{
-                              PaperProps: { sx: { maxHeight: 200, backgroundColor: '#fff' } }
+                              PaperProps: {
+                                sx: { maxHeight: 200, backgroundColor: "#fff" },
+                              },
                             }}
                           >
                             {Array.from({ length: totalPages }, (_, i) => (
@@ -929,11 +1072,15 @@ const ProgramTagging = () => {
                         </FormControl>
 
                         <Typography fontSize="11px" color="white">
-                          of {totalPages} page{totalPages > 1 ? 's' : ''}
+                          of {totalPages} page{totalPages > 1 ? "s" : ""}
                         </Typography>
 
                         <Button
-                          onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                          onClick={() =>
+                            setCurrentPage((prev) =>
+                              Math.min(prev + 1, totalPages),
+                            )
+                          }
                           disabled={currentPage === totalPages}
                           variant="outlined"
                           size="small"
@@ -942,8 +1089,16 @@ const ProgramTagging = () => {
                             color: "white",
                             borderColor: "white",
                             backgroundColor: "transparent",
-                            '&:hover': { borderColor: 'white', backgroundColor: 'rgba(255,255,255,0.1)' },
-                            '&.Mui-disabled': { color: "white", borderColor: "white", backgroundColor: "transparent", opacity: 1 }
+                            "&:hover": {
+                              borderColor: "white",
+                              backgroundColor: "rgba(255,255,255,0.1)",
+                            },
+                            "&.Mui-disabled": {
+                              color: "white",
+                              borderColor: "white",
+                              backgroundColor: "transparent",
+                              opacity: 1,
+                            },
                           }}
                         >
                           Next
@@ -959,8 +1114,16 @@ const ProgramTagging = () => {
                             color: "white",
                             borderColor: "white",
                             backgroundColor: "transparent",
-                            '&:hover': { borderColor: 'white', backgroundColor: 'rgba(255,255,255,0.1)' },
-                            '&.Mui-disabled': { color: "white", borderColor: "white", backgroundColor: "transparent", opacity: 1 }
+                            "&:hover": {
+                              borderColor: "white",
+                              backgroundColor: "rgba(255,255,255,0.1)",
+                            },
+                            "&.Mui-disabled": {
+                              color: "white",
+                              borderColor: "white",
+                              backgroundColor: "transparent",
+                              opacity: 1,
+                            },
                           }}
                         >
                           Last
@@ -975,11 +1138,8 @@ const ProgramTagging = () => {
 
           <div>
             {taggedPrograms.length > 0 ? (
-
               <table style={{ ...styles.table, mt: "-15px", mb: 4 }}>
-
                 <thead>
-
                   <tr>
                     <th
                       style={{
@@ -988,12 +1148,11 @@ const ProgramTagging = () => {
                         border: `1px solid ${borderColor}`,
                         color: "black",
                         textAlign: "center",
-                        fontSize: "13px"
+                        fontSize: "13px",
                       }}
                     >
                       #
                     </th>
-
 
                     <th
                       style={{
@@ -1002,7 +1161,7 @@ const ProgramTagging = () => {
                         border: `1px solid ${borderColor}`,
                         color: "black",
                         textAlign: "center",
-                        fontSize: "13px"
+                        fontSize: "13px",
                       }}
                     >
                       Curriculum
@@ -1014,7 +1173,7 @@ const ProgramTagging = () => {
                         border: `1px solid ${borderColor}`,
                         color: "black",
                         textAlign: "center",
-                        fontSize: "13px"
+                        fontSize: "13px",
                       }}
                     >
                       Course
@@ -1026,7 +1185,7 @@ const ProgramTagging = () => {
                         border: `1px solid ${borderColor}`,
                         color: "black",
                         textAlign: "center",
-                        fontSize: "13px"
+                        fontSize: "13px",
                       }}
                     >
                       Year Level
@@ -1038,7 +1197,7 @@ const ProgramTagging = () => {
                         border: `1px solid ${borderColor}`,
                         color: "black",
                         textAlign: "center",
-                        fontSize: "13px"
+                        fontSize: "13px",
                       }}
                     >
                       Semester
@@ -1051,7 +1210,7 @@ const ProgramTagging = () => {
                         border: `1px solid ${borderColor}`,
                         color: "black",
                         textAlign: "center",
-                        fontSize: "13px"
+                        fontSize: "13px",
                       }}
                     >
                       Lec Fee
@@ -1063,7 +1222,7 @@ const ProgramTagging = () => {
                         border: `1px solid ${borderColor}`,
                         color: "black",
                         textAlign: "center",
-                        fontSize: "13px"
+                        fontSize: "13px",
                       }}
                     >
                       Lab Fee
@@ -1075,7 +1234,7 @@ const ProgramTagging = () => {
                         border: `1px solid ${borderColor}`,
                         color: "black",
                         textAlign: "center",
-                        fontSize: "13px"
+                        fontSize: "13px",
                       }}
                     >
                       Computer Fee
@@ -1087,7 +1246,7 @@ const ProgramTagging = () => {
                         border: `1px solid ${borderColor}`,
                         color: "black",
                         textAlign: "center",
-                        fontSize: "13px"
+                        fontSize: "13px",
                       }}
                     >
                       Laboratory Fee
@@ -1099,7 +1258,7 @@ const ProgramTagging = () => {
                         border: `1px solid ${borderColor}`,
                         color: "black",
                         textAlign: "center",
-                        fontSize: "13px"
+                        fontSize: "13px",
                       }}
                     >
                       NSTP Fee
@@ -1111,7 +1270,7 @@ const ProgramTagging = () => {
                         border: `1px solid ${borderColor}`,
                         color: "black",
                         textAlign: "center",
-                        fontSize: "13px"
+                        fontSize: "13px",
                       }}
                     >
                       Actions
@@ -1120,43 +1279,110 @@ const ProgramTagging = () => {
                 </thead>
                 <tbody>
                   {currentPrograms.map((program, index) => (
-
                     <tr key={program.program_tagging_id}>
-                      <td style={{ ...styles.td, border: `1px solid ${borderColor}`, fontSize: "13px" }}>
+                      <td
+                        style={{
+                          ...styles.td,
+                          border: `1px solid ${borderColor}`,
+                          fontSize: "13px",
+                        }}
+                      >
                         {indexOfFirstItem + index + 1}
                       </td>
-                      <td style={{ ...styles.td, border: `1px solid ${borderColor}`, fontSize: "13px" }}>
-                        {formatSchoolYear(program.year_description)}  ({program.program_code}) – {program.curriculum_description}
+                      <td
+                        style={{
+                          ...styles.td,
+                          border: `1px solid ${borderColor}`,
+                          fontSize: "13px",
+                        }}
+                      >
+                        {formatSchoolYear(program.year_description)} (
+                        {program.program_code}) –{" "}
+                        {program.curriculum_description}
                         {program.major ? ` (${program.major})` : ""}
                       </td>
 
-
-
-                      <td style={{ ...styles.td, border: `1px solid ${borderColor}`, fontSize: "13px" }}>
-                        ({program.course_code}) - {program.course_description} - ({program.prereq})
+                      <td
+                        style={{
+                          ...styles.td,
+                          border: `1px solid ${borderColor}`,
+                          fontSize: "13px",
+                        }}
+                      >
+                        ({program.course_code}) - {program.course_description} -
+                        ({program.prereq})
                       </td>
-                      <td style={{ ...styles.td, border: `1px solid ${borderColor}`, textAlign: "center", fontSize: "13px" }}>
+                      <td
+                        style={{
+                          ...styles.td,
+                          border: `1px solid ${borderColor}`,
+                          textAlign: "center",
+                          fontSize: "13px",
+                        }}
+                      >
                         {program.year_level_description}
                       </td>
-                      <td style={{ ...styles.td, border: `1px solid ${borderColor}`, textAlign: "center", fontSize: "13px" }}>
+                      <td
+                        style={{
+                          ...styles.td,
+                          border: `1px solid ${borderColor}`,
+                          textAlign: "center",
+                          fontSize: "13px",
+                        }}
+                      >
                         {program.semester_description}
                       </td>
-                      <td style={{ ...styles.td, border: `1px solid ${borderColor}`, textAlign: "center", fontSize: "13px" }}>
+                      <td
+                        style={{
+                          ...styles.td,
+                          border: `1px solid ${borderColor}`,
+                          textAlign: "center",
+                          fontSize: "13px",
+                        }}
+                      >
                         {program.lec_fee ?? "—"}
                       </td>
-                      <td style={{ ...styles.td, border: `1px solid ${borderColor}`, textAlign: "center", fontSize: "13px" }}>
+                      <td
+                        style={{
+                          ...styles.td,
+                          border: `1px solid ${borderColor}`,
+                          textAlign: "center",
+                          fontSize: "13px",
+                        }}
+                      >
                         {program.lab_fee ?? "—"}
                       </td>
 
-                      <td style={{ ...styles.td, border: `1px solid ${borderColor}`, textAlign: "center", fontSize: "13px" }}>
+                      <td
+                        style={{
+                          ...styles.td,
+                          border: `1px solid ${borderColor}`,
+                          textAlign: "center",
+                          fontSize: "13px",
+                        }}
+                      >
                         {Number(program.iscomputer_lab) === 1 ? "Yes" : "No"}
                       </td>
 
-                      <td style={{ ...styles.td, border: `1px solid ${borderColor}`, textAlign: "center", fontSize: "13px" }}>
+                      <td
+                        style={{
+                          ...styles.td,
+                          border: `1px solid ${borderColor}`,
+                          textAlign: "center",
+                          fontSize: "13px",
+                        }}
+                      >
                         {Number(program.islaboratory_fee) === 1 ? "Yes" : "No"}
                       </td>
 
-                      <td style={{ ...styles.td, border: `1px solid ${borderColor}`, textAlign: "center", fontSize: "13px" }}>
+                      <td
+                        style={{
+                          ...styles.td,
+                          border: `1px solid ${borderColor}`,
+                          textAlign: "center",
+                          fontSize: "13px",
+                        }}
+                      >
                         {Number(program.is_nstp) === 1 ? "Yes" : "No"}
                       </td>
 
@@ -1184,11 +1410,20 @@ const ProgramTagging = () => {
                             display: "flex",
                             gap: "6px",
                             justifyContent: "center",
-                            alignItems: "center"
+                            alignItems: "center",
                           }}
                         >
                           <button
+                            disabled={!canEdit}
                             onClick={() => {
+                              if (!canEdit) {
+                                showSnackbar(
+                                  "You do not have permission to edit this item.",
+                                  "error",
+                                );
+                                return;
+                              }
+
                               handleEdit(program);
                               setOpenFormDialog(true);
                             }}
@@ -1197,20 +1432,30 @@ const ProgramTagging = () => {
                               color: "white",
                               border: "none",
                               borderRadius: "5px",
-                              cursor: "pointer",
+                              cursor: canEdit ? "pointer" : "not-allowed",
                               width: "100px",
                               height: "40px",
                               display: "flex",
                               alignItems: "center",
                               justifyContent: "center",
                               gap: "5px",
+                              opacity: canEdit ? 1 : 0.6,
                             }}
                           >
                             <EditIcon fontSize="small" /> Edit
                           </button>
 
                           <button
+                            disabled={!canDelete}
                             onClick={() => {
+                              if (!canDelete) {
+                                showSnackbar(
+                                  "You do not have permission to delete this item.",
+                                  "error",
+                                );
+                                return;
+                              }
+
                               setDeleteId(program.program_tagging_id);
                               setProgramToDelete(program);
                               setOpenDeleteDialog(true);
@@ -1221,12 +1466,13 @@ const ProgramTagging = () => {
                               border: "none",
                               borderRadius: "5px",
                               height: "40px",
-                              cursor: "pointer",
+                              cursor: canDelete ? "pointer" : "not-allowed",
                               width: "100px",
                               display: "flex",
                               alignItems: "center",
                               justifyContent: "center",
                               gap: "5px",
+                              opacity: canDelete ? 1 : 0.6,
                             }}
                           >
                             <DeleteIcon fontSize="small" /> Delete
@@ -1236,18 +1482,14 @@ const ProgramTagging = () => {
                     </tr>
                   ))}
                 </tbody>
-
-
               </table>
-
-
             ) : (
               <p>No tagged programs available.</p>
             )}
 
-            <TableContainer component={Paper} sx={{ width: '100%', mb: 4 }}>
+            <TableContainer component={Paper} sx={{ width: "100%", mb: 4 }}>
               <Table size="small">
-                <TableHead sx={{ backgroundColor: '#6D2323', color: "white" }}>
+                <TableHead sx={{ backgroundColor: "#6D2323", color: "white" }}>
                   <TableRow>
                     <TableCell
                       colSpan={10}
@@ -1266,12 +1508,21 @@ const ProgramTagging = () => {
                         gap={1}
                       >
                         {/* Left side: Total Tagged Programs */}
-                        <Typography fontSize="14px" fontWeight="bold" color="white">
+                        <Typography
+                          fontSize="14px"
+                          fontWeight="bold"
+                          color="white"
+                        >
                           Total Tagged Programs: {filteredPrograms.length}
                         </Typography>
 
                         {/* Right side: Pagination / Filtering Controls */}
-                        <Box display="flex" alignItems="center" gap={1} flexWrap="wrap">
+                        <Box
+                          display="flex"
+                          alignItems="center"
+                          gap={1}
+                          flexWrap="wrap"
+                        >
                           <Button
                             onClick={() => setCurrentPage(1)}
                             disabled={currentPage === 1}
@@ -1282,23 +1533,25 @@ const ProgramTagging = () => {
                               color: "white",
                               borderColor: "white",
                               backgroundColor: "transparent",
-                              '&:hover': {
-                                borderColor: 'white',
-                                backgroundColor: 'rgba(255,255,255,0.1)',
+                              "&:hover": {
+                                borderColor: "white",
+                                backgroundColor: "rgba(255,255,255,0.1)",
                               },
-                              '&.Mui-disabled': {
+                              "&.Mui-disabled": {
                                 color: "white",
                                 borderColor: "white",
                                 backgroundColor: "transparent",
                                 opacity: 1,
-                              }
+                              },
                             }}
                           >
                             First
                           </Button>
 
                           <Button
-                            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                            onClick={() =>
+                              setCurrentPage((prev) => Math.max(prev - 1, 1))
+                            }
                             disabled={currentPage === 1}
                             variant="outlined"
                             size="small"
@@ -1307,16 +1560,16 @@ const ProgramTagging = () => {
                               color: "white",
                               borderColor: "white",
                               backgroundColor: "transparent",
-                              '&:hover': {
-                                borderColor: 'white',
-                                backgroundColor: 'rgba(255,255,255,0.1)',
+                              "&:hover": {
+                                borderColor: "white",
+                                backgroundColor: "rgba(255,255,255,0.1)",
                               },
-                              '&.Mui-disabled': {
+                              "&.Mui-disabled": {
                                 color: "white",
                                 borderColor: "white",
                                 backgroundColor: "transparent",
                                 opacity: 1,
-                              }
+                              },
                             }}
                           >
                             Prev
@@ -1326,21 +1579,33 @@ const ProgramTagging = () => {
                           <FormControl size="small" sx={{ minWidth: 80 }}>
                             <Select
                               value={currentPage}
-                              onChange={(e) => setCurrentPage(Number(e.target.value))}
+                              onChange={(e) =>
+                                setCurrentPage(Number(e.target.value))
+                              }
                               displayEmpty
                               sx={{
-                                fontSize: '12px',
+                                fontSize: "12px",
                                 height: 36,
-                                color: 'white',
-                                border: '1px solid white',
-                                backgroundColor: 'transparent',
-                                '.MuiOutlinedInput-notchedOutline': { borderColor: 'white' },
-                                '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: 'white' },
-                                '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: 'white' },
-                                '& svg': { color: 'white' }
+                                color: "white",
+                                border: "1px solid white",
+                                backgroundColor: "transparent",
+                                ".MuiOutlinedInput-notchedOutline": {
+                                  borderColor: "white",
+                                },
+                                "&:hover .MuiOutlinedInput-notchedOutline": {
+                                  borderColor: "white",
+                                },
+                                "&.Mui-focused .MuiOutlinedInput-notchedOutline":
+                                  { borderColor: "white" },
+                                "& svg": { color: "white" },
                               }}
                               MenuProps={{
-                                PaperProps: { sx: { maxHeight: 200, backgroundColor: '#fff' } }
+                                PaperProps: {
+                                  sx: {
+                                    maxHeight: 200,
+                                    backgroundColor: "#fff",
+                                  },
+                                },
                               }}
                             >
                               {Array.from({ length: totalPages }, (_, i) => (
@@ -1352,11 +1617,15 @@ const ProgramTagging = () => {
                           </FormControl>
 
                           <Typography fontSize="11px" color="white">
-                            of {totalPages} page{totalPages > 1 ? 's' : ''}
+                            of {totalPages} page{totalPages > 1 ? "s" : ""}
                           </Typography>
 
                           <Button
-                            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                            onClick={() =>
+                              setCurrentPage((prev) =>
+                                Math.min(prev + 1, totalPages),
+                              )
+                            }
                             disabled={currentPage === totalPages}
                             variant="outlined"
                             size="small"
@@ -1365,8 +1634,16 @@ const ProgramTagging = () => {
                               color: "white",
                               borderColor: "white",
                               backgroundColor: "transparent",
-                              '&:hover': { borderColor: 'white', backgroundColor: 'rgba(255,255,255,0.1)' },
-                              '&.Mui-disabled': { color: "white", borderColor: "white", backgroundColor: "transparent", opacity: 1 }
+                              "&:hover": {
+                                borderColor: "white",
+                                backgroundColor: "rgba(255,255,255,0.1)",
+                              },
+                              "&.Mui-disabled": {
+                                color: "white",
+                                borderColor: "white",
+                                backgroundColor: "transparent",
+                                opacity: 1,
+                              },
                             }}
                           >
                             Next
@@ -1382,8 +1659,16 @@ const ProgramTagging = () => {
                               color: "white",
                               borderColor: "white",
                               backgroundColor: "transparent",
-                              '&:hover': { borderColor: 'white', backgroundColor: 'rgba(255,255,255,0.1)' },
-                              '&.Mui-disabled': { color: "white", borderColor: "white", backgroundColor: "transparent", opacity: 1 }
+                              "&:hover": {
+                                borderColor: "white",
+                                backgroundColor: "rgba(255,255,255,0.1)",
+                              },
+                              "&.Mui-disabled": {
+                                color: "white",
+                                borderColor: "white",
+                                backgroundColor: "transparent",
+                                opacity: 1,
+                              },
                             }}
                           >
                             Last
@@ -1396,10 +1681,7 @@ const ProgramTagging = () => {
               </Table>
             </TableContainer>
           </div>
-
         </div>
-
-
       </div>
 
       <Dialog
@@ -1411,8 +1693,8 @@ const ProgramTagging = () => {
           sx: {
             borderRadius: 3,
             overflow: "hidden",
-            boxShadow: 6
-          }
+            boxShadow: 6,
+          },
         }}
       >
         {/* HEADER */}
@@ -1422,7 +1704,7 @@ const ProgramTagging = () => {
             color: "#fff",
             fontWeight: 700,
             fontSize: "1.2rem",
-            py: 2
+            py: 2,
           }}
         >
           {editingId ? "Edit Program Tag" : "Insert Program Tag"}
@@ -1431,7 +1713,6 @@ const ProgramTagging = () => {
         {/* CONTENT */}
         <DialogContent sx={{ p: 3 }}>
           <Grid container spacing={2} sx={{ mt: 1 }}>
-
             {/* CAMPUS */}
             <Grid item xs={12} md={6}>
               <Typography fontWeight={700} sx={{ mb: 1 }}>
@@ -1445,9 +1726,9 @@ const ProgramTagging = () => {
                 onChange={(e) => {
                   setSelectedCampus(e.target.value);
                   setSelectedAcademicProgram("");
-                  setProgTag(prev => ({
+                  setProgTag((prev) => ({
                     ...prev,
-                    curriculum_id: ""
+                    curriculum_id: "",
                   }));
                 }}
               >
@@ -1472,9 +1753,9 @@ const ProgramTagging = () => {
                 value={selectedAcademicProgram}
                 onChange={(e) => {
                   setSelectedAcademicProgram(e.target.value);
-                  setProgTag(prev => ({
+                  setProgTag((prev) => ({
                     ...prev,
-                    curriculum_id: ""
+                    curriculum_id: "",
                   }));
                 }}
               >
@@ -1484,8 +1765,6 @@ const ProgramTagging = () => {
                 <MenuItem value="2">Techvoc</MenuItem>
               </TextField>
             </Grid>
-
-
 
             {/* CURRICULUM */}
             <Grid item xs={12}>
@@ -1498,19 +1777,20 @@ const ProgramTagging = () => {
                 options={filteredCurriculumList}
                 value={
                   filteredCurriculumList.find(
-                    item => item.curriculum_id === progTag.curriculum_id
+                    (item) => item.curriculum_id === progTag.curriculum_id,
                   ) || null
                 }
                 onChange={(event, newValue) => {
-                  setProgTag(prev => ({
+                  setProgTag((prev) => ({
                     ...prev,
-                    curriculum_id: newValue?.curriculum_id || ""
+                    curriculum_id: newValue?.curriculum_id || "",
                   }));
                 }}
                 getOptionLabel={(option) =>
-                  `${formatSchoolYear(option.year_description)}: (${option.program_code}) ${option.program_description
+                  `${formatSchoolYear(option.year_description)}: (${option.program_code}) ${
+                    option.program_description
                   }${option.major ? ` (${option.major})` : ""} (${getBranchLabel(
-                    option.components
+                    option.components,
                   )})`
                 }
                 renderInput={(params) => (
@@ -1518,7 +1798,6 @@ const ProgramTagging = () => {
                 )}
               />
             </Grid>
-
 
             <Grid item xs={12}>
               <Typography fontWeight={700} sx={{ mb: 1 }}>
@@ -1530,7 +1809,7 @@ const ProgramTagging = () => {
                 options={courseList}
                 value={
                   courseList.find(
-                    (course) => course.course_id === progTag.course_id
+                    (course) => course.course_id === progTag.course_id,
                   ) || null
                 }
                 onChange={(event, newValue) => {
@@ -1547,14 +1826,16 @@ const ProgramTagging = () => {
 
                   return options.filter((course) => {
                     const courseCode = (course.course_code || "").toLowerCase();
-                    const courseDesc = (course.course_description || "").toLowerCase();
+                    const courseDesc = (
+                      course.course_description || ""
+                    ).toLowerCase();
                     const coursePreq = (course.prereq || "").toLowerCase();
 
                     return words.every(
                       (word) =>
                         courseCode.includes(word) ||
                         courseDesc.includes(word) ||
-                        coursePreq.includes(word)
+                        coursePreq.includes(word),
                     );
                   });
                 }}
@@ -1578,10 +1859,7 @@ const ProgramTagging = () => {
                 onChange={handleChangesForEverything}
               >
                 {yearLevelList.map((year) => (
-                  <MenuItem
-                    key={year.year_level_id}
-                    value={year.year_level_id}
-                  >
+                  <MenuItem key={year.year_level_id} value={year.year_level_id}>
                     {year.year_level_description}
                   </MenuItem>
                 ))}
@@ -1648,63 +1926,69 @@ const ProgramTagging = () => {
               </Typography>
 
               <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
-                <label style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                <label
+                  style={{ display: "flex", alignItems: "center", gap: "10px" }}
+                >
                   <input
                     type="radio"
                     style={{
                       width: "25px",
                       height: "25px",
-                      cursor: "pointer"
+                      cursor: "pointer",
                     }}
                     checked={progTag.iscomputer_lab === 1}
                     onChange={() =>
-                      setProgTag(prev => ({
+                      setProgTag((prev) => ({
                         ...prev,
                         iscomputer_lab: 1,
                         islaboratory_fee: 0,
-                        is_nstp: 0
+                        is_nstp: 0,
                       }))
                     }
                   />
                   Computer Lab
                 </label>
 
-                <label style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                <label
+                  style={{ display: "flex", alignItems: "center", gap: "10px" }}
+                >
                   <input
                     type="radio"
                     style={{
                       width: "25px",
                       height: "25px",
-                      cursor: "pointer"
+                      cursor: "pointer",
                     }}
                     checked={progTag.islaboratory_fee === 1}
                     onChange={() =>
-                      setProgTag(prev => ({
+                      setProgTag((prev) => ({
                         ...prev,
                         iscomputer_lab: 0,
                         islaboratory_fee: 1,
-                        is_nstp: 0
+                        is_nstp: 0,
                       }))
                     }
                   />
                   Laboratory Fee
                 </label>
 
-                <label style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                <label
+                  style={{ display: "flex", alignItems: "center", gap: "10px" }}
+                >
                   <input
                     type="radio"
                     style={{
                       width: "25px",
                       height: "25px",
-                      cursor: "pointer"
+                      cursor: "pointer",
                     }}
                     checked={progTag.is_nstp === 1}
                     onChange={() =>
-                      setProgTag(prev => ({
+                      setProgTag((prev) => ({
                         ...prev,
                         iscomputer_lab: 0,
                         islaboratory_fee: 0,
-                        is_nstp: 1
+                        is_nstp: 1,
                       }))
                     }
                   />
@@ -1720,7 +2004,7 @@ const ProgramTagging = () => {
           sx={{
             px: 3,
             py: 2,
-            borderTop: "1px solid #e0e0e0"
+            borderTop: "1px solid #e0e0e0",
           }}
         >
           <Button
@@ -1733,15 +2017,21 @@ const ProgramTagging = () => {
 
           <Button
             variant="contained"
-            onClick={() => {
-              handleInsertingProgTag();
-              setOpenFormDialog(false);
+            disabled={editingId ? !canEdit : !canCreate}
+            onClick={async () => {
+              const isSaved = await handleInsertingProgTag();
+              if (isSaved) {
+                setOpenFormDialog(false);
+              }
             }}
             sx={{
               px: 4,
               fontWeight: 600,
               textTransform: "none",
-        
+              "&.Mui-disabled": {
+                backgroundColor: "#C9C9C9",
+                color: "#666666",
+              },
             }}
           >
             <SaveIcon fontSize="small" /> Save
@@ -1758,8 +2048,7 @@ const ProgramTagging = () => {
         <DialogContent>
           <Typography>
             Are you sure you want to delete the course{" "}
-            <b>{programToDelete?.course_description}</b>{" "}
-            from curriculum{" "}
+            <b>{programToDelete?.course_description}</b> from curriculum{" "}
             <b>{programToDelete?.curriculum_description}</b>?
           </Typography>
         </DialogContent>
@@ -1768,15 +2057,15 @@ const ProgramTagging = () => {
           <Button
             color="error"
             variant="outlined"
-
-
-            onClick={() => setOpenDeleteDialog(false)}>
+            onClick={() => setOpenDeleteDialog(false)}
+          >
             Cancel
           </Button>
 
           <Button
             color="error"
             variant="contained"
+            disabled={!canDelete}
             onClick={() => {
               handleDelete(deleteId);
               setOpenDeleteDialog(false);
@@ -1797,7 +2086,8 @@ const ProgramTagging = () => {
         <DialogContent>
           <Typography>
             Are you sure you want to delete ALL tagged courses under this:
-            <br /><br />
+            <br />
+            <br />
             <b>Curriculum ID:</b> {deleteAllFilter?.curriculum_id} <br />
             <b>Year Level:</b> {deleteAllFilter?.year_level_id} <br />
             <b>Semester:</b> {deleteAllFilter?.semester_id}
@@ -1808,14 +2098,15 @@ const ProgramTagging = () => {
           <Button
             color="error"
             variant="outlined"
-
-            onClick={() => setOpenDeleteAllDialog(false)}>
+            onClick={() => setOpenDeleteAllDialog(false)}
+          >
             Cancel
           </Button>
 
           <Button
             color="error"
             variant="contained"
+            disabled={!canDelete}
             onClick={() => {
               handleDeleteAllTagged();
               setOpenDeleteAllDialog(false);
@@ -1854,7 +2145,7 @@ const styles = {
     margin: "30px auto",
   },
   formSection: {
-    width: "100%",   // 👈 instead of minWidth: "48%"
+    width: "100%", // 👈 instead of minWidth: "48%"
     background: "#f8f8f8",
     padding: "25px",
 
@@ -1862,7 +2153,7 @@ const styles = {
   },
 
   displaySection: {
-    width: "100%",   // 👈 instead of minWidth: "48%"
+    width: "100%", // 👈 instead of minWidth: "48%"
     background: "#f8f8f8",
     padding: "25px",
 
@@ -1889,7 +2180,6 @@ const styles = {
     width: "100%",
     borderCollapse: "collapse",
     textAlign: "left",
-
   },
   th: {
     padding: "12px",
@@ -1908,4 +2198,3 @@ const styles = {
 };
 
 export default ProgramTagging;
-
