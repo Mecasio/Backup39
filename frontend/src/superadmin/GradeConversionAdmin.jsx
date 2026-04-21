@@ -721,8 +721,8 @@ const GradeConversionAdmin = () => {
                             width={130}
                             select
                         >
-                            <MenuItem value={0}>Semester</MenuItem>
-                            <MenuItem value={1}>Graduation</MenuItem>
+                            <MenuItem value={1}>Semester</MenuItem>
+                            <MenuItem value={2}>Graduation</MenuItem>
                         </LabeledField>
                         <SaveButton
                             isEdit={!!honorForm.id}
@@ -793,17 +793,17 @@ const GradeConversionAdmin = () => {
                                         />
                                     </TdCell>
                                     <TdCell borderColor={resolvedBorder}>
-                                       <PillBadge
-    label={row.type === 2 ? "Graduation" : "Semester"}
-    bg={
-        row.type === 2
-            ? `${resolvedHeader}20`
-            : "rgba(26,26,46,0.07)"
-    }
-    color={
-        row.type === 2 ? resolvedHeader : C.textMain
-    }
-/>
+                                        <PillBadge
+                                            label={row.type === 2 ? "Graduation" : "Semester"}
+                                            bg={
+                                                row.type === 2
+                                                    ? `${resolvedHeader}20`
+                                                    : "rgba(26,26,46,0.07)"
+                                            }
+                                            color={
+                                                row.type === 2 ? resolvedHeader : C.textMain
+                                            }
+                                        />
                                     </TdCell>
                                     <TdCell borderColor={resolvedBorder}>
                                         <Stack direction="row" spacing={1} justifyContent="center">

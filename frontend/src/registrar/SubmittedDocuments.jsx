@@ -886,7 +886,7 @@ const MedicalRequirements = () => {
         padding: 2,
       }}
     >
-      {/* Top header: DOCUMENTS SUBMITTED + Search */}
+      {/* Top header: APPLICANT ONLINE REQUIREMENTS + Search */}
       <Box
         sx={{
           display: "flex",
@@ -900,7 +900,7 @@ const MedicalRequirements = () => {
           variant="h4"
           sx={{ fontWeight: "bold", color: titleColor, fontSize: "36px" }}
         >
-          DOCUMENTS SUBMITTED
+          APPLICANT ONLINE REQUIREMENTS
         </Typography>
 
         <TextField
@@ -1570,9 +1570,8 @@ const MedicalRequirements = () => {
           </DialogContent>
           <DialogActions>
             <Button onClick={() => setConfirmOpen(false)}
-              variant="contained"
               color="error"
-
+            variant="outlined"
             >
               Cancel
             </Button>

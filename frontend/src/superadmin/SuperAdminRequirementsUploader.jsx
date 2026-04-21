@@ -841,7 +841,7 @@ const SuperAdminRequirementsUploader = () => {
                   sx={{
                     backgroundColor: "maroon",
                     color: "white",
-                   
+
                   }}
                 >
                   Delete
@@ -874,7 +874,7 @@ const SuperAdminRequirementsUploader = () => {
         padding: 2,
       }}
     >
-      {/* Top header: DOCUMENTS SUBMITTED + Search */}
+      {/* Top header: APPLICANT ONLINE REQUIREMENTS + Search */}
       <Box
         sx={{
           display: "flex",
@@ -893,7 +893,7 @@ const SuperAdminRequirementsUploader = () => {
             fontSize: "36px",
           }}
         >
-          DOCUMENTS SUBMITTED
+          APPLICANT ONLINE REQUIREMENTS
         </Typography>
 
         <TextField
@@ -1595,15 +1595,14 @@ const SuperAdminRequirementsUploader = () => {
           </DialogContent>
           <DialogActions>
             <Button onClick={() => setConfirmOpen(false)}
-              variant="contained"
               color="error"
-
+              variant="outlined"
             >
               Cancel
             </Button>
             <Button
               onClick={handleConfirmAction}
-         
+
               variant="contained"
             >
               Yes, Confirm

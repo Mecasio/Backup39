@@ -132,7 +132,7 @@ router.get("/student_list/:student_number", async (req, res) => {
   try {
 
     const sql = `
-SELECT 
+SELECT DISTINCT
     snt.student_number,
     pt.person_id,
     pt.last_name,

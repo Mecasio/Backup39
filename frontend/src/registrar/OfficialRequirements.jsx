@@ -950,7 +950,7 @@ const OfficialRequirements = () => {
         padding: 2,
       }}
     >
-      {/* Top header: DOCUMENTS SUBMITTED + Search */}
+      {/* Top header: APPLICANT ONLINE REQUIREMENTS + Search */}
       <Box
         sx={{
           display: "flex",
@@ -969,7 +969,7 @@ const OfficialRequirements = () => {
             fontSize: "36px",
           }}
         >
-          DOCUMENTS SUBMITTED
+          APPLICANT ONLINE REQUIREMENTS
         </Typography>
 
         <TextField
@@ -1734,9 +1734,8 @@ const OfficialRequirements = () => {
           </DialogContent>
           <DialogActions>
             <Button
-              variant="contained"
               color="error"
-
+              variant="outlined"
 
               onClick={() => setConfirmOpen(false)}>
               Cancel

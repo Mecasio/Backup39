@@ -28,6 +28,10 @@ router.post("/adding_course", async (req, res) => {
     lab_unit,
     prereq,
     corequisite,
+    is_included,
+    include_summa,
+    include_magna,
+    include_cum,
   } = req.body;
 
   try {
@@ -51,16 +55,19 @@ router.post("/adding_course", async (req, res) => {
       return res.status(400).json({ message: "Course description is required" });
     }
 
-    // 🔥 CHECK: Reject only if EVERYTHING is identical
     const [rows] = await db3.query(
       `SELECT course_id FROM course_table 
-       WHERE course_code = ?
-       AND course_description = ?
-       AND course_unit = ?
-       AND lec_unit = ?
-       AND lab_unit = ?
-       AND (prereq <=> ?)   -- NULL-safe comparison
-       AND (corequisite <=> ?)`,
+   WHERE course_code = ?
+   AND course_description = ?
+   AND course_unit = ?
+   AND lec_unit = ?
+   AND lab_unit = ?
+   AND (prereq <=> ?)
+   AND (corequisite <=> ?)
+   AND (is_included <=> ?)
+   AND (include_summa <=> ?)
+   AND (include_magna <=> ?)
+   AND (include_cum <=> ?)`,
       [
         normalized_code,
         normalized_desc,
@@ -69,9 +76,14 @@ router.post("/adding_course", async (req, res) => {
         lab,
         prereq || null,
         corequisite || null,
+        is_included ?? 1,
+        include_summa ?? 1,
+        include_magna ?? 1,
+        include_cum ?? 1
       ]
     );
 
+    
     if (rows.length > 0) {
       return res.status(400).json({
         message: "❌ Exact duplicate course already exists",
@@ -80,8 +92,8 @@ router.post("/adding_course", async (req, res) => {
 
     await db3.query(
       `INSERT INTO course_table
-       (course_code, course_description, course_unit, lec_unit, lab_unit, prereq, corequisite)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+  (course_code, course_description, course_unit, lec_unit, lab_unit, prereq, corequisite, is_included, include_summa, include_magna, include_cum)
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         normalized_code,
         normalized_desc,
@@ -90,8 +102,13 @@ router.post("/adding_course", async (req, res) => {
         lab,
         prereq || null,
         corequisite || null,
+        is_included ?? 1,
+        include_summa ?? 1,
+        include_magna ?? 1,
+        include_cum ?? 1
       ]
     );
+
 
     res.status(200).json({ message: "✅ Course added successfully" });
 
@@ -111,6 +128,10 @@ router.put("/update_course/:id", async (req, res) => {
     lab_unit,
     prereq,
     corequisite,
+    is_included,
+    include_summa,
+    include_magna,
+    include_cum
   } = req.body;
 
   try {
@@ -140,8 +161,33 @@ router.put("/update_course/:id", async (req, res) => {
       : normalizeDescription(current.course_description);
 
     const [rows] = await db3.query(
-      "SELECT course_id FROM course_table WHERE course_code = ? AND course_description = ? AND course_id != ?",
-      [final_course_code, final_course_desc, id]
+      `SELECT course_id FROM course_table 
+   WHERE course_code = ?
+   AND course_description = ?
+   AND course_unit = ?
+   AND lec_unit = ?
+   AND lab_unit = ?
+   AND (prereq <=> ?)
+   AND (corequisite <=> ?)
+   AND (is_included <=> ?)
+   AND (include_summa <=> ?)
+   AND (include_magna <=> ?)
+   AND (include_cum <=> ?)
+   AND course_id != ?`,
+      [
+        final_course_code,
+        final_course_desc,
+        course_unit ?? current.course_unit,
+        lec_unit ?? current.lec_unit,
+        lab_unit ?? current.lab_unit,
+        prereq ?? current.prereq,
+        corequisite ?? current.corequisite,
+        is_included ?? current.is_included,
+        include_summa ?? current.include_summa,
+        include_magna ?? current.include_magna,
+        include_cum ?? current.include_cum,
+        id
+      ]
     );
 
     if (rows.length > 0) {
@@ -150,22 +196,32 @@ router.put("/update_course/:id", async (req, res) => {
 
     await db3.query(
       `UPDATE course_table SET
-         course_code = ?,
-         course_description = ?,
-         course_unit = ?,
-         lec_unit = ?,
-         lab_unit = ?,
-         prereq = ?,
-         corequisite = ?
-       WHERE course_id = ?`,
+    course_code = ?,
+    course_description = ?,
+    course_unit = ?,
+    lec_unit = ?,
+    lab_unit = ?,
+    prereq = ?,
+    corequisite = ?,
+    is_included = ?,
+    include_summa = ?,
+    include_magna = ?,
+    include_cum = ?
+  WHERE course_id = ?`,
       [
-        course_code,
-        course_description ?? current.course_description,
-        course_unit !== undefined ? parseFloat(course_unit) : current.course_unit,
+        final_course_code,
+        final_course_desc,
+        course_unit !== undefined && course_unit !== ""
+          ? parseFloat(course_unit)
+          : current.course_unit,
         lec_unit !== undefined ? parseFloat(lec_unit) : current.lec_unit,
         lab_unit !== undefined ? parseFloat(lab_unit) : current.lab_unit,
         prereq !== undefined ? prereq : current.prereq,
         corequisite !== undefined ? corequisite : current.corequisite,
+        is_included !== undefined ? Number(is_included) : current.is_included,
+        include_summa !== undefined ? Number(include_summa) : current.include_summa,
+        include_magna !== undefined ? Number(include_magna) : current.include_magna,
+        include_cum !== undefined ? Number(include_cum) : current.include_cum,
         id,
       ]
     );

@@ -409,7 +409,7 @@ const SideBar = ({ setIsAuthenticated, profileImage, setProfileImage }) => {
       key: "admissionOffice", label: "Admission Office", icon: AdminPanelSettings, items: [
         { title: "Applicant List", link: "/applicant_list_admin", icon: ListAltOutlined, page_id: 7 },
         { title: "Applicant Profile", link: "/admin_dashboard1", icon: AccountCircle, page_id: 1 },
-        { title: "Documents Submitted", link: "/student_requirements", icon: FolderCopy, page_id: 61 },
+        { title: "Applicant Online Requirements", link: "/student_requirements", icon: FolderCopy, page_id: 61 },
         { title: "Verify Schedule Mgmt", link: "/verify_schedule", icon: EditCalendar, page_id: 118 },
         { title: "Exam Schedule Mgmt", link: "/assign_schedule_applicant", icon: EditCalendar, page_id: 11 },
         { title: "Examination Permit", link: "/registrar_examination_profile", icon: Badge, page_id: 48 },
@@ -454,7 +454,7 @@ const SideBar = ({ setIsAuthenticated, profileImage, setProfileImage }) => {
       key: "medicalDental", label: "Medical & Dental", icon: MedicalServices, items: [
         { title: "Applicant List", link: "/medical_applicant_list", icon: ListAltOutlined, page_id: 24 },
         { title: "Student Profile", link: "/medical_dashboard1", icon: AccountCircle, page_id: 25 },
-        { title: "Documents Submitted", link: "/medical_requirements", icon: FolderCopy, page_id: 30 },
+        { title: "Applicant Online Requirements", link: "/medical_requirements", icon: FolderCopy, page_id: 30 },
         { title: "Medical Requirements", link: "/medical_requirements_form", icon: MedicalServices, page_id: 31 },
         { title: "Dental Assessment", link: "/dental_assessment", icon: HealthAndSafety, page_id: 19 },
         { title: "Physical & Neuro Exam", link: "/physical_neuro_exam", icon: Psychology, page_id: 32 },
@@ -780,7 +780,7 @@ const SideBar = ({ setIsAuthenticated, profileImage, setProfileImage }) => {
             <NavItem to="/applicant_dashboard" icon={DashboardIcon} label="Dashboard" active={isActivePrefix("/applicant_dashboard")} />
             <NavItem
               icon={AssignmentIndIcon}
-              label="Applicant Form"
+              label="Applicant Profile"
               active={isActivePrefix("/dashboard/")}
               onClick={() => {
                 let keys = JSON.parse(localStorage.getItem("dashboardKeys"));

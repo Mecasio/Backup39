@@ -972,7 +972,7 @@ const StudentRequirements = () => {
     <Box sx={{ height: "calc(100vh - 150px)", overflowY: "auto", paddingRight: 1, backgroundColor: "transparent", mt: 1, padding: 2 }}>
 
 
-      {/* Top header: DOCUMENTS SUBMITTED + Search */}
+      {/* Top header: APPLICANT ONLINE REQUIREMENTS + Search */}
       <Box
         sx={{
           display: 'flex',
@@ -992,7 +992,7 @@ const StudentRequirements = () => {
             fontSize: '36px',
           }}
         >
-          DOCUMENTS SUBMITTED
+          APPLICANT ONLINE REQUIREMENTS
         </Typography>
 
         <TextField
@@ -1620,9 +1620,8 @@ const StudentRequirements = () => {
           </DialogContent>
           <DialogActions>
             <Button onClick={() => setConfirmOpen(false)}
-              variant="contained"
-              color="error"
-
+               color="error"
+            variant="outlined"
             >
               Cancel
             </Button>

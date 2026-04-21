@@ -2010,9 +2010,8 @@ const ApplicationProcessAdmin = () => {
                         </DialogContent>
                         <DialogActions>
                             <Button onClick={() => setConfirmOpen(false)}
-                                variant="contained"
                                 color="error"
-
+                                variant="outlined"
                             >
                                 Cancel
                             </Button>
@@ -2022,7 +2021,7 @@ const ApplicationProcessAdmin = () => {
                                     setConfirmOpen(false);
                                     fetchApplicants();
                                 }}
-                            
+
                                 variant="contained"
                             >
                                 Yes, Confirm
@@ -2523,9 +2522,8 @@ const ApplicationProcessAdmin = () => {
 
                         <DialogActions>
                             <Button
-                                variant="contained"
                                 color="error"
-
+                                variant="outlined"
 
                                 onClick={handleCloseDialog}>Cancel</Button>
                             {!(

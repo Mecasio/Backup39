@@ -1988,9 +1988,8 @@ const ApplicantList = () => {
               <Button
                 disabled
                 onClick={() => setConfirmOpen(false)}
-                variant="contained"
                 color="error"
-
+                variant="outlined"
 
               >
                 Cancel

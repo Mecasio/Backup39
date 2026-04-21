@@ -22,7 +22,6 @@ import {
   Select,
   MenuItem,
   TableContainer,
-  Checkbox,
 } from "@mui/material";
 import {
   Dialog,
@@ -82,9 +81,12 @@ const CoursePanel = () => {
     lab_unit: "",
     prereq: "",
     corequisite: "",
+    is_included: 1,
 
+    include_summa: 1,
+    include_magna: 1,
+    include_cum: 1,
   });
-
 
   const [courseList, setCourseList] = useState([]);
   const [editMode, setEditMode] = useState(false);
@@ -108,6 +110,8 @@ const CoursePanel = () => {
   const [feeRules, setFeeRules] = useState([]);
   const importInputRef = useRef(null);
   const [importingXlsx, setImportingXlsx] = useState(false);
+
+
 
 
   const fetchFeeRules = async () => {
@@ -211,6 +215,7 @@ const CoursePanel = () => {
       const data = response.data.map(item => ({
         ...item,
         prerequisite: item.prereq || "",
+        is_included: item.is_included ?? 1,
       }));
       setCourseList(data);
     } catch (err) {
@@ -251,8 +256,12 @@ const CoursePanel = () => {
         lab_unit: parseFloat(course.lab_unit) || 0,
         prereq: course.prereq || null,
         corequisite: course.corequisite || null,
-      });
 
+        is_included: Number(course.is_included) || 0,
+        include_summa: Number(course.include_summa) ?? 1,
+        include_magna: Number(course.include_magna) ?? 1,
+        include_cum: Number(course.include_cum) ?? 1,
+      });
       setCourse({
         course_code: "",
         course_description: "",
@@ -261,6 +270,10 @@ const CoursePanel = () => {
         lab_unit: "",
         prereq: "",
         corequisite: "",
+        is_included: 1,
+        include_summa: 1,
+        include_magna: 1,
+        include_cum: 1,
       });
 
       showSnack("Course successfully added!", "success");
@@ -320,7 +333,13 @@ const CoursePanel = () => {
       lab_unit: Number(item.lab_unit) || 0,
       prereq: item.prereq ?? "",
       corequisite: item.corequisite ?? "",
+      is_included: item.is_included ?? 1,
+
+      include_summa: item.include_summa ?? 1,
+      include_magna: item.include_magna ?? 1,
+      include_cum: item.include_cum ?? 1,
     });
+
 
     setEditMode(true);
     setEditId(item.course_id);
@@ -343,11 +362,16 @@ const CoursePanel = () => {
         corequisite: course.corequisite || null,
       });
 
-      fetchCourses();
+      await fetchCourses(); // ✅ wait for refresh
+
       showSnack("Course updated successfully!", "success");
+
+      // ✅ CLOSE ONLY AFTER SUCCESS
+      setOpenCourseDialog(false);
 
       setEditMode(false);
       setEditId(null);
+
       setCourse({
         course_code: "",
         course_description: "",
@@ -356,9 +380,17 @@ const CoursePanel = () => {
         lab_unit: "",
         prereq: "",
         corequisite: "",
+        is_included: 1,
+        include_summa: 1,
+        include_magna: 1,
+        include_cum: 1,
       });
+
     } catch (error) {
-      showSnack(error.response?.data?.message || "Failed to update course.", "error");
+      showSnack(
+        error.response?.data?.message || "Failed to update course.",
+        "error"
+      );
     }
   };
 
@@ -416,6 +448,22 @@ const CoursePanel = () => {
       event.target.value = "";
     }
   };
+
+
+  const [honorRules, setHonorRules] = useState([]);
+
+  const fetchHonorRules = async () => {
+    try {
+      const res = await axios.get(`${API_BASE_URL}/admin/honors-rules`);
+      setHonorRules(res.data);
+    } catch (err) {
+      console.error("Error fetching honor rules:", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchHonorRules();
+  }, []);
 
   const attachedFees = feeRules.filter(
     fee => Number(fee.applies_to_all) === 1
@@ -703,6 +751,10 @@ const CoursePanel = () => {
                           lab_unit: "",
                           prereq: "",
                           corequisite: "",
+                          is_included: 1,
+                          include_summa: 1,
+                          include_magna: 1,
+                          include_cum: 1,
                         });
                         setOpenCourseDialog(true);
                       }}
@@ -750,6 +802,10 @@ const CoursePanel = () => {
                 "Corequisite",
                 "Lab",
                 "Lecture",
+                "Deans Lister / President Lister",
+                "Summa",
+                "Magna",
+                "Cum Laude",
                 "Actions",
               ].map((header) => (
                 <th
@@ -796,6 +852,21 @@ const CoursePanel = () => {
                   <td style={styles.tableCell}>{c.corequisite}</td>
                   <td style={styles.tableCell}>{c.iscomputer_lab ? "YES" : "NO"}</td>
                   <td style={styles.tableCell}>{c.isnon_computer_lab ? "YES" : "NO"}</td>
+                  <td style={styles.tableCell}>
+                    <span>{Number(c.is_included) === 1 ? "YES" : "NO"}</span>
+                  </td>
+
+                  <td style={styles.tableCell}>
+                    {Number(c.include_summa) === 1 ? "YES" : "NO"}
+                  </td>
+
+                  <td style={styles.tableCell}>
+                    {Number(c.include_magna) === 1 ? "YES" : "NO"}
+                  </td>
+
+                  <td style={styles.tableCell}>
+                    {Number(c.include_cum) === 1 ? "YES" : "NO"}
+                  </td>
 
                   {/* ✅ SINGLE FEE CELL */}
                   {/* <td style={styles.tableCell}>
@@ -1181,7 +1252,76 @@ const CoursePanel = () => {
               />
             </Grid>
 
+            <Grid item xs={12} md={6}>
+              <Typography fontWeight="bold">Deans Lister / President Lister</Typography>
+              <Select
+                fullWidth
+                value={course.is_included ?? 1}
+                onChange={(e) =>
+                  setCourse(prev => ({
+                    ...prev,
+                    is_included: Number(e.target.value)
+                  }))
+                }
+              >
+                <MenuItem value={1}>YES</MenuItem>
+                <MenuItem value={0}>NO</MenuItem>
+              </Select>
+            </Grid>
+
+            <Grid item xs={12} md={4}>
+              <Typography fontWeight="bold">Include in Summa</Typography>
+              <Select
+                fullWidth
+                value={course.include_summa ?? 1}
+                onChange={(e) =>
+                  setCourse(prev => ({
+                    ...prev,
+                    include_summa: e.target.value
+                  }))
+                }
+              >
+                <MenuItem value={1}>YES</MenuItem>
+                <MenuItem value={0}>NO</MenuItem>
+              </Select>
+            </Grid>
+
+            <Grid item xs={12} md={4}>
+              <Typography fontWeight="bold">Include in Magna</Typography>
+              <Select
+                fullWidth
+                value={course.include_magna ?? 1}
+                onChange={(e) =>
+                  setCourse(prev => ({
+                    ...prev,
+                    include_magna: e.target.value
+                  }))
+                }
+              >
+                <MenuItem value={1}>YES</MenuItem>
+                <MenuItem value={0}>NO</MenuItem>
+              </Select>
+            </Grid>
+
+            <Grid item xs={12} md={4}>
+              <Typography fontWeight="bold">Include in Cum Laude</Typography>
+              <Select
+                fullWidth
+                value={course.include_cum ?? 1}
+                onChange={(e) =>
+                  setCourse(prev => ({
+                    ...prev,
+                    include_cum: e.target.value
+                  }))
+                }
+              >
+                <MenuItem value={1}>YES</MenuItem>
+                <MenuItem value={0}>NO</MenuItem>
+              </Select>
+            </Grid>
           </Grid>
+
+
         </DialogContent>
 
         {/* ===== ACTIONS ===== */}
@@ -1211,11 +1351,10 @@ const CoursePanel = () => {
             }}
             onClick={() => {
               if (editMode) {
-                handleUpdateCourse();
+                handleUpdateCourse(); // already closes on success
               } else {
                 handleAddingCourse();
               }
-              setOpenCourseDialog(false);
             }}
           >
             <SaveIcon fontSize="small" /> Save
