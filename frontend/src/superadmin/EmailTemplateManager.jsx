@@ -784,9 +784,8 @@ export default function EmailTemplateManager() {
 
         <DialogActions>
           <Button
-            variant="contained"
             color="error"
-
+            variant="outlined"
 
             onClick={() => setOpenDeleteDialog(false)}>
             Cancel
@@ -916,7 +915,7 @@ export default function EmailTemplateManager() {
         >
           <Button
             onClick={() => setOpenFormDialog(false)}
-            color="error"
+          color="error"
             variant="outlined"
           >
             Cancel

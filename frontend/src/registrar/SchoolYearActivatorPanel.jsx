@@ -601,10 +601,8 @@ const SchoolYearActivatorPanel = () => {
                 </DialogContent>
                 <DialogActions>
                     <Button
-                        variant="contained"
-                        color="error"
-
-
+                  color="error"
+            variant="outlined"
                         onClick={closeConfirm}
                     >Cancel</Button>
                     <Button onClick={handleConfirm} variant="contained">

@@ -436,6 +436,7 @@ const ProgramEvaluationForRegistrar = () => {
 
       <button
         onClick={() => setIsEditing(!isEditing)}
+        
         style={{
           padding: "8px 12px", marginBottom: "1rem", cursor: "pointer",
           fontWeight: "bold", backgroundColor: "#1976d2", color: "white",

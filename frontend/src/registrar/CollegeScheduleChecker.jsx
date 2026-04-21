@@ -2498,9 +2498,8 @@ const CollegeScheduleChecker = () => {
               setOpenDialogue(false);
               setSelectedScheduleId(null);
             }}
-            variant="contained"
-            color="error"
-
+         color="error"
+            variant="outlined"
 
           >
             Cancel
@@ -2527,9 +2526,8 @@ const CollegeScheduleChecker = () => {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setOpenConfirmDialog(false)}
-            variant="contained"
-            color="error"
-
+       color="error"
+            variant="outlined"
           >
             Cancel
           </Button>

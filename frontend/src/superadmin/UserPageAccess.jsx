@@ -1446,7 +1446,7 @@ const UserPageAccess = () => {
 
         <DialogActions>
           <Button
-            color="error"
+         color="error"
             variant="outlined"
             onClick={() => setOpenModal(false)}
           >
@@ -1553,7 +1553,7 @@ const UserPageAccess = () => {
 
         <DialogActions>
           <Button
-            color="error"
+          color="error"
             variant="outlined"
             onClick={() => setOpenCreateModal(false)}
           >
@@ -1699,7 +1699,7 @@ const UserPageAccess = () => {
 
         <DialogActions>
           <Button
-            color="error"
+         color="error"
             variant="outlined"
             onClick={() => setOpenEditAccessModal(false)}
           >

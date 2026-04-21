@@ -551,7 +551,7 @@ const AdminBranches = () => {
         >
           <Button
             onClick={() => setOpenBranchDialog(false)}
-            color="error"
+              color="error"
             variant="outlined"
           >
             Cancel

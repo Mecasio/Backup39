@@ -454,7 +454,7 @@ const SideBar = ({ setIsAuthenticated, profileImage, setProfileImage }) => {
       key: "medicalDental", label: "Medical & Dental", icon: MedicalServices, items: [
         { title: "Applicant List", link: "/medical_applicant_list", icon: ListAltOutlined, page_id: 24 },
         { title: "Student Profile", link: "/medical_dashboard1", icon: AccountCircle, page_id: 25 },
-        { title: "Applicant Online Requirements", link: "/medical_requirements", icon: FolderCopy, page_id: 30 },
+        { title: "Student Online Requirements", link: "/medical_requirements", icon: FolderCopy, page_id: 30 },
         { title: "Medical Requirements", link: "/medical_requirements_form", icon: MedicalServices, page_id: 31 },
         { title: "Dental Assessment", link: "/dental_assessment", icon: HealthAndSafety, page_id: 19 },
         { title: "Physical & Neuro Exam", link: "/physical_neuro_exam", icon: Psychology, page_id: 32 },
@@ -473,7 +473,7 @@ const SideBar = ({ setIsAuthenticated, profileImage, setProfileImage }) => {
         { title: "Course Tagging For Summer", link: "/course_tagging_for_summer", icon: Class, page_id: 140 },
         { title: "Student List", link: "/student_list", icon: ListAltOutlined, page_id: 104 },
         { title: "Student Profile", link: "/readmission_dashboard1", icon: AccountCircle, page_id: 38 },
-        { title: "Submitted Documents", link: "/submitted_documents", icon: FolderCopy, page_id: 106 },
+        { title: "Student Online Requirements", link: "/submitted_documents", icon: FolderCopy, page_id: 106 },
         {
           title: "Class List", link: classRosterRegistrarLink, icon: Class, page_id: 15,
           activeCheck: () => isClassRosterActive(classRosterRegistrarLink)
@@ -822,6 +822,7 @@ const SideBar = ({ setIsAuthenticated, profileImage, setProfileImage }) => {
             <NavItem to="/student_section_offering" icon={MenuBook} label="Curriculum" active={isActive("/student_section_offering")} />
             <NavItem to="/student_faculty_evaluation" icon={AssignmentTurnedInIcon} label="Faculty Evaluation" active={isActive("/student_faculty_evaluation")} />
             <NavItem to="/student_dashboard1" icon={PersonIcon} label="Student Profile" active={/^\/student_dashboard[1-5]$/.test(loc)} />
+            <NavItem to="/student_online_requirements" icon={FolderCopy} label="Student Online Requirements" active={isActive("/student_online_requirements")} />
             <div className="sb-section-label">Setting</div>
             <NavItem to="/student_reset_password" icon={Settings} label="Settings" active={isActive("/student_reset_password")} />
           </>

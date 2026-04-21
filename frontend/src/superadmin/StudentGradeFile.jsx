@@ -1401,174 +1401,174 @@ const StudentGradeFile = () => {
                 </TableHead>
                 <TableBody>
                   {termData.map((course, index) => (
-                      <TableRow key={course.course_id} hover>
-                        <TableCell
-                          sx={{
-                            py: 0.5,
-                            px: 1,
-                            border: `1px solid ${borderColor}`,
+                    <TableRow key={course.course_id} hover>
+                      <TableCell
+                        sx={{
+                          py: 0.5,
+                          px: 1,
+                          border: `1px solid ${borderColor}`,
+                          textAlign: "center",
+                        }}
+                      >
+                        {index + 1}
+                      </TableCell>
+                      <TableCell
+                        sx={{
+                          py: 0.5,
+                          px: 1,
+                          border: `1px solid ${borderColor}`,
+                        }}
+                      >
+                        {course.course_code}
+                      </TableCell>
+                      <TableCell
+                        sx={{
+                          py: 0.5,
+                          px: 1,
+                          border: `1px solid ${borderColor}`,
+                          textAlign: "center",
+                        }}
+                      >
+                      </TableCell>
+                      <TableCell
+                        sx={{
+                          py: 0.5,
+                          px: 1,
+                          border: `1px solid ${borderColor}`,
+                        }}
+                      >
+                        {course.course_description}
+                      </TableCell>
+                      <TableCell
+                        sx={{
+                          py: 0.5,
+                          px: 1,
+                          border: `1px solid ${borderColor}`,
+                          textAlign: "center",
+                        }}
+                      >
+                        {course.course_unit || 0}
+                      </TableCell>
+                      <TableCell
+                        sx={{
+                          py: 0.5,
+                          px: 1,
+                          border: `1px solid ${borderColor}`,
+                          textAlign: "center",
+                        }}
+                      >
+                      </TableCell>
+                      <TableCell
+                        sx={{
+                          py: 0.5,
+                          px: 0.5,
+                          border: `1px solid ${borderColor}`,
+                        }}
+                      >
+                        <GradeSelect
+                          value={course.midterm ?? ""}
+                          onChange={(value) =>
+                            handleGradeChange(course.id, "midterm", value)
+                          }
+                          placeholder="Enter grade"
+                        />
+                      </TableCell>
+                      <TableCell
+                        sx={{
+                          py: 0.5,
+                          px: 0.5,
+                          border: `1px solid ${borderColor}`,
+                        }}
+                      >
+                        <GradeSelect
+                          value={course.finals ?? ""}
+                          onChange={(value) =>
+                            handleGradeChange(course.id, "finals", value)
+                          }
+                          placeholder="Enter grade"
+                        />
+                      </TableCell>
+                      <TableCell
+                        sx={{
+                          py: 0.5,
+                          px: 0.5,
+                          border: `1px solid ${borderColor}`,
+                        }}
+                      >
+                        <input
+                          type="text"
+                          value={getDisplayedFinalGrade(course)}
+                          readOnly
+                          style={{
+                            border: "none",
                             textAlign: "center",
+                            background: "none",
+                            outline: "none",
+                            width: "100%",
+                            fontWeight: "bold",
                           }}
-                        >
-                          {index + 1}
-                        </TableCell>
-                        <TableCell
+                        />
+                      </TableCell>
+                      <TableCell
+                        sx={{
+                          py: 0.5,
+                          px: 1,
+                          border: `1px solid ${borderColor}`,
+                          textAlign: "center",
+                        }}
+                      >
+                        {/* Show stored re-exam / grade-status value from the database. */}
+                        {course.grades_status || "-"}
+                      </TableCell>
+                      <TableCell
+                        sx={{
+                          py: 0.5,
+                          px: 1,
+                          border: `1px solid ${borderColor}`,
+                          textAlign: "center",
+                          fontSize: "12px",
+                        }}
+                      >
+                        {remarkConversion(course.en_remarks)}
+                      </TableCell>
+                      <TableCell
+                        sx={{
+                          py: 0.5,
+                          px: 1,
+                          border: `1px solid ${borderColor}`,
+                          textAlign: "center",
+                          fontSize: "12px",
+                        }}
+                      >
+                        {course.remarks?.toUpperCase()}
+                      </TableCell>
+                      <TableCell
+                        sx={{
+                          py: 0.5,
+                          px: 1,
+                          border: `1px solid ${borderColor}`,
+                          borderRight: "none",
+                          textAlign: "center",
+                        }}
+                      >
+                        <Button
+                          color="error"
+                          size="small"
+                          variant="contained"
                           sx={{
-                            py: 0.5,
+                            background: mainButtonColor,
+                            minWidth: "auto",
                             px: 1,
-                            border: `1px solid ${borderColor}`,
+                            py: 0.25,
+                            fontSize: "11px",
                           }}
+                          onClick={() => confirmDelete(course.id)}
                         >
-                          {course.course_code}
-                        </TableCell>
-                        <TableCell
-                          sx={{
-                            py: 0.5,
-                            px: 1,
-                            border: `1px solid ${borderColor}`,
-                            textAlign: "center",
-                          }}
-                        >
-                        </TableCell>
-                        <TableCell
-                          sx={{
-                            py: 0.5,
-                            px: 1,
-                            border: `1px solid ${borderColor}`,
-                          }}
-                        >
-                          {course.course_description}
-                        </TableCell>
-                        <TableCell
-                          sx={{
-                            py: 0.5,
-                            px: 1,
-                            border: `1px solid ${borderColor}`,
-                            textAlign: "center",
-                          }}
-                        >
-                          {course.course_unit || 0}
-                        </TableCell>
-                        <TableCell
-                          sx={{
-                            py: 0.5,
-                            px: 1,
-                            border: `1px solid ${borderColor}`,
-                            textAlign: "center",
-                          }}
-                        >
-                        </TableCell>
-                        <TableCell
-                          sx={{
-                            py: 0.5,
-                            px: 0.5,
-                            border: `1px solid ${borderColor}`,
-                          }}
-                        >
-                          <GradeSelect
-                            value={course.midterm ?? ""}
-                            onChange={(value) =>
-                              handleGradeChange(course.id, "midterm", value)
-                            }
-                            placeholder="Enter grade"
-                          />
-                        </TableCell>
-                        <TableCell
-                          sx={{
-                            py: 0.5,
-                            px: 0.5,
-                            border: `1px solid ${borderColor}`,
-                          }}
-                        >
-                          <GradeSelect
-                            value={course.finals ?? ""}
-                            onChange={(value) =>
-                              handleGradeChange(course.id, "finals", value)
-                            }
-                            placeholder="Enter grade"
-                          />
-                        </TableCell>
-                        <TableCell
-                          sx={{
-                            py: 0.5,
-                            px: 0.5,
-                            border: `1px solid ${borderColor}`,
-                          }}
-                        >
-                          <input
-                            type="text"
-                            value={getDisplayedFinalGrade(course)}
-                            readOnly
-                            style={{
-                              border: "none",
-                              textAlign: "center",
-                              background: "none",
-                              outline: "none",
-                              width: "100%",
-                              fontWeight: "bold",
-                            }}
-                          />
-                        </TableCell>
-                        <TableCell
-                          sx={{
-                            py: 0.5,
-                            px: 1,
-                            border: `1px solid ${borderColor}`,
-                            textAlign: "center",
-                          }}
-                        >
-                          {/* Show stored re-exam / grade-status value from the database. */}
-                          {course.grades_status || "-"}
-                        </TableCell>
-                        <TableCell
-                          sx={{
-                            py: 0.5,
-                            px: 1,
-                            border: `1px solid ${borderColor}`,
-                            textAlign: "center",
-                            fontSize: "12px",
-                          }}
-                        >
-                          {remarkConversion(course.en_remarks)}
-                        </TableCell>
-                        <TableCell
-                          sx={{
-                            py: 0.5,
-                            px: 1,
-                            border: `1px solid ${borderColor}`,
-                            textAlign: "center",
-                            fontSize: "12px",
-                          }}
-                        >
-                          {course.remarks?.toUpperCase()}
-                        </TableCell>
-                        <TableCell
-                          sx={{
-                            py: 0.5,
-                            px: 1,
-                            border: `1px solid ${borderColor}`,
-                            borderRight: "none",
-                            textAlign: "center",
-                          }}
-                        >
-                          <Button
-                            color="error"
-                            size="small"
-                            variant="contained"
-                            sx={{
-                              background: mainButtonColor,
-                              minWidth: "auto",
-                              px: 1,
-                              py: 0.25,
-                              fontSize: "11px",
-                            }}
-                            onClick={() => confirmDelete(course.id)}
-                          >
-                            DELETE
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                          DELETE
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
                   <TableRow>
                     <TableCell
                       colSpan={4}
@@ -1723,7 +1723,8 @@ const StudentGradeFile = () => {
           </DialogContentText>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setOpenDialog(false)}>Cancel</Button>
+          <Button color="error"
+            variant="outlined" onClick={() => setOpenDialog(false)}>Cancel</Button>
           <Button color="error" onClick={handleDelete}>
             Delete
           </Button>

@@ -1395,10 +1395,8 @@ const StudentNumbering = () => {
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={() => setOpenModal(false)}
-                        variant="contained"
-                        color="error"
-
-
+                  color="error"
+            variant="outlined"
                     >
                         Cancel
                     </Button>

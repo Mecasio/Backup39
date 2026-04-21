@@ -620,7 +620,7 @@ const RequirementUploader = () => {
             fontSize: "36px",
           }}
         >
-          UPLOAD REQUIREMENTS
+         APPLICANT'S DOCUMENTS
         </Typography>
       </Box>
       <hr style={{ border: "1px solid #ccc", width: "100%" }} />

@@ -279,6 +279,7 @@ const StudentDashboard2 = lazy(() => import("./student/StudentDashboard2"));
 const StudentDashboard3 = lazy(() => import("./student/StudentDashboard3"));
 const StudentDashboard4 = lazy(() => import("./student/StudentDashboard4"));
 const StudentDashboard5 = lazy(() => import("./student/StudentDashboard5"));
+const StudentOnlineRequirements = lazy(() => import("./student/StudentOnlineRequirements"));
 const StudentSectionOffering = lazy(
   () => import("./student/StudentSectionOffering"),
 );
@@ -1145,7 +1146,7 @@ function App() {
                         path="/nstp_tagging"
                         element={
                           <ProtectedRoute>
-                            <NSTPTagging/>
+                            <NSTPTagging />
                           </ProtectedRoute>
                         }
                       />
@@ -1153,7 +1154,7 @@ function App() {
                         path="/department_section_tagging"
                         element={
                           <ProtectedRoute>
-                            <DepartmentSectionTagging/>
+                            <DepartmentSectionTagging />
                           </ProtectedRoute>
                         }
                       />
@@ -1592,6 +1593,14 @@ function App() {
                         element={
                           <ProtectedRoute>
                             <StudentDashboard5 allowedRoles={"student"} />
+                          </ProtectedRoute>
+                        }
+                      />
+                      <Route
+                        path="/student_online_requirements"
+                        element={
+                          <ProtectedRoute>
+                            <StudentOnlineRequirements allowedRoles={"student"} />
                           </ProtectedRoute>
                         }
                       />

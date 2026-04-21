@@ -1212,7 +1212,7 @@ const ProgramPanel = () => {
         </DialogContent>
         <DialogActions>
           <Button
-            color="error"
+         color="error"
             variant="outlined"
             onClick={() => setOpenDeleteDialog(false)}
           >

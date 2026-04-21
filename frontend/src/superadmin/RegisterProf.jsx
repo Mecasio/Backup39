@@ -1372,9 +1372,8 @@ const RegisterProf = () => {
         >
           <Button
             onClick={handleCloseDialog}
-            color="error"
+        color="error"
             variant="outlined"
-
           >
             Cancel
           </Button>

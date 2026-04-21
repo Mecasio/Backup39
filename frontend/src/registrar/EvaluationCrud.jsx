@@ -856,8 +856,8 @@ const EvaluationCRUD = () => {
                     }}
                 >
                     <Button
-                        color="error"
-                        variant="outlined"
+                     color="error"
+            variant="outlined"
                         sx={{ textTransform: "none", fontWeight: 600 }}
                         onClick={handleCloseDialog}
                     >
@@ -946,8 +946,8 @@ const EvaluationCRUD = () => {
                     }}
                 >
                     <Button
-                        color="error"
-                        variant="outlined"
+                       color="error"
+            variant="outlined"
                         sx={{ textTransform: "none", fontWeight: 600 }}
                         onClick={handleCategoryDialogClose}
                     >

@@ -827,9 +827,8 @@ const AnnouncementPanel = () => {
 
                 <DialogActions>
                     <Button
-                        color="error"
-                        variant="outlined"
-
+                    color="error"
+            variant="outlined"
                         onClick={() => setOpenDeleteDialog(false)}>
                         Cancel
                     </Button>
@@ -870,7 +869,7 @@ const AnnouncementPanel = () => {
                 <DialogActions>
                     <Button
                         color="error"
-                        variant="outlined"
+            variant="outlined"
 
                         onClick={() => setOpenCrop(false)}>Cancel</Button>
                     <Button variant="contained" onClick={handleCropSave}>
@@ -1064,8 +1063,8 @@ const AnnouncementPanel = () => {
                     }}
                 >
                     <Button
-                        color="error"
-                        variant="outlined"
+                      color="error"
+            variant="outlined"
                         onClick={() => setOpenFormDialog(false)}
                     >
                         Cancel

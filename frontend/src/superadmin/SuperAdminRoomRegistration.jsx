@@ -1055,7 +1055,7 @@ const RoomRegistration = () => {
         >
           <Button
             onClick={() => setOpenFormDialog(false)}
-            color="error"
+   color="error"
             variant="outlined"
           >
             Cancel
@@ -1098,7 +1098,7 @@ const RoomRegistration = () => {
 
         <DialogActions>
           <Button
-            color="error"
+             color="error"
             variant="outlined"
             onClick={() => setOpenTypeDialog(false)}>Cancel</Button>
 
@@ -1136,7 +1136,7 @@ const RoomRegistration = () => {
 
         <DialogActions>
           <Button
-            color="error"
+          color="error"
             variant="outlined"
             onClick={() => {
               setOpenDeleteDialog(false);
@@ -1174,7 +1174,7 @@ const RoomRegistration = () => {
         </DialogContent>
         <DialogActions>
           <Button
-            color="error"
+           color="error"
             variant="outlined"
             onClick={() => setOpenUpdateDialog(false)}>Cancel</Button>
           <Button

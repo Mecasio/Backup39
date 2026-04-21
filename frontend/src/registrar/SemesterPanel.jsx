@@ -319,9 +319,8 @@ const SemesterPanel = () => {
         >
           <Button
             onClick={() => setOpenDialog(false)}
-            color="error"
+        color="error"
             variant="outlined"
-
             sx={{
               textTransform: "none",
               fontWeight: 600

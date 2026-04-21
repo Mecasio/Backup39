@@ -1496,8 +1496,8 @@ const MedicalRequirements = () => {
           </DialogContent>
           <DialogActions>
             <Button
-              color="error"
-              variant="outlined"
+           color="error"
+            variant="outlined"
               onClick={() => setConfirmOpen(false)}>
               Cancel
             </Button>

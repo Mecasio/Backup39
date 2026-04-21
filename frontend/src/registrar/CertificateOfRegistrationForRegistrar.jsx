@@ -1081,8 +1081,8 @@ const CertificateOfRegistration = forwardRef(
           </DialogContent>
           <DialogActions>
             <Button
-              color="error"
-              variant="outlined"
+             color="error"
+            variant="outlined"
               onClick={closeConfirm}
             >
               Cancel
@@ -1118,8 +1118,8 @@ const CertificateOfRegistration = forwardRef(
           </DialogContent>
           <DialogActions>
             <Button
-              variant="contained"
-              color="error"
+            color="error"
+            variant="outlined"
 
 
               onClick={closeScholarshipModal}>

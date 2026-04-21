@@ -1564,10 +1564,8 @@ const MedicalApplicantList = () => {
                         </DialogContent>
                         <DialogActions>
                             <Button
-                                variant="contained"
-                                color="error"
-
-
+                              color="error"
+            variant="outlined"
                                 onClick={() => setConfirmOpen(false)}>
                                 Cancel
                             </Button>

@@ -814,8 +814,8 @@ const SectionPanel = () => {
           }}
         >
           <Button
+       color="error"
             variant="outlined"
-            color="error"
             sx={{
               textTransform: "none",
               fontWeight: 600

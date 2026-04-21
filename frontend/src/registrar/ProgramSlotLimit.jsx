@@ -688,9 +688,8 @@ const ProgramSlotLimit = () => {
         </DialogContent>
         <DialogActions>
           <Button
-            variant="contained"
-            color="error"
-
+        color="error"
+            variant="outlined"
 
 
             onClick={() => setConfirmOpen(false)}
@@ -726,9 +725,8 @@ const ProgramSlotLimit = () => {
         </DialogContent>
         <DialogActions>
           <Button
-            variant="contained"
-            color="error"
-
+         color="error"
+            variant="outlined"
 
             onClick={() => setConfirmAllOpen(false)}
           >
@@ -763,10 +761,8 @@ const ProgramSlotLimit = () => {
         <DialogActions>
           <Button
             onClick={() => setConfirmAllProgramsOpen(false)}
-            variant="contained"
-            color="error"
-
-
+         color="error"
+            variant="outlined"
 
           >
             Cancel

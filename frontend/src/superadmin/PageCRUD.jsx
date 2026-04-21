@@ -515,9 +515,8 @@ const PageCRUD = () => {
 
                 <DialogActions sx={{ justifyContent: "space-between", px: 3, pb: 2 }}>
                     <Button onClick={handleClose}
-                        color="error"
-                        variant="outlined"
-
+                    color="error"
+            variant="outlined"
 
                     >
                         Cancel

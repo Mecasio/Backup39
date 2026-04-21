@@ -427,9 +427,8 @@ const DepartmentRoom = () => {
 
         <DialogActions>
           <Button
-            variant="contained"
-            color="error"
-
+        color="error"
+            variant="outlined"
 
             onClick={() => setOpenUnassignDialog(false)}>
             Cancel
@@ -541,7 +540,7 @@ const DepartmentRoom = () => {
           }}
         >
           <Button
-            color="error"
+   color="error"
             variant="outlined"
             sx={{ textTransform: "none", fontWeight: 600 }}
             onClick={() => setOpenModal(false)}

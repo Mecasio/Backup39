@@ -1858,8 +1858,8 @@ const SuperAdminApplicantList = () => {
             </DialogContent>
             <DialogActions>
               <Button onClick={() => setConfirmOpen(false)}
-                variant="contained"
-                color="error"
+             color="error"
+            variant="outlined"
 
               >
                 Cancel
@@ -2335,9 +2335,8 @@ const SuperAdminApplicantList = () => {
 
             <DialogActions>
               <Button
-                variant="contained"
-                color="error"
-
+           color="error"
+            variant="outlined"
 
                 onClick={handleCloseDialog}>Cancel</Button>
               {!(

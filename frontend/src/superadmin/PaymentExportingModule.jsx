@@ -660,9 +660,8 @@ const PaymentExportingModule = () => {
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={closeExportConfirm}
-                        variant="contained"
-                        color="error"
-
+                 color="error"
+            variant="outlined"
                     >
                         Cancel
                     </Button>

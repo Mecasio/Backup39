@@ -861,9 +861,8 @@ const ArchivedModule = () => {
         </DialogContent>
         <DialogActions>
           <Button
-            variant="contained"
-            color="error"
-
+         color="error"
+            variant="outlined"
 
             onClick={closeDialog} disabled={actionLoading}>
             Cancel
@@ -905,10 +904,8 @@ const ArchivedModule = () => {
         </DialogContent>
         <DialogActions>
           <Button
-            variant="contained"
-            color="error"
-
-
+       color="error"
+            variant="outlined"
             onClick={closeDialog} disabled={actionLoading}>
             Cancel
           </Button>

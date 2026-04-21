@@ -1026,7 +1026,7 @@ const RegisterRegistrar = () => {
                     <Button
                         onClick={handleCloseDialog}
                         color="error"
-                        variant="outlined"
+            variant="outlined"
                         sx={{ textTransform: "none", fontWeight: 600 }}
                     >
                         Cancel

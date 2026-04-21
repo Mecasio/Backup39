@@ -996,9 +996,8 @@ const MatriculationPaymentModule = () => {
                             />
                             <Box sx={{ mt: 2, width: "406px", display: "flex", alignItems: "center", justifyContent: "end" }}>
                                 <Button onClick={closeConfirm}
-                                    variant="contained"
-                                    color="error"
-
+                                 color="error"
+            variant="outlined"
 
                                 >
                                     Cancel

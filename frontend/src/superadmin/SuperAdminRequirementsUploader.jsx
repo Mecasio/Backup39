@@ -1595,8 +1595,8 @@ const SuperAdminRequirementsUploader = () => {
           </DialogContent>
           <DialogActions>
             <Button onClick={() => setConfirmOpen(false)}
-              color="error"
-              variant="outlined"
+           color="error"
+            variant="outlined"
             >
               Cancel
             </Button>

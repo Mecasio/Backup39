@@ -405,9 +405,8 @@ const YearLevelPanel = () => {
         >
           <Button
             onClick={() => setOpenYearLevelDialog(false)}
-            color="error"
+        color="error"
             variant="outlined"
-
             sx={{ textTransform: "none" }}
           >
             Cancel

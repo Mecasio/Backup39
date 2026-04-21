@@ -771,10 +771,8 @@ const InterviewerApplicantList = () => {
 
               <DialogActions>
                 <Button
-                  variant="contained"
-                  color="error"
-
-
+         color="error"
+            variant="outlined"
                   onClick={() => {
                     setOpenDeleteDialog(false);
                     setApplicantToDelete(null);

@@ -1275,8 +1275,125 @@ ORDER BY ptg.year_level_id, ptg.semester_id;
 
   } catch (err) {
     console.error(err);
+
     res.status(500).json({ error: "Failed to fetch curriculum subjects" });
   }
 });
+
+
+router.get("/api/student-documents/:studentNumber", async (req, res) => {
+  const { studentNumber } = req.params;
+  console.log("studentNumber: ", studentNumber);
+
+  try {
+    console.log("📥 Fetching documents for:", studentNumber);
+
+    const [rows] = await db3.execute(
+      `
+     SELECT 
+      snt.student_number,
+
+      -- PERSON INFO
+      pt.person_id,
+      pt.first_name,
+      pt.middle_name,
+      pt.last_name,
+      pt.profile_img,
+      pt.emailAddress,
+
+      -- REQUIREMENT INFO
+      rt.id AS requirements_id,
+      rt.description,
+      rt.category,
+      rt.is_optional,
+
+      -- UPLOAD INFO
+      ru.upload_id,
+      ru.original_name,
+      ru.file_path,
+      ru.remarks,
+      ru.status,
+      ru.document_status,
+      ru.missing_documents,
+      ru.registrar_status,
+      ru.created_at
+
+  FROM student_numbering_table snt
+
+  INNER JOIN person_table pt
+    ON snt.person_id = pt.person_id
+  INNER JOIN requirements_table rt
+    ON pt.applyingAs = rt.applicant_type
+  INNER JOIN requirement_uploads ru
+    ON ru.person_id = pt.person_id
+  WHERE snt.person_id = ? AND pt.applyingAs = rt.applicant_type 
+  OR rt.applicant_type = 0
+  ORDER BY rt.category, rt.description;
+      `,
+      [studentNumber]
+    );
+
+    console.log(rows)
+
+    res.status(200).json({
+      success: true,
+      data: rows,
+    });
+
+  } catch (error) {
+    console.error(error);
+
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+    });
+  }
+});
+
+router.post("/api/upload", upload.single("file"), async (req, res) => {
+  try {
+    const file = req.file;
+    const { requirements_id, person_id } = req.body;
+
+    if (!file) {
+      return res.status(400).json({
+        error: "No file uploaded",
+      });
+    }
+
+    await db3.execute(
+      `
+      INSERT INTO requirement_uploads (
+        requirements_id,
+        person_id,
+        original_name,
+        file_path,
+        status,
+        created_at
+      )
+      VALUES (?, ?, ?, ?, 0, NOW())
+      `,
+      [
+        requirements_id,
+        person_id,
+        file.originalname,
+        file.filename,
+      ]
+    );
+
+    res.json({
+      success: true,
+      message: "File uploaded successfully",
+    });
+
+  } catch (error) {
+    console.error(error);
+
+    res.status(500).json({
+      error: "Upload failed",
+    });
+  }
+});
+
 
 module.exports = router;

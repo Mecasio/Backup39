@@ -2010,8 +2010,8 @@ const ApplicationProcessAdmin = () => {
                         </DialogContent>
                         <DialogActions>
                             <Button onClick={() => setConfirmOpen(false)}
-                                color="error"
-                                variant="outlined"
+                                 color="error"
+            variant="outlined"
                             >
                                 Cancel
                             </Button>
@@ -2523,7 +2523,7 @@ const ApplicationProcessAdmin = () => {
                         <DialogActions>
                             <Button
                                 color="error"
-                                variant="outlined"
+            variant="outlined"
 
                                 onClick={handleCloseDialog}>Cancel</Button>
                             {!(
@@ -2785,9 +2785,8 @@ const ApplicationProcessAdmin = () => {
 
                 <DialogActions>
                     <Button
-                        variant="contained"
-                        color="error"
-
+                  color="error"
+            variant="outlined"
 
                         onClick={() => {
                             setOpenDeleteDialog(false);

@@ -880,10 +880,8 @@ const SchoolYearPanel = () => {
               setOpenDialog(false);
               setEditID(null);
             }}
-            color="error"
+   color="error"
             variant="outlined"
-
-
             sx={{
               textTransform: "none",
               fontWeight: 600

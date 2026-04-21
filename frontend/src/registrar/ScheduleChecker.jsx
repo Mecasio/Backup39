@@ -2468,9 +2468,8 @@ const ScheduleChecker = () => {
               setOpenDialogue(false);
               setSelectedScheduleId(null);
             }}
-            variant="contained"
-            color="error"
-
+         color="error"
+            variant="outlined"
 
           >
             Cancel
@@ -2497,10 +2496,8 @@ const ScheduleChecker = () => {
         </DialogContent>
         <DialogActions>
           <Button
-            variant="contained"
-            color="error"
-
-
+    color="error"
+            variant="outlined"
             onClick={() => setOpenConfirmDialog(false)}>
             Cancel
           </Button>

@@ -1091,8 +1091,8 @@ const CurriculumPanel = () => {
 
         <DialogActions>
           <Button
+         color="error"
             variant="outlined"
-            color="error"
             onClick={() => {
               setOpenDeleteDialog(false);
               setCurriculumToDelete(null);
@@ -1246,7 +1246,7 @@ const CurriculumPanel = () => {
               setEditingId(null);
               setCurriculum({ year_id: "", program_id: "" });
             }}
-            color="error"
+             color="error"
             variant="outlined"
           >
             Cancel

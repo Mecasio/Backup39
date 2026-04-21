@@ -644,9 +644,8 @@ const CourseTagging = () => {
         </DialogContent>
         <DialogActions>
           <Button
-            variant="contained"
-            color="error"
-
+      color="error"
+            variant="outlined"
 
             onClick={handleConfirmDialogClose}>Cancel</Button>
           <Button onClick={handleConfirmDialogProceed} variant="contained">Continue</Button>

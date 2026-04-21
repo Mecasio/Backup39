@@ -1279,9 +1279,8 @@ export default function StudentAccounts() {
                     {/* CANCEL */}
                     <Button
                         onClick={() => setOpen(false)}
-                        variant="contained"
-                        color="error"
-
+                     color="error"
+            variant="outlined"
 
                         startIcon={<CancelIcon />}
                         sx={{

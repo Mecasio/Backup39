@@ -1071,8 +1071,8 @@ const RegisterStudents = () => {
 
                 <DialogActions>
                     <Button
-                        variant="contained"
-                        color="error"
+                         color="error"
+            variant="outlined"
 
 
                         onClick={handleCloseDialog}>Cancel</Button>
