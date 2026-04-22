@@ -1,5 +1,10 @@
 const express = require("express");
 const { db } = require("../database/database");
+const {
+  CanCreate,
+  CanDelete,
+  CanEdit,
+} = require("../../middleware/pagePermissions");
 
 const router = express.Router();
 
@@ -19,7 +24,7 @@ const normalizeRequirementPayload = (body = {}) => {
   };
 };
 
-router.post("/requirements", async (req, res) => {
+router.post("/requirements", CanCreate, async (req, res) => {
   const payload = normalizeRequirementPayload(req.body);
 
   if (!payload.description) {
@@ -74,7 +79,7 @@ router.get("/requirements", async (req, res) => {
   }
 });
 
-router.put("/requirements/:id", async (req, res) => {
+router.put("/requirements/:id", CanEdit, async (req, res) => {
   const { id } = req.params;
   const payload = normalizeRequirementPayload(req.body);
 
@@ -118,7 +123,7 @@ router.put("/requirements/:id", async (req, res) => {
   }
 });
 
-router.delete("/requirements/:id", async (req, res) => {
+router.delete("/requirements/:id", CanDelete, async (req, res) => {
   const { id } = req.params;
 
   try {

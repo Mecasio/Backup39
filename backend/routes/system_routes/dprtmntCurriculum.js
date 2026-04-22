@@ -1,5 +1,10 @@
 const express = require('express');
 const { db, db3 } = require('../database/database');
+const {
+  CanCreate,
+  CanDelete,
+  CanEdit,
+} = require("../../middleware/pagePermissions");
 
 const router = express.Router();
 
@@ -48,7 +53,7 @@ router.get("/dprtmnt_curriculum/:dprtmnt_id", async (req, res) => {
 });
 
 // POST add mapping (dprtmnt_id + curriculum_id)
-router.post("/dprtmnt_curriculum", async (req, res) => {
+router.post("/dprtmnt_curriculum", CanCreate, async (req, res) => {
   const { dprtmnt_id, curriculum_id } = req.body;
   if (!dprtmnt_id || !curriculum_id) {
     return res
@@ -85,7 +90,7 @@ router.post("/dprtmnt_curriculum", async (req, res) => {
 });
 
 // DELETE mapping by mapping id
-router.delete("/dprtmnt_curriculum/:id", async (req, res) => {
+router.delete("/dprtmnt_curriculum/:id", CanDelete, async (req, res) => {
   const { id } = req.params;
   try {
     const [result] = await db3.execute(
@@ -104,7 +109,7 @@ router.delete("/dprtmnt_curriculum/:id", async (req, res) => {
   }
 });
 
-router.put("/dprtmnt_curriculum/:id", async (req, res) => {
+router.put("/dprtmnt_curriculum/:id", CanEdit, async (req, res) => {
   const { id } = req.params;
   const { curriculum_id, dprtmnt_id } = req.body;
 

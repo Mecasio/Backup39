@@ -100,6 +100,12 @@ const RoomRegistration = () => {
   const pageId = 52;
 
   const [employeeID, setEmployeeID] = useState("");
+  const permissionHeaders = {
+    headers: {
+      "x-employee-id": employeeID,
+      "x-page-id": pageId,
+    },
+  };
 
   useEffect(() => {
 
@@ -223,7 +229,7 @@ const RoomRegistration = () => {
         type,
         branch,
         updated_by: employeeID,
-      });
+      }, permissionHeaders);
 
       setSnack({
         open: true,
@@ -338,7 +344,8 @@ const RoomRegistration = () => {
           type,
           branch,
           updated_by: employeeID,
-        }
+        },
+        permissionHeaders,
       );
 
       setSnack({
@@ -369,7 +376,7 @@ const RoomRegistration = () => {
   // 🔹 Delete room (automatic, no confirm)
   const handleDeleteRoom = async (roomId) => {
     try {
-      await axios.delete(`${API_BASE_URL}/delete_room/${roomId}`);
+      await axios.delete(`${API_BASE_URL}/delete_room/${roomId}`, permissionHeaders);
       setSnack({
         open: true,
         message: "Room deleted successfully",

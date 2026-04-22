@@ -84,10 +84,19 @@ export default function EmailTemplateManager() {
   const [userRole, setUserRole] = useState("");
 
   const [hasAccess, setHasAccess] = useState(null);
+  const [canCreate, setCanCreate] = useState(false);
+  const [canEdit, setCanEdit] = useState(false);
+  const [canDelete, setCanDelete] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const pageId = 67;
   const [employeeID, setEmployeeID] = useState("");
+  const permissionHeaders = {
+    headers: {
+      "x-employee-id": employeeID,
+      "x-page-id": pageId,
+    },
+  };
 
   useEffect(() => {
 
@@ -117,12 +126,21 @@ export default function EmailTemplateManager() {
       const response = await axios.get(`${API_BASE_URL}/api/page_access/${employeeID}/${pageId}`);
       if (response.data && response.data.page_privilege === 1) {
         setHasAccess(true);
+        setCanCreate(Number(response.data?.can_create) === 1);
+        setCanEdit(Number(response.data?.can_edit) === 1);
+        setCanDelete(Number(response.data?.can_delete) === 1);
       } else {
         setHasAccess(false);
+        setCanCreate(false);
+        setCanEdit(false);
+        setCanDelete(false);
       }
     } catch (error) {
       console.error('Error checking access:', error);
       setHasAccess(false);
+      setCanCreate(false);
+      setCanEdit(false);
+      setCanDelete(false);
       if (error.response && error.response.data.message) {
         console.log(error.response.data.message);
       } else {
@@ -171,8 +189,13 @@ export default function EmailTemplateManager() {
       return;
     }
 
+    if (!canCreate) {
+      showSnack("You do not have permission to create items on this page", "error");
+      return;
+    }
+
     try {
-      await axios.post(API, form);
+      await axios.post(API, form, permissionHeaders);
       showSnack("Template successfully added", "success");
       setForm({ sender_name: "", department_id: "", employee_id: "", is_active: true });
       loadTemplates();
@@ -185,6 +208,11 @@ export default function EmailTemplateManager() {
   const [openFormDialog, setOpenFormDialog] = useState(false);
   // ✅ Edit template
   const handleEdit = (row) => {
+    if (!canEdit) {
+      showSnack("You do not have permission to edit this item", "error");
+      return;
+    }
+
     setEditing(row.template_id);
     setForm({
       sender_name: row.sender_name || "",
@@ -198,8 +226,13 @@ export default function EmailTemplateManager() {
   const handleUpdate = async () => {
     if (!editing) return;
 
+    if (!canEdit) {
+      showSnack("You do not have permission to edit this item", "error");
+      return;
+    }
+
     try {
-      await axios.put(`${API}/${editing}`, form);
+      await axios.put(`${API}/${editing}`, form, permissionHeaders);
       showSnack("Template updated successfully", "success");
       setEditing(null);
       setForm({ sender_name: "", department_id: "", employee_id: "", is_active: true });
@@ -225,8 +258,13 @@ export default function EmailTemplateManager() {
   const [templateToDelete, setTemplateToDelete] = useState(null);
 
   const handleDelete = async (id) => {
+    if (!canDelete) {
+      showSnack("You do not have permission to delete this item", "error");
+      return;
+    }
+
     try {
-      await axios.delete(`${API}/${id}`);
+      await axios.delete(`${API}/${id}`, permissionHeaders);
       showSnack("Template deleted successfully", "success");
       loadTemplates();
     } catch (err) {
@@ -458,9 +496,11 @@ export default function EmailTemplateManager() {
 
                     <Button
                       variant="contained"
+                      disabled={!canCreate}
                       sx={{
-                        backgroundColor: "#1976d2", // ✅ Blue
+                        backgroundColor: "#1976d2", // âœ… Blue
                         color: "#fff",
+                        opacity: canCreate ? 1 : 0.5,
                         fontWeight: "bold",
                         borderRadius: "8px",
                         width: "250px",
@@ -469,7 +509,10 @@ export default function EmailTemplateManager() {
 
                       }}
                       onClick={() => {
-                        ``
+                        if (!canCreate) {
+                          showSnack("You do not have permission to create items on this page", "error");
+                          return;
+                        }
                         setEditing(null);
                         setForm({
                           sender_name: "",
@@ -538,6 +581,7 @@ export default function EmailTemplateManager() {
                         <Button
                           variant="contained"
                           size="small"
+                          disabled={!canEdit}
                           sx={{
                             backgroundColor: "green",
                             color: "white",
@@ -545,17 +589,21 @@ export default function EmailTemplateManager() {
                             borderRadius: "5px",
                             padding: "8px 14px",
 
-                            cursor: "pointer",
+                            cursor: canEdit ? "pointer" : "not-allowed",
                             width: "100px",
                             height: "40px",
                             display: "flex",
                             alignItems: "center",
                             justifyContent: "center",
                             gap: "5px",
+                            opacity: canEdit ? 1 : 0.5,
 
                           }}
                           onClick={() => {
                             handleEdit(r);
+                            if (!canEdit) {
+                              return;
+                            }
                             setOpenFormDialog(true);
                           }}
                         >
@@ -564,22 +612,28 @@ export default function EmailTemplateManager() {
                         <Button
                           variant="contained"
                           size="small"
+                          disabled={!canDelete}
                           sx={{
                             backgroundColor: "#9E0000",
                             color: "white",
                             border: "none",
                             borderRadius: "5px",
                             padding: "8px 14px",
-                            cursor: "pointer",
+                            cursor: canDelete ? "pointer" : "not-allowed",
                             width: "100px",
                             height: "40px",
                             display: "flex",
                             alignItems: "center",
                             justifyContent: "center",
                             gap: "5px",
+                            opacity: canDelete ? 1 : 0.5,
 
                           }}
                           onClick={() => {
+                            if (!canDelete) {
+                              showSnack("You do not have permission to delete this item", "error");
+                              return;
+                            }
                             setTemplateToDelete(r);
                             setOpenDeleteDialog(true);
                           }}
@@ -930,8 +984,16 @@ export default function EmailTemplateManager() {
             }}
             onClick={async () => {
               if (editing) {
+                if (!canEdit) {
+                  showSnack("You do not have permission to edit this item", "error");
+                  return;
+                }
                 await handleUpdate();
               } else {
+                if (!canCreate) {
+                  showSnack("You do not have permission to create items on this page", "error");
+                  return;
+                }
                 await handleAdd();
               }
 

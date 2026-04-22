@@ -1,5 +1,10 @@
 const express = require('express');
 const { db3 } = require('../database/database');
+const {
+  CanCreate,
+  CanDelete,
+  CanEdit,
+} = require("../../middleware/pagePermissions");
 
 const router = express.Router();
 
@@ -45,7 +50,7 @@ router.get("/room_list", async (req, res) => {
 
 
 /* ===================== ADD ROOM ===================== */
-router.post("/adding_room", async (req, res) => {
+router.post("/adding_room", CanCreate, async (req, res) => {
   const {
     room_description,
     building_description,
@@ -101,7 +106,7 @@ router.post("/adding_room", async (req, res) => {
 
 
 /* ===================== UPDATE ROOM ===================== */
-router.put("/update_room/:id", async (req, res) => {
+router.put("/update_room/:id", CanEdit, async (req, res) => {
   const { id } = req.params;
 
   const {
@@ -178,7 +183,7 @@ router.put("/update_room/:id", async (req, res) => {
 
 
 /* ===================== DELETE ROOM ===================== */
-router.delete("/delete_room/:id", async (req, res) => {
+router.delete("/delete_room/:id", CanDelete, async (req, res) => {
   const { id } = req.params;
 
   try {

@@ -154,6 +154,41 @@ const CertificateOfRegistration = forwardRef(
       setCampusAddress(settings.address || "");
     }, [settings, branches, person?.campus]);
 
+    const [approvedBy, setApprovedBy] = useState(null);
+    const [approvedBySignatureMissing, setApprovedBySignatureMissing] =
+      useState(false);
+    const approvedBySignature =
+      typeof approvedBy?.signature_image === "string"
+        ? approvedBy.signature_image.trim()
+        : "";
+    const approvedBySignatureUrl = approvedBySignature
+      ? `${API_BASE_URL}/uploads/${approvedBySignature}`
+      : "";
+    const showApprovedBySignature = Boolean(
+      student_number && approvedBySignatureUrl && !approvedBySignatureMissing,
+    );
+
+    useEffect(() => {
+      setApprovedBySignatureMissing(false);
+    }, [approvedBySignatureUrl]);
+
+    useEffect(() => {
+      const fetchApprovedBy = async () => {
+        try {
+          const res = await fetch(`${API_BASE_URL}/api/signature-latest`);
+          const data = await res.json();
+
+          if (data.success) {
+            setApprovedBy(data.data);
+          }
+        } catch (err) {
+          console.error(err);
+        }
+      };
+
+      fetchApprovedBy();
+    }, []);
+
     // ✅ Fetch person data from backend
     const fetchPersonData = async (id) => {
       try {
@@ -439,14 +474,9 @@ const CertificateOfRegistration = forwardRef(
 
           console.log(yearLevelDescription);
 
-          // 2. Fetch full student data (COR info)
-          const corResponse = await axios.get(
-            `${API_BASE_URL}/student-data/${studentNum}`,
-          );
-          const fullData = corResponse.data;
+          const fullData = response.data.corData || {};
           setData([fullData]); // Wrap in array for data[0] compatibility
 
-          // 3. Set additional fields: gender, age, email, program
           setGender(fullData.gender || null);
           setAge(fullData.age || null);
           console.log(age);
@@ -3103,23 +3133,55 @@ const CertificateOfRegistration = forwardRef(
                           fontSize: "62.5%",
                         }}
                       >
-                        <input
-                          type="text"
-                          value={"_________________________________"}
-                          readOnly
+                        {showApprovedBySignature ? (
+                          <img
+                            src={approvedBySignatureUrl}
+                            alt="Signature"
+                            onError={() =>
+                              setApprovedBySignatureMissing(true)
+                            }
+                            style={{
+                              height: "60px",
+                              objectFit: "contain",
+                              width: "250px",
+                              marginBottom: "2px",
+                              display: !student_number ? "none" : "block",
+                              marginLeft: "auto",
+                              marginRight: "auto",
+                            }}
+                          />
+                        ) : (
+                          <div
+                            style={{
+                              height: "60px",
+                              display: !student_number ? "none" : "block",
+                            }}
+                          />
+                        )}
+
+                        <div
                           style={{
-                            color: "black",
-                            textAlign: "center",
-                            fontWeight: "bold",
+                            display: "inline-block",
                             fontFamily: "Arial",
                             fontSize: "12px",
-                            textDecoration: "underline",
-                            width: "98%",
-                            border: "none",
-                            outline: "none",
-                            background: "none",
+                            marginTop: "-10px",
+                            fontWeight: "bold",
+                            lineHeight: "1.1",
+                            textAlign: "center",
                           }}
-                        />
+                        >
+                          <div
+                            style={{
+                              minHeight: "14px",
+                              display: !student_number ? "none" : "block",
+                            }}
+                          >
+                            {approvedBy?.full_name || ""}
+                          </div>
+                          <div style={{ whiteSpace: "pre", marginTop: "-6px" }}>
+                            __________________________________
+                          </div>
+                        </div>
                       </td>
                     </tr>
 

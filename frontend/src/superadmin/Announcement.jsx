@@ -57,9 +57,18 @@ const AnnouncementPanel = () => {
     const [userRole, setUserRole] = useState("");
     const [employeeID, setEmployeeID] = useState("");
     const [hasAccess, setHasAccess] = useState(null);
+    const [canCreate, setCanCreate] = useState(false);
+    const [canEdit, setCanEdit] = useState(false);
+    const [canDelete, setCanDelete] = useState(false);
     const [loading, setLoading] = useState(false);
 
     const pageId = 66;
+    const permissionHeaders = {
+        headers: {
+            "x-employee-id": employeeID,
+            "x-page-id": pageId,
+        },
+    };
 
     const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
 
@@ -88,9 +97,22 @@ const AnnouncementPanel = () => {
     const checkAccess = async (employeeID) => {
         try {
             const res = await axios.get(`${API_BASE_URL}/api/page_access/${employeeID}/${pageId}`);
-            setHasAccess(res.data?.page_privilege === 1);
+            if (res.data?.page_privilege === 1) {
+                setHasAccess(true);
+                setCanCreate(Number(res.data?.can_create) === 1);
+                setCanEdit(Number(res.data?.can_edit) === 1);
+                setCanDelete(Number(res.data?.can_delete) === 1);
+            } else {
+                setHasAccess(false);
+                setCanCreate(false);
+                setCanEdit(false);
+                setCanDelete(false);
+            }
         } catch (err) {
             setHasAccess(false);
+            setCanCreate(false);
+            setCanEdit(false);
+            setCanDelete(false);
             console.error(err);
         }
     };
@@ -117,6 +139,14 @@ const AnnouncementPanel = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        if (editingId && !canEdit) {
+            setSnackbar({ open: true, message: "You do not have permission to edit this item", severity: "error" });
+            return;
+        }
+        if (!editingId && !canCreate) {
+            setSnackbar({ open: true, message: "You do not have permission to create items on this page", severity: "error" });
+            return;
+        }
         try {
             const formData = new FormData();
             formData.append("title", form.title);
@@ -128,12 +158,20 @@ const AnnouncementPanel = () => {
 
             if (editingId) {
                 await axios.put(`${API_BASE_URL}/api/announcements/${editingId}`, formData, {
-                    headers: { "Content-Type": "multipart/form-data" },
+                    headers: {
+                        "Content-Type": "multipart/form-data",
+                        "x-employee-id": employeeID,
+                        "x-page-id": pageId,
+                    },
                 });
                 setSnackbar({ open: true, message: "Announcement updated!", severity: "success" });
             } else {
                 await axios.post(`${API_BASE_URL}/api/announcements`, formData, {
-                    headers: { "Content-Type": "multipart/form-data" },
+                    headers: {
+                        "Content-Type": "multipart/form-data",
+                        "x-employee-id": employeeID,
+                        "x-page-id": pageId,
+                    },
                 });
                 setSnackbar({ open: true, message: "Announcement created!", severity: "success" });
             }
@@ -156,6 +194,10 @@ const AnnouncementPanel = () => {
 
 
     const handleEdit = (announcement) => {
+        if (!canEdit) {
+            setSnackbar({ open: true, message: "You do not have permission to edit this item", severity: "error" });
+            return;
+        }
         setForm({
             title: announcement?.title ?? "",
             content: announcement?.content ?? "",
@@ -287,6 +329,14 @@ const AnnouncementPanel = () => {
     const [announcementToDelete, setAnnouncementToDelete] = useState(null);
 
     const handleDelete = async (id) => {
+        if (!canDelete) {
+            setSnackbar({
+                open: true,
+                message: "You do not have permission to delete this item",
+                severity: "error",
+            });
+            return;
+        }
         setSnackbar({
             open: true,
             message: "⏳ Deleting announcement...",
@@ -294,7 +344,7 @@ const AnnouncementPanel = () => {
         });
 
         try {
-            await axios.delete(`${API_BASE_URL}/api/announcements/${id}`);
+            await axios.delete(`${API_BASE_URL}/api/announcements/${id}`, permissionHeaders);
 
             setSnackbar({
                 open: true,
@@ -455,9 +505,11 @@ const AnnouncementPanel = () => {
 
                                         <Button
                                             variant="contained"
+                                            disabled={!canCreate}
                                             sx={{
                                                 backgroundColor: "#1976d2", // ✅ Blue
                                                 color: "#fff",
+                                                opacity: canCreate ? 1 : 0.5,
                                                 fontWeight: "bold",
                                                 borderRadius: "8px",
                                                 width: "250px",
@@ -469,6 +521,10 @@ const AnnouncementPanel = () => {
                                                 }
                                             }}
                                             onClick={() => {
+                                                if (!canCreate) {
+                                                    setSnackbar({ open: true, message: "You do not have permission to create items on this page", severity: "error" });
+                                                    return;
+                                                }
                                                 setEditingId(null);
                                                 setForm({
                                                     title: "",
@@ -639,6 +695,7 @@ const AnnouncementPanel = () => {
                                             <Button
                                                 variant="contained"
                                                 size="small"
+                                                disabled={!canEdit}
                                                 sx={{
                                                     backgroundColor: "green",
                                                     color: "white",
@@ -649,6 +706,8 @@ const AnnouncementPanel = () => {
                                                     alignItems: "center",
                                                     justifyContent: "center",
                                                     gap: "5px",
+                                                    opacity: canEdit ? 1 : 0.5,
+                                                    cursor: canEdit ? "pointer" : "not-allowed",
                                                 }}
 
                                                 onClick={() => {
@@ -662,6 +721,7 @@ const AnnouncementPanel = () => {
                                             <Button
                                                 variant="contained"
                                                 size="small"
+                                                disabled={!canDelete}
                                                 sx={{
                                                     backgroundColor: "#9E0000",
                                                     color: "white",
@@ -672,8 +732,14 @@ const AnnouncementPanel = () => {
                                                     alignItems: "center",
                                                     justifyContent: "center",
                                                     gap: "5px",
+                                                    opacity: canDelete ? 1 : 0.5,
+                                                    cursor: canDelete ? "pointer" : "not-allowed",
                                                 }}
                                                 onClick={() => {
+                                                    if (!canDelete) {
+                                                        setSnackbar({ open: true, message: "You do not have permission to delete this item", severity: "error" });
+                                                        return;
+                                                    }
                                                     setAnnouncementToDelete(a);
                                                     setOpenDeleteDialog(true);
                                                 }}
@@ -1073,6 +1139,14 @@ const AnnouncementPanel = () => {
                     <Button
                         variant="contained"
                         onClick={(e) => {
+                            if (editingId && !canEdit) {
+                                setSnackbar({ open: true, message: "You do not have permission to edit this item", severity: "error" });
+                                return;
+                            }
+                            if (!editingId && !canCreate) {
+                                setSnackbar({ open: true, message: "You do not have permission to create items on this page", severity: "error" });
+                                return;
+                            }
                             handleSubmit(e);
                             setOpenFormDialog(false);
                         }}

@@ -494,7 +494,7 @@ WHERE proctor LIKE ?
       );
 
       const [studentFuturePI] = await db3.query(
-        `SELECT MAX(person_id) AS latest_person_id FROM user_accounts;`,
+        `SELECT MAX(person_id) AS latest_person_id FROM person_table;`,
       );
 
       const personIdForStudent = studentFuturePI[0].latest_person_id;
@@ -2798,6 +2798,9 @@ app.post("/student-tagging-batch", async (req, res) => {
         ptbl.first_name,
         ptbl.last_name,
         ptbl.middle_name,
+        ptbl.campus,
+        ptbl.lrnNumber,
+        ptbl.cellphoneNumber,
         ptbl.age,
         ptbl.gender,
         ptbl.emailAddress,
@@ -2879,6 +2882,27 @@ app.post("/student-tagging-batch", async (req, res) => {
         const totalNstpCount = Number(feeResult[0]?.total_nstp || 0);
         const totalComputerLab = Number(feeResult[0]?.total_computer_lab || 0);
         const totalLaboratory = Number(feeResult[0]?.total_laboratory || 0);
+        const corData = {
+          student_number: student.student_number,
+          person_id: student.person_id,
+          profile_img: student.profile_img,
+          lrnNumber: student.lrnNumber,
+          cellphoneNumber: student.cellphoneNumber,
+          last_name: student.last_name,
+          middle_name: student.middle_name,
+          campus: student.campus,
+          first_name: student.first_name,
+          extension: student.extension,
+          gender: student.gender,
+          age: student.age,
+          email: student.emailAddress,
+          curriculum: student.active_curriculum,
+          yearlevel: student.year_level_id,
+          program: student.program_description,
+          program_code: student.program_code,
+          college: student.dprtmnt_name,
+          active_school_year_id: student.active_school_year_id,
+        };
 
         const token2 = webtoken.sign(
           {
@@ -2900,6 +2924,7 @@ app.post("/student-tagging-batch", async (req, res) => {
           totalNstpCount,
           totalComputerLab,
           totalLaboratory,
+          corData,
           token2,
         };
       }),
@@ -5028,7 +5053,11 @@ app.get("/api/college/persons", async (req, res) => {
       INNER JOIN enrollment.curriculum_table ct ON p.program = ct.curriculum_id
       INNER JOIN enrollment.program_table pt ON ct.program_id = pt.program_id
       WHERE ps.student_registration_status = 0 AND ps.exam_status = 1 AND ps.interview_status = 1
-      AND p.emailAddress NOT IN (SELECT emailAddress FROM enrollment.person_table);
+      AND NOT EXISTS (
+        SELECT 1 
+        FROM enrollment.person_table ep
+        WHERE ep.emailAddress = p.emailAddress
+      )
     `);
 
     if (persons.length === 0) return res.json([]);
@@ -5101,13 +5130,24 @@ app.put(
 
 // � Get interviewer schedules + applicants
 app.get("/api/interviewers", async (req, res) => {
-  const { query } = req.query;
+  const { query = "", schedule } = req.query;
 
   try {
-    // 1. Find schedules that match interviewer name
+    const scheduleParams = [];
+    const scheduleWhere = [];
+
+    if (schedule) {
+      scheduleWhere.push("schedule_id = ?");
+      scheduleParams.push(schedule);
+    } else {
+      scheduleWhere.push("interviewer LIKE ?");
+      scheduleParams.push(`%${query}%`);
+    }
+
+    // 1. Find schedules by clicked schedule id, or by interviewer search text.
     const [schedules] = await db.query(
-      "SELECT * FROM interview_exam_schedule WHERE interviewer LIKE ?",
-      [`%${query}%`],
+      `SELECT * FROM interview_exam_schedule WHERE ${scheduleWhere.join(" AND ")}`,
+      scheduleParams,
     );
 
     if (schedules.length === 0) {

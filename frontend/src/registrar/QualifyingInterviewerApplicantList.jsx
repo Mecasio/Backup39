@@ -49,7 +49,7 @@ const InterviewerApplicantList = () => {
 
     if (scheduleId) {
       setSearchQuery(interviewerName || "");  // pre-fill search bar
-      handleSearch(); // immediately fetch applicants for this schedule
+      handleSearch(scheduleId); // immediately fetch applicants for this schedule
     }
   }, [location.search]);
 
@@ -247,12 +247,15 @@ const InterviewerApplicantList = () => {
 
   });
 
-  const handleSearch = async (scheduleId = null) => {
+  const handleSearch = async (scheduleId = null, query = searchQuery) => {
     try {
+      const params = new URLSearchParams(location.search);
+      const selectedScheduleId = scheduleId || params.get("schedule");
+
       const { data } = await axios.get(`${API_BASE_URL}/api/interviewers`, {
         params: {
-          query: searchQuery,
-          schedule: scheduleId, // send schedule ID if provided
+          query,
+          schedule: selectedScheduleId, // keep the clicked schedule filter
         },
       });
 
@@ -514,8 +517,9 @@ const InterviewerApplicantList = () => {
 
           value={searchQuery}
           onChange={(e) => {
-            setSearchQuery(e.target.value);
-            handleSearch();
+            const value = e.target.value;
+            setSearchQuery(value);
+            handleSearch(null, value);
           }}
 
           sx={{

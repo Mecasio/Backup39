@@ -81,12 +81,21 @@ const RequirementsForm = () => {
   const [userRole, setUserRole] = useState("");
 
   const [hasAccess, setHasAccess] = useState(null);
+  const [canCreate, setCanCreate] = useState(false);
+  const [canEdit, setCanEdit] = useState(false);
+  const [canDelete, setCanDelete] = useState(false);
   const [loading, setLoading] = useState(false);
 
 
   const pageId = 51;
 
   const [employeeID, setEmployeeID] = useState("");
+  const permissionHeaders = {
+    headers: {
+      "x-employee-id": employeeID,
+      "x-page-id": pageId,
+    },
+  };
 
   useEffect(() => {
 
@@ -116,12 +125,21 @@ const RequirementsForm = () => {
       const response = await axios.get(`${API_BASE_URL}/api/page_access/${employeeID}/${pageId}`);
       if (response.data && response.data.page_privilege === 1) {
         setHasAccess(true);
+        setCanCreate(Number(response.data?.can_create) === 1);
+        setCanEdit(Number(response.data?.can_edit) === 1);
+        setCanDelete(Number(response.data?.can_delete) === 1);
       } else {
         setHasAccess(false);
+        setCanCreate(false);
+        setCanEdit(false);
+        setCanDelete(false);
       }
     } catch (error) {
       console.error('Error checking access:', error);
       setHasAccess(false);
+      setCanCreate(false);
+      setCanEdit(false);
+      setCanDelete(false);
       if (error.response && error.response.data.message) {
         console.log(error.response.data.message);
       } else {
@@ -186,6 +204,15 @@ const RequirementsForm = () => {
   const [openDialog, setOpenDialog] = useState(false);
 
   const handleOpenAddDialog = () => {
+    if (!canCreate) {
+      setSnack({
+        open: true,
+        message: "You do not have permission to create items on this page",
+        severity: "error",
+      });
+      return;
+    }
+
     setDescription("");
     setShortLabel("");
     setCategory("Main");
@@ -201,6 +228,15 @@ const RequirementsForm = () => {
   };
 
   const handleOpenEditDialog = (req) => {
+    if (!canEdit) {
+      setSnack({
+        open: true,
+        message: "You do not have permission to edit this item",
+        severity: "error",
+      });
+      return;
+    }
+
     setDescription(req.description);
     setShortLabel(req.short_label || "");
     setCategory(req.category || "Main");
@@ -230,6 +266,24 @@ const RequirementsForm = () => {
       return;
     }
 
+    if (isEditing && !canEdit) {
+      setSnack({
+        open: true,
+        message: "You do not have permission to edit this item.",
+        severity: "error",
+      });
+      return;
+    }
+
+    if (!isEditing && !canCreate) {
+      setSnack({
+        open: true,
+        message: "You do not have permission to create items on this page.",
+        severity: "error",
+      });
+      return;
+    }
+
     try {
       if (isEditing) {
         await axios.put(`${API_BASE_URL}/requirements/${editId}`, {
@@ -240,7 +294,7 @@ const RequirementsForm = () => {
           requires_original: requiresOriginal,
           is_optional: isOptional,
           applicant_type: applicantType
-        });
+        }, permissionHeaders);
 
         setSnack({
           open: true,
@@ -258,7 +312,7 @@ const RequirementsForm = () => {
           requires_original: requiresOriginal,
           is_optional: isOptional,
           applicant_type: applicantType
-        });
+        }, permissionHeaders);
 
         setSnack({
           open: true,
@@ -296,8 +350,17 @@ const RequirementsForm = () => {
   const [requirementToDelete, setRequirementToDelete] = useState(null);
 
   const handleDelete = async (id) => {
+    if (!canDelete) {
+      setSnack({
+        open: true,
+        message: "You do not have permission to delete this item.",
+        severity: "error",
+      });
+      return;
+    }
+
     try {
-      await axios.delete(`${API_BASE_URL}/requirements/${id}`);
+      await axios.delete(`${API_BASE_URL}/requirements/${id}`, permissionHeaders);
       fetchRequirements();
       setSnack({
         open: true,
@@ -559,9 +622,11 @@ const RequirementsForm = () => {
                     <Button
                       variant="contained"
                       onClick={handleOpenAddDialog}
+                      disabled={!canCreate}
                       sx={{
                         backgroundColor: "#1976d2", // ✅ Blue
                         color: "#fff",
+                        opacity: canCreate ? 1 : 0.5,
                         fontWeight: "bold",
                         borderRadius: "8px",
                         width: "250px",
@@ -668,6 +733,7 @@ const RequirementsForm = () => {
                   <Button
                     variant="contained"
                     size="small"
+                    disabled={!canEdit}
                     style={{
                       backgroundColor: "green",
                       color: "white",
@@ -675,13 +741,14 @@ const RequirementsForm = () => {
                       borderRadius: "5px",
                       padding: "8px 14px",
 
-                      cursor: "pointer",
+                      cursor: canEdit ? "pointer" : "not-allowed",
                       width: "100px",
                       height: "40px",
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
                       gap: "5px",
+                      opacity: canEdit ? 1 : 0.5,
 
                     }}
                     onClick={() => handleOpenEditDialog(req)}
@@ -692,6 +759,7 @@ const RequirementsForm = () => {
                   <Button
                     variant="contained"
                     size="small"
+                    disabled={!canDelete}
                     style={{
 
                       backgroundColor: "#9E0000",
@@ -699,15 +767,24 @@ const RequirementsForm = () => {
                       border: "none",
                       borderRadius: "5px",
                       padding: "8px 14px",
-                      cursor: "pointer",
+                      cursor: canDelete ? "pointer" : "not-allowed",
                       width: "100px",
                       height: "40px",
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
                       gap: "5px",
+                      opacity: canDelete ? 1 : 0.5,
                     }}
                     onClick={() => {
+                      if (!canDelete) {
+                        setSnack({
+                          open: true,
+                          message: "You do not have permission to delete this item.",
+                          severity: "error",
+                        });
+                        return;
+                      }
                       setRequirementToDelete(req);
                       setOpenDeleteDialog(true);
                     }}

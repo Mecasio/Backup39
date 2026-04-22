@@ -1,5 +1,10 @@
 const express = require("express");
 const { db, db3 } = require("../database/database");
+const {
+  CanCreate,
+  CanDelete,
+  CanEdit,
+} = require("../../middleware/pagePermissions");
 
 const router = express.Router();
 
@@ -144,7 +149,7 @@ router.get("/school_years", async (req, res) => {
   }
 });
 
-router.post("/school_years", async (req, res) => {
+router.post("/school_years", CanCreate, async (req, res) => {
   const { year_id, semester_id, activator } = req.body;
 
   if (!year_id || !semester_id) {
@@ -184,7 +189,7 @@ router.post("/school_years", async (req, res) => {
   }
 });
 
-router.put("/school_years/:id", async (req, res) => {
+router.put("/school_years/:id", CanEdit, async (req, res) => {
   const { id } = req.params;
   const { activator } = req.body;
 
@@ -241,7 +246,7 @@ router.put("/school_years/:id", async (req, res) => {
   }
 });
 
-router.delete("/school_years/:id", async (req, res) => {
+router.delete("/school_years/:id", CanDelete, async (req, res) => {
   const { id } = req.params;
 
   try {

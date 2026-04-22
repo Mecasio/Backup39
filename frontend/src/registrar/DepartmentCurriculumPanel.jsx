@@ -27,7 +27,9 @@ import {
   Typography,
   IconButton,
   Autocomplete,
-  TextField
+  TextField,
+  Snackbar,
+  Alert,
 } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
 import AddIcon from "@mui/icons-material/Add";
@@ -111,6 +113,9 @@ export default function DepartmentCurriculumPanel() {
   const [user, setUser] = useState("");
   const [userRole, setUserRole] = useState("");
   const [hasAccess, setHasAccess] = useState(null);
+  const [canCreate, setCanCreate] = useState(false);
+  const [canEdit, setCanEdit] = useState(false);
+  const [canDelete, setCanDelete] = useState(false);
   const [loading, setLoading] = useState(false);
   const [snack, setSnack] = useState({
     open: false,
@@ -120,6 +125,12 @@ export default function DepartmentCurriculumPanel() {
   const pageId = 107;
 
   const [employeeID, setEmployeeID] = useState("");
+  const permissionHeaders = {
+    headers: {
+      "x-employee-id": employeeID,
+      "x-page-id": pageId,
+    },
+  };
 
   useEffect(() => {
 
@@ -149,12 +160,21 @@ export default function DepartmentCurriculumPanel() {
       const response = await axios.get(`${API_BASE_URL}/api/page_access/${employeeID}/${pageId}`);
       if (response.data && response.data.page_privilege === 1) {
         setHasAccess(true);
+        setCanCreate(Number(response.data?.can_create) === 1);
+        setCanEdit(Number(response.data?.can_edit) === 1);
+        setCanDelete(Number(response.data?.can_delete) === 1);
       } else {
         setHasAccess(false);
+        setCanCreate(false);
+        setCanEdit(false);
+        setCanDelete(false);
       }
     } catch (error) {
       console.error('Error checking access:', error);
       setHasAccess(false);
+      setCanCreate(false);
+      setCanEdit(false);
+      setCanDelete(false);
       if (error.response && error.response.data.message) {
         console.log(error.response.data.message);
       } else {
@@ -177,6 +197,23 @@ export default function DepartmentCurriculumPanel() {
   // function closeEditDialog() {
   //   setEditDialog({ open: false, id: null, curriculum_id: "" });
   // }
+
+  function openEditDialog() {
+    if (!canEdit) {
+      setSnack({
+        open: true,
+        message: "You do not have permission to edit this item",
+        severity: "error",
+      });
+      return;
+    }
+
+    setSnack({
+      open: true,
+      message: "Edit mapping is not available on this panel yet.",
+      severity: "info",
+    });
+  }
 
 
   // async function handleEditSave() {
@@ -260,12 +297,22 @@ export default function DepartmentCurriculumPanel() {
 
   async function handleAddMapping() {
     if (!selectedDept || !selectedCurr) return;
+
+    if (!canCreate) {
+      setSnack({
+        open: true,
+        message: "You do not have permission to create items on this page",
+        severity: "error",
+      });
+      return;
+    }
+
     setAdding(true);
     try {
       await axios.post(`${API_BASE_URL}/dprtmnt_curriculum`, {
         dprtmnt_id: selectedDept,
         curriculum_id: selectedCurr,
-      });
+      }, permissionHeaders);
       // refresh
       fetchMappings(selectedDept);
       setSelectedCurr("");
@@ -287,8 +334,19 @@ export default function DepartmentCurriculumPanel() {
   async function handleDelete() {
     const id = confirmDelete.id;
     if (!id) return;
+
+    if (!canDelete) {
+      setSnack({
+        open: true,
+        message: "You do not have permission to delete this item",
+        severity: "error",
+      });
+      closeDeleteDialog();
+      return;
+    }
+
     try {
-      await axios.delete(`${API_BASE_URL}/dprtmnt_curriculum/${id}`);
+      await axios.delete(`${API_BASE_URL}/dprtmnt_curriculum/${id}`, permissionHeaders);
       fetchMappings(selectedDept);
       closeDeleteDialog();
     } catch (err) {
@@ -430,7 +488,10 @@ export default function DepartmentCurriculumPanel() {
               variant="contained"
               startIcon={<AddIcon />}
               onClick={handleAddMapping}
-              disabled={!selectedDept || !selectedCurr || adding}
+              disabled={!selectedDept || !selectedCurr || adding || !canCreate}
+              sx={{
+                opacity: canCreate ? 1 : 0.5,
+              }}
             >
               {adding ? <CircularProgress size={18} /> : "Add"}
             </Button>
@@ -511,7 +572,10 @@ export default function DepartmentCurriculumPanel() {
                               alignItems: "center",
                               justifyContent: "center",
                               gap: "5px",
+                              opacity: canEdit ? 1 : 0.5,
+                              cursor: canEdit ? "pointer" : "not-allowed",
                             }}
+                            disabled={!canEdit}
                             onClick={() => openEditDialog(m)}
                           >
                             <EditIcon fontSize="small" /> Edit
@@ -530,7 +594,10 @@ export default function DepartmentCurriculumPanel() {
                               alignItems: "center",
                               justifyContent: "center",
                               gap: "5px",
+                              opacity: canDelete ? 1 : 0.5,
+                              cursor: canDelete ? "pointer" : "not-allowed",
                             }}
+                            disabled={!canDelete}
                             onClick={() => openDeleteDialog(m.dprtmnt_curriculum_id)}
                           >
                             <DeleteIcon fontSize="small" /> Delete
@@ -596,6 +663,21 @@ export default function DepartmentCurriculumPanel() {
           </Button>
         </DialogActions>
       </Dialog> */}
+
+      <Snackbar
+        open={snack.open}
+        autoHideDuration={3000}
+        onClose={() => setSnack((prev) => ({ ...prev, open: false }))}
+        anchorOrigin={{ vertical: "top", horizontal: "center" }}
+      >
+        <Alert
+          severity={snack.severity}
+          onClose={() => setSnack((prev) => ({ ...prev, open: false }))}
+          sx={{ width: "100%" }}
+        >
+          {snack.message}
+        </Alert>
+      </Snackbar>
 
     </Box>
   );

@@ -1,7 +1,20 @@
 const express = require("express");
 const { db3 } = require("../database/database");
+const {
+    CanCreate,
+    CanDelete,
+    CanEdit,
+} = require("../../middleware/pagePermissions");
 
 const router = express.Router();
+
+const requireCreateOrEdit = async (req, res, next) => {
+    if (req.body?.id) {
+        return CanEdit(req, res, next);
+    }
+
+    return CanCreate(req, res, next);
+};
 
 /* =========================================================
    HELPERS
@@ -57,7 +70,7 @@ router.get("/admin/grade-conversion", async (req, res) => {
     }
 });
 
-router.post("/admin/grade-conversion", async (req, res) => {
+router.post("/admin/grade-conversion", requireCreateOrEdit, async (req, res) => {
     try {
         const { id, min_score, max_score, equivalent_grade, descriptive_rating } = req.body;
 
@@ -118,7 +131,7 @@ router.post("/admin/grade-conversion", async (req, res) => {
     }
 });
 
-router.delete("/admin/grade-conversion/:id", async (req, res) => {
+router.delete("/admin/grade-conversion/:id", CanDelete, async (req, res) => {
     try {
         await db3.query("DELETE FROM grade_conversion WHERE id=?", [req.params.id]);
         res.json({ success: true });
@@ -142,7 +155,7 @@ router.get("/admin/honors-rules", async (req, res) => {
     }
 });
 
-router.post("/admin/honors-rules", async (req, res) => {
+router.post("/admin/honors-rules", requireCreateOrEdit, async (req, res) => {
     try {
         let { id, title, min_grade, max_allowed_grade, type } = req.body;
 
@@ -187,7 +200,7 @@ router.post("/admin/honors-rules", async (req, res) => {
     }
 });
 
-router.delete("/admin/honors-rules/:id", async (req, res) => {
+router.delete("/admin/honors-rules/:id", CanDelete, async (req, res) => {
     try {
         await db3.query("DELETE FROM honors_rules WHERE id=?", [req.params.id]);
         res.json({ success: true });

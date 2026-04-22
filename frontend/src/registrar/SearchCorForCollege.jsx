@@ -175,6 +175,8 @@ const SearchCorForCollege = () => {
     const [selectedStudent, setSelectedStudent] = useState(null);
     const [studentData, setStudentData] = useState([]);
     const [studentDetails, setStudentDetails] = useState([]);
+    const [corPreload, setCorPreload] = useState(null);
+    const [corPreloadLoading, setCorPreloadLoading] = useState(false);
     const [openSnackbar, setOpenSnackbar] = useState(false);
     const [snackbarMessage, setSnackbarMessage] = useState("");
     const [snackbarSeverity, setSnackbarSeverity] = useState("info");
@@ -194,13 +196,35 @@ const SearchCorForCollege = () => {
         if (!debouncedStudentNumber || debouncedStudentNumber.length < 5) {
             setSelectedStudent(null);
             setStudentData([]);
+            setCorPreload(null);
+            setCorPreloadLoading(false);
             return;
         }
 
         const fetchStudent = async () => {
             try {
-                const res = await fetch(`${API_BASE_URL}/api/program_evaluation/${debouncedStudentNumber}`);
+                setCorPreload(null);
+                setCorPreloadLoading(true);
+                const [res, preloadRes] = await Promise.all([
+                    fetch(`${API_BASE_URL}/api/program_evaluation/${debouncedStudentNumber}`),
+                    dprtmntID
+                        ? axios
+                            .post(
+                                `${API_BASE_URL}/student-tagging/dprtmnt`,
+                                {
+                                    studentNumber: debouncedStudentNumber,
+                                    dprtmntId: dprtmntID,
+                                },
+                                { headers: { "Content-Type": "application/json" } },
+                            )
+                            .catch((err) => {
+                                console.error("College COR preload failed:", err);
+                                return null;
+                            })
+                        : Promise.resolve(null),
+                ]);
                 const data = await res.json();
+                setCorPreload(preloadRes?.data || null);
 
                 console.log("Fetched student data:", data);
                 if (data) {
@@ -220,16 +244,20 @@ const SearchCorForCollege = () => {
                     setSelectedStudent(null);
                     setStudentData([]);
                     setStudentDetails([]);
+                    setCorPreload(null);
                     showSnackbar("No student data found.", "info");
                 }
             } catch (err) {
                 console.error("Error fetching student", err);
+                setCorPreload(null);
                 showSnackbar("Server error. Please try again.", "error");
+            } finally {
+                setCorPreloadLoading(false);
             }
         };
 
         fetchStudent();
-    }, [debouncedStudentNumber]);
+    }, [debouncedStudentNumber, dprtmntID]);
 
     const divToPrintRef = useRef();
     const [pdfLoading, setPdfLoading] = useState(false);
@@ -518,8 +546,13 @@ const SearchCorForCollege = () => {
                 }}
             >
                 <CertificateOfRegistrationForCollege
-                    student_number={debouncedStudentNumber}
+                    student_number={
+                        corPreload || !corPreloadLoading
+                            ? debouncedStudentNumber
+                            : ""
+                    }
                     dprtmnt_id={dprtmntID}
+                    preload={corPreload}
                     onNotify={({ message, severity }) => showSnackbar(message, severity)}
                 />
             </div>

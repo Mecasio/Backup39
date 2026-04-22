@@ -1,5 +1,10 @@
 const express = require('express');
 const { db, db3 } = require('../database/database');
+const {
+  CanCreate,
+  CanDelete,
+  CanEdit,
+} = require("../../middleware/pagePermissions");
 
 const router = express.Router();
 
@@ -21,7 +26,7 @@ router.get("/api/email-templates", async (req, res) => {
 });
 
 // CREATE template
-router.post("/api/email-templates", async (req, res) => {
+router.post("/api/email-templates", CanCreate, async (req, res) => {
   try {
     const { sender_name, department_id, employee_id, is_active = 1 } = req.body;
     if (!sender_name || !department_id)
@@ -31,7 +36,7 @@ router.post("/api/email-templates", async (req, res) => {
 
     const [result] = await db.query(
       "INSERT INTO email_templates (sender_name, department_id, employee_id, is_active) VALUES (?,  ?, ?, ?)",
-      [sender_name, department_id, is_active ? 1 : 0],
+      [sender_name, department_id, employee_id || null, is_active ? 1 : 0],
     );
     res.status(201).json({ template_id: result.insertId });
   } catch (err) {
@@ -41,7 +46,7 @@ router.post("/api/email-templates", async (req, res) => {
 });
 
 // UPDATE template
-router.put("/api/email-templates/:id", async (req, res) => {
+router.put("/api/email-templates/:id", CanEdit, async (req, res) => {
   try {
     const { sender_name, department_id, employee_id, is_active } = req.body;
 
@@ -65,7 +70,7 @@ router.put("/api/email-templates/:id", async (req, res) => {
 });
 
 // DELETE template
-router.delete("/api/email-templates/:id", async (req, res) => {
+router.delete("/api/email-templates/:id", CanDelete, async (req, res) => {
   try {
     const [result] = await db.query(
       "DELETE FROM email_templates WHERE template_id = ?",

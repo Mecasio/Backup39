@@ -35,9 +35,18 @@ const YearLevelPanel = () => {
   const [userRole, setUserRole] = useState("");
   const [employeeID, setEmployeeID] = useState("");
   const [hasAccess, setHasAccess] = useState(null);
+  const [canCreate, setCanCreate] = useState(false);
+  const [canEdit, setCanEdit] = useState(false);
+  const [canDelete, setCanDelete] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const pageId = 63;
+  const permissionHeaders = {
+    headers: {
+      "x-employee-id": employeeID,
+      "x-page-id": pageId,
+    },
+  };
 
   const [yearLevelDescription, setYearLevelDescription] = useState("");
   const [yearLevelList, setYearLevelList] = useState([]);
@@ -82,10 +91,23 @@ const YearLevelPanel = () => {
     setLoading(true);
     try {
       const response = await axios.get(`${API_BASE_URL}/api/page_access/${employeeID}/${pageId}`);
-      setHasAccess(response.data?.page_privilege === 1);
+      if (response.data?.page_privilege === 1) {
+        setHasAccess(true);
+        setCanCreate(Number(response.data?.can_create) === 1);
+        setCanEdit(Number(response.data?.can_edit) === 1);
+        setCanDelete(Number(response.data?.can_delete) === 1);
+      } else {
+        setHasAccess(false);
+        setCanCreate(false);
+        setCanEdit(false);
+        setCanDelete(false);
+      }
     } catch (err) {
       console.error("Error checking access:", err);
       setHasAccess(false);
+      setCanCreate(false);
+      setCanEdit(false);
+      setCanDelete(false);
       setSnackbar({ open: true, message: "Failed to check access", severity: "error" });
     } finally {
       setLoading(false);
@@ -118,7 +140,7 @@ const YearLevelPanel = () => {
       await axios.post(`${API_BASE_URL}/years_level`, {
         year_level_description: yearLevelDescription,
         level_type: levelType,
-      });
+      }, permissionHeaders);
       setYearLevelDescription("");
       fetchYearLevelList();
       setSnackbar({ open: true, message: "Year level added successfully!", severity: "success" });
@@ -136,6 +158,11 @@ const YearLevelPanel = () => {
   const [selectedId, setSelectedId] = useState(null);
 
   const handleEdit = (level) => {
+    if (!canEdit) {
+      setSnackbar({ open: true, message: "You do not have permission to edit this item", severity: "error" });
+      return;
+    }
+
     setEditMode(true);
     setSelectedId(level.year_level_id);
     setYearLevelDescription(level.year_level_description);
@@ -149,13 +176,23 @@ const YearLevelPanel = () => {
       return;
     }
 
+    if (editMode && !canEdit) {
+      setSnackbar({ open: true, message: "You do not have permission to edit this item", severity: "error" });
+      return;
+    }
+
+    if (!editMode && !canCreate) {
+      setSnackbar({ open: true, message: "You do not have permission to create items on this page", severity: "error" });
+      return;
+    }
+
     try {
       if (editMode) {
         // UPDATE
         await axios.put(`${API_BASE_URL}/years_level/${selectedId}`, {
           year_level_description: yearLevelDescription,
           level_type: levelType,
-        });
+        }, permissionHeaders);
 
         setSnackbar({ open: true, message: "Updated successfully!", severity: "success" });
       } else {
@@ -163,7 +200,7 @@ const YearLevelPanel = () => {
         await axios.post(`${API_BASE_URL}/years_level`, {
           year_level_description: yearLevelDescription,
           level_type: levelType,
-        });
+        }, permissionHeaders);
 
         setSnackbar({ open: true, message: "Added successfully!", severity: "success" });
       }
@@ -185,10 +222,15 @@ const YearLevelPanel = () => {
   };
 
   const handleDelete = async (id) => {
+    if (!canDelete) {
+      setSnackbar({ open: true, message: "You do not have permission to delete this item", severity: "error" });
+      return;
+    }
+
     if (!window.confirm("Are you sure you want to delete this?")) return;
 
     try {
-      await axios.delete(`${API_BASE_URL}/years_level/${id}`);
+      await axios.delete(`${API_BASE_URL}/years_level/${id}`, permissionHeaders);
       fetchYearLevelList();
       setSnackbar({ open: true, message: "Deleted successfully!", severity: "success" });
     } catch (err) {
@@ -230,7 +272,12 @@ const YearLevelPanel = () => {
 
                 <Button
                   variant="contained"
+                  disabled={!canCreate}
                   onClick={() => {
+                    if (!canCreate) {
+                      setSnackbar({ open: true, message: "You do not have permission to create items on this page", severity: "error" });
+                      return;
+                    }
                     setEditMode(false);
                     setSelectedId(null);
                     setYearLevelDescription("");
@@ -240,6 +287,7 @@ const YearLevelPanel = () => {
                   sx={{
                     backgroundColor: "#1976d2", // ✅ Blue
                     color: "#fff",
+                    opacity: canCreate ? 1 : 0.5,
                     fontWeight: "bold",
                     borderRadius: "8px",
                     width: "250px",
@@ -293,6 +341,7 @@ const YearLevelPanel = () => {
                       variant="contained"
                       size="small"
                       onClick={() => handleEdit(level)}
+                      disabled={!canEdit}
                       sx={{
                         backgroundColor: "green",
                         color: "white",
@@ -303,6 +352,8 @@ const YearLevelPanel = () => {
                         alignItems: "center",
                         justifyContent: "center",
                         gap: "5px",
+                        opacity: canEdit ? 1 : 0.5,
+                        cursor: canEdit ? "pointer" : "not-allowed",
                       }}
                     >
                       <EditIcon fontSize="small" /> Edit
@@ -312,6 +363,7 @@ const YearLevelPanel = () => {
                       variant="contained"
                       size="small"
                       onClick={() => handleDelete(level.year_level_id)}
+                      disabled={!canDelete}
                       sx={{
                         backgroundColor: "#9E0000",
                         color: "white",
@@ -322,6 +374,8 @@ const YearLevelPanel = () => {
                         alignItems: "center",
                         justifyContent: "center",
                         gap: "5px",
+                        opacity: canDelete ? 1 : 0.5,
+                        cursor: canDelete ? "pointer" : "not-allowed",
                       }}
                     >
                       <DeleteIcon fontSize="small" /> Delete

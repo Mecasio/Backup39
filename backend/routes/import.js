@@ -3361,19 +3361,17 @@ router.post("/api/import-xlsx", upload.single("file"), async (req, res) => {
         `SELECT 1
          FROM enrolled_subject
          WHERE student_number = ?
-           AND curriculum_id = ?
            AND active_school_year_id IN (?) 
          LIMIT 1`,
-        [studentNumber, curriculum.curriculum_id, activeSchoolYearIds],
+        [studentNumber, activeSchoolYearIds],
       );
 
       if (existingEnrolledRows.length > 0) {
         await connection.query(
           `DELETE FROM enrolled_subject
            WHERE student_number = ?
-             AND curriculum_id = ?
              AND active_school_year_id IN (?)`,
-          [studentNumber, curriculum.curriculum_id, activeSchoolYearIds],
+          [studentNumber, activeSchoolYearIds],
         );
       }
 
@@ -3381,19 +3379,17 @@ router.post("/api/import-xlsx", upload.single("file"), async (req, res) => {
         `SELECT 1
          FROM student_status_table
          WHERE student_number = ?
-           AND active_curriculum = ?
            AND active_school_year_id IN (?)
          LIMIT 1`,
-        [studentNumber, curriculum.curriculum_id, activeSchoolYearIds],
+        [studentNumber, activeSchoolYearIds],
       );
 
       if (existingStatusRows.length > 0) {
         await connection.query(
           `DELETE FROM student_status_table
            WHERE student_number = ?
-             AND active_curriculum = ?
              AND active_school_year_id IN (?)`,
-          [studentNumber, curriculum.curriculum_id, activeSchoolYearIds],
+          [studentNumber, activeSchoolYearIds],
         );
       }
     }

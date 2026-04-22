@@ -42,9 +42,18 @@ const SectionPanel = () => {
   const [userRole, setUserRole] = useState("");
   const [employeeID, setEmployeeID] = useState("");
   const [hasAccess, setHasAccess] = useState(null);
+  const [canCreate, setCanCreate] = useState(false);
+  const [canEdit, setCanEdit] = useState(false);
+  const [canDelete, setCanDelete] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const pageId = 57;
+  const permissionHeaders = {
+    headers: {
+      "x-employee-id": employeeID,
+      "x-page-id": pageId,
+    },
+  };
 
   const [description, setDescription] = useState('');
   const [sections, setSections] = useState([]);
@@ -54,6 +63,11 @@ const SectionPanel = () => {
 
 
   const handleEdit = (section) => {
+    if (!canEdit) {
+      setSnackbar({ open: true, message: "You do not have permission to edit this item", severity: "error" });
+      return;
+    }
+
     setEditId(section.id);
     setDescription(section.description);
     setOpenFormDialog(true);
@@ -104,10 +118,23 @@ const SectionPanel = () => {
     setLoading(true);
     try {
       const response = await axios.get(`${API_BASE_URL}/api/page_access/${employeeID}/${pageId}`);
-      setHasAccess(response.data?.page_privilege === 1);
+      if (response.data?.page_privilege === 1) {
+        setHasAccess(true);
+        setCanCreate(Number(response.data?.can_create) === 1);
+        setCanEdit(Number(response.data?.can_edit) === 1);
+        setCanDelete(Number(response.data?.can_delete) === 1);
+      } else {
+        setHasAccess(false);
+        setCanCreate(false);
+        setCanEdit(false);
+        setCanDelete(false);
+      }
     } catch (err) {
       console.error("Error checking access:", err);
       setHasAccess(false);
+      setCanCreate(false);
+      setCanEdit(false);
+      setCanDelete(false);
       setSnackbar({ open: true, message: "Failed to check access", severity: "error" });
     } finally {
       setLoading(false);
@@ -129,21 +156,31 @@ const SectionPanel = () => {
   }, []);
 
   const handleSubmit = async (event) => {
-    event.preventDefault();
+    event?.preventDefault?.();
 
     if (!description.trim()) {
       setSnackbar({ open: true, message: "Description required", severity: "warning" });
       return;
     }
 
+    if (editId && !canEdit) {
+      setSnackbar({ open: true, message: "You do not have permission to edit this item", severity: "error" });
+      return;
+    }
+
+    if (!editId && !canCreate) {
+      setSnackbar({ open: true, message: "You do not have permission to create items on this page", severity: "error" });
+      return;
+    }
+
     try {
       if (editId) {
         // UPDATE
-        await axios.put(`${API_BASE_URL}/section_table/${editId}`, { description });
+        await axios.put(`${API_BASE_URL}/section_table/${editId}`, { description }, permissionHeaders);
         setSnackbar({ open: true, message: "Section updated!", severity: "success" });
       } else {
         // INSERT
-        await axios.post(`${API_BASE_URL}/section_table`, { description });
+        await axios.post(`${API_BASE_URL}/section_table`, { description }, permissionHeaders);
         setSnackbar({ open: true, message: "Section added!", severity: "success" });
       }
 
@@ -164,8 +201,15 @@ const SectionPanel = () => {
   const handleConfirmDelete = async () => {
     if (!sectionToDelete) return;
 
+    if (!canDelete) {
+      setSnackbar({ open: true, message: "You do not have permission to delete this item", severity: "error" });
+      setOpenDeleteDialog(false);
+      setSectionToDelete(null);
+      return;
+    }
+
     try {
-      await axios.delete(`${API_BASE_URL}/section_table/${sectionToDelete.id}`);
+      await axios.delete(`${API_BASE_URL}/section_table/${sectionToDelete.id}`, permissionHeaders);
       setSnackbar({ open: true, message: "Section deleted!", severity: "success" });
       fetchSections();
     } catch (err) {
@@ -399,7 +443,12 @@ const SectionPanel = () => {
 
                     <Button
                       variant="contained"
+                      disabled={!canCreate}
                       onClick={() => {
+                        if (!canCreate) {
+                          setSnackbar({ open: true, message: "You do not have permission to create items on this page", severity: "error" });
+                          return;
+                        }
                         setEditId(null);
                         setDescription("");
                         setOpenFormDialog(true);
@@ -407,6 +456,7 @@ const SectionPanel = () => {
                       sx={{
                         backgroundColor: "#1976d2", // ✅ Blue
                         color: "#fff",
+                        opacity: canCreate ? 1 : 0.5,
                         fontWeight: "bold",
                         borderRadius: "8px",
                         width: "250px",
@@ -457,6 +507,7 @@ const SectionPanel = () => {
                     <Button
                       variant="contained"
                       size="small"
+                      disabled={!canEdit}
                       sx={{
                         backgroundColor: "green",
                         color: "white",
@@ -467,6 +518,8 @@ const SectionPanel = () => {
                         alignItems: "center",
                         justifyContent: "center",
                         gap: "5px",
+                        opacity: canEdit ? 1 : 0.5,
+                        cursor: canEdit ? "pointer" : "not-allowed",
                       }}
 
                       onClick={() => handleEdit(section)}
@@ -477,6 +530,7 @@ const SectionPanel = () => {
                     <Button
                       variant="contained"
                       size="small"
+                      disabled={!canDelete}
                       sx={{
                         backgroundColor: "#9E0000",
                         color: "white",
@@ -487,8 +541,14 @@ const SectionPanel = () => {
                         alignItems: "center",
                         justifyContent: "center",
                         gap: "5px",
+                        opacity: canDelete ? 1 : 0.5,
+                        cursor: canDelete ? "pointer" : "not-allowed",
                       }}
                       onClick={() => {
+                        if (!canDelete) {
+                          setSnackbar({ open: true, message: "You do not have permission to delete this item", severity: "error" });
+                          return;
+                        }
                         setSectionToDelete(section);
                         setOpenDeleteDialog(true);
                       }}

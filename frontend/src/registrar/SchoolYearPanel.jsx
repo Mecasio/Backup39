@@ -35,9 +35,18 @@ const SchoolYearPanel = () => {
   const [userRole, setUserRole] = useState("");
   const [employeeID, setEmployeeID] = useState("");
   const [hasAccess, setHasAccess] = useState(null);
+  const [canCreate, setCanCreate] = useState(false);
+  const [canEdit, setCanEdit] = useState(false);
+  const [canDelete, setCanDelete] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const pageId = 55;
+  const permissionHeaders = {
+    headers: {
+      "x-employee-id": employeeID,
+      "x-page-id": pageId,
+    },
+  };
 
   const [years, setYears] = useState([]);
   const [semesters, setSemesters] = useState([]);
@@ -78,9 +87,22 @@ const SchoolYearPanel = () => {
     setLoading(true);
     try {
       const response = await axios.get(`${API_BASE_URL}/api/page_access/${employeeID}/${pageId}`);
-      setHasAccess(response.data?.page_privilege === 1);
+      if (response.data?.page_privilege === 1) {
+        setHasAccess(true);
+        setCanCreate(Number(response.data?.can_create) === 1);
+        setCanEdit(Number(response.data?.can_edit) === 1);
+        setCanDelete(Number(response.data?.can_delete) === 1);
+      } else {
+        setHasAccess(false);
+        setCanCreate(false);
+        setCanEdit(false);
+        setCanDelete(false);
+      }
     } catch {
       setHasAccess(false);
+      setCanCreate(false);
+      setCanEdit(false);
+      setCanDelete(false);
       setSnackbar({ open: true, message: "Failed to check access", severity: "error" });
     } finally {
       setLoading(false);
@@ -121,13 +143,23 @@ const SchoolYearPanel = () => {
       return;
     }
 
+    if (editID && !canEdit) {
+      setSnackbar({ open: true, message: "You do not have permission to edit this item", severity: "error" });
+      return;
+    }
+
+    if (!editID && !canCreate) {
+      setSnackbar({ open: true, message: "You do not have permission to create items on this page", severity: "error" });
+      return;
+    }
+
     // If editing
     if (editID) {
       try {
         await axios.put(`${API_BASE_URL}/school_years/${editID}`, {
           year_id: selectedYear,
           semester_id: selectedSemester,
-        });
+        }, permissionHeaders);
         setSnackbar({ open: true, message: "School year updated successfully!", severity: "success" });
         setEditID(null);
         setSelectedYear("");
@@ -154,7 +186,7 @@ const SchoolYearPanel = () => {
         year_id: selectedYear,
         semester_id: selectedSemester,
         activator: 0,
-      });
+      }, permissionHeaders);
       setSelectedYear("");
       setSelectedSemester("");
       fetchSchoolYears();
@@ -165,6 +197,10 @@ const SchoolYearPanel = () => {
   };
 
   const handleEdit = (sy) => {
+    if (!canEdit) {
+      setSnackbar({ open: true, message: "You do not have permission to edit this item", severity: "error" });
+      return;
+    }
     setSelectedYear(sy.year_id);
     setSelectedSemester(sy.semester_id);
     setEditID(sy.school_year_id); // assuming backend returns school_year_id
@@ -176,9 +212,17 @@ const SchoolYearPanel = () => {
   const handleConfirmDelete = async () => {
     if (!schoolYearToDelete) return;
 
+    if (!canDelete) {
+      setSnackbar({ open: true, message: "You do not have permission to delete this item", severity: "error" });
+      setOpenDeleteDialog(false);
+      setSchoolYearToDelete(null);
+      return;
+    }
+
     try {
       await axios.delete(
-        `${API_BASE_URL}/school_years/${schoolYearToDelete.school_year_id}`
+        `${API_BASE_URL}/school_years/${schoolYearToDelete.school_year_id}`,
+        permissionHeaders,
       );
       setSnackbar({
         open: true,
@@ -418,14 +462,20 @@ const SchoolYearPanel = () => {
                     <Button
                       variant="contained"
                       onClick={() => {
+                        if (!canCreate) {
+                          setSnackbar({ open: true, message: "You do not have permission to create items on this page", severity: "error" });
+                          return;
+                        }
                         setEditID(null); // reset edit
                         setSelectedYear("");
                         setSelectedSemester("");
                         setOpenDialog(true);
                       }}
+                      disabled={!canCreate}
                       sx={{
                         backgroundColor: "#1976d2", // ✅ Blue
                         color: "#fff",
+                        opacity: canCreate ? 1 : 0.5,
                         fontWeight: "bold",
                         borderRadius: "8px",
                         width: "250px",
@@ -481,6 +531,7 @@ const SchoolYearPanel = () => {
                   >
                     <Button
                       size="small"
+                      disabled={!canEdit}
                       sx={{
                         backgroundColor: "green",
                         color: "white",
@@ -491,6 +542,8 @@ const SchoolYearPanel = () => {
                         alignItems: "center",
                         justifyContent: "center",
                         gap: "5px",
+                        opacity: canEdit ? 1 : 0.5,
+                        cursor: canEdit ? "pointer" : "not-allowed",
                       }}
                       onClick={() => {
                         handleEdit(sy);
@@ -502,6 +555,7 @@ const SchoolYearPanel = () => {
 
                     <Button
                       size="small"
+                      disabled={!canDelete}
                       sx={{
                         backgroundColor: "#9E0000",
                         color: "white",
@@ -512,8 +566,14 @@ const SchoolYearPanel = () => {
                         alignItems: "center",
                         justifyContent: "center",
                         gap: "5px",
+                        opacity: canDelete ? 1 : 0.5,
+                        cursor: canDelete ? "pointer" : "not-allowed",
                       }}
                       onClick={() => {
+                        if (!canDelete) {
+                          setSnackbar({ open: true, message: "You do not have permission to delete this item", severity: "error" });
+                          return;
+                        }
                         setSchoolYearToDelete(sy);
                         setOpenDeleteDialog(true);
                       }}

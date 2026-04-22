@@ -150,6 +150,8 @@ const SearchCertificateOfRegistration = () => {
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [studentData, setStudentData] = useState([]);
   const [studentDetails, setStudentDetails] = useState([]);
+  const [corPreload, setCorPreload] = useState(null);
+  const [corPreloadLoading, setCorPreloadLoading] = useState(false);
   const [openSnackbar, setOpenSnackbar] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
   const [snackbarSeverity, setSnackbarSeverity] = useState("info");
@@ -167,13 +169,31 @@ const SearchCertificateOfRegistration = () => {
     if (!debouncedStudentNumber || debouncedStudentNumber.length < 5) {
       setSelectedStudent(null);
       setStudentData([]);
+      setCorPreload(null);
+      setCorPreloadLoading(false);
       return;
     }
 
     const fetchStudent = async () => {
       try {
-        const res = await fetch(`${API_BASE_URL}/api/program_evaluation/${debouncedStudentNumber}`);
+        setCorPreload(null);
+        setCorPreloadLoading(true);
+        const [res, preloadRes] = await Promise.all([
+          fetch(`${API_BASE_URL}/api/program_evaluation/${debouncedStudentNumber}`),
+          axios
+            .post(
+              `${API_BASE_URL}/student-tagging`,
+              { studentNumber: debouncedStudentNumber },
+              { headers: { "Content-Type": "application/json" } },
+            )
+            .catch((err) => {
+              console.error("COR preload failed:", err);
+              return null;
+            }),
+        ]);
+
         const data = await res.json();
+        setCorPreload(preloadRes?.data || null);
 
 
         if (data) {
@@ -192,11 +212,15 @@ const SearchCertificateOfRegistration = () => {
           setSelectedStudent(null);
           setStudentData([]);
           setStudentDetails([]);
+          setCorPreload(null);
           showSnackbar("No student data found.", "info");
         }
       } catch (err) {
         console.error("Error fetching student", err);
+        setCorPreload(null);
         showSnackbar("Server error. Please try again.", "error");
+      } finally {
+        setCorPreloadLoading(false);
       }
     };
 
@@ -529,7 +553,10 @@ const SearchCertificateOfRegistration = () => {
         }}
       >
         <CertificateOfRegistration
-          student_number={debouncedStudentNumber}
+          student_number={
+            corPreload || !corPreloadLoading ? debouncedStudentNumber : ""
+          }
+          preload={corPreload}
           onNotify={({ message, severity }) => showSnackbar(message, severity)}
         />
       </div>

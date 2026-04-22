@@ -3,6 +3,11 @@ const path = require("path");
 const fs = require("fs");
 const { db, db3 } = require("../database/database");
 const { announcementUpload } = require("../../middleware/uploads");
+const {
+  CanCreate,
+  CanDelete,
+  CanEdit,
+} = require("../../middleware/pagePermissions");
 
 const router = express.Router();
 
@@ -34,7 +39,7 @@ router.get("/announcements", async (req, res) => {
 });
 
 //EDITED 4:40PM 14/03/2026
-router.post("/announcements", announcementUpload.single("image"), async (req, res) => {
+router.post("/announcements", CanCreate, announcementUpload.single("image"), async (req, res) => {
   const {
     title,
     content,
@@ -108,7 +113,7 @@ const [result] = await db.execute(
 }
 );
 //EDITED 4:40PM 14/03/2026
-router.put("/announcements/:id", announcementUpload.single("image"), async (req, res) => {
+router.put("/announcements/:id", CanEdit, announcementUpload.single("image"), async (req, res) => {
   const { id } = req.params;
   const { title, content, valid_days, target_role } = req.body;
 
@@ -185,7 +190,7 @@ router.put("/announcements/:id", announcementUpload.single("image"), async (req,
   }
 });
 
-router.delete("/announcements/:id", async (req, res) => {
+router.delete("/announcements/:id", CanDelete, async (req, res) => {
   const { id } = req.params;
 
   try {

@@ -34,7 +34,7 @@ import API_BASE_URL from "../apiConfig";
 
 const CertificateOfRegistrationForCollege = forwardRef(
 
-  ({ student_number, dprtmnt_id, onNotify }, divToPrintRef) => {
+  ({ student_number, dprtmnt_id, onNotify, preload }, divToPrintRef) => {
     const settings = useContext(SettingsContext);
     const [fetchedLogo, setFetchedLogo] = useState(null);
     const [companyName, setCompanyName] = useState("");
@@ -155,6 +155,22 @@ const CertificateOfRegistrationForCollege = forwardRef(
 
     const [hasAccess, setHasAccess] = useState(null);
     const [approvedBy, setApprovedBy] = useState(null);
+    const [approvedBySignatureMissing, setApprovedBySignatureMissing] =
+      useState(false);
+    const approvedBySignature =
+      typeof approvedBy?.signature_image === "string"
+        ? approvedBy.signature_image.trim()
+        : "";
+    const approvedBySignatureUrl = approvedBySignature
+      ? `${API_BASE_URL}/uploads/${approvedBySignature}`
+      : "";
+    const showApprovedBySignature = Boolean(
+      student_number && approvedBySignatureUrl && !approvedBySignatureMissing,
+    );
+
+    useEffect(() => {
+      setApprovedBySignatureMissing(false);
+    }, [approvedBySignatureUrl]);
 
     useEffect(() => {
       const fetchApprovedBy = async () => {
@@ -444,18 +460,22 @@ const CertificateOfRegistrationForCollege = forwardRef(
 
       const fetchStudent = async () => {
         try {
-          // 1. Authenticate and tag student
-          const response = await axios.post(
-            `${API_BASE_URL}/student-tagging/dprtmnt`,
-            { studentNumber: student_number, dprtmntId: dprtmnt_id },
-            { headers: { "Content-Type": "application/json" } },
-          );
+          let tagged = preload;
 
-          setTotalLecFees(Number(response.data.totalLecFee || 0));
-          setTotalLabFees(Number(response.data.totalLabFee || 0));
-          setIsHaveNSTP(Number(response.data.totalNstpCount || 0));
-          setIsHaveComputerFees(Number(response.data.totalComputerLab || 0));
-          setIsHaveLaboratory(Number(response.data.totalLaboratory || 0));
+          if (!tagged) {
+            const response = await axios.post(
+              `${API_BASE_URL}/student-tagging/dprtmnt`,
+              { studentNumber: student_number, dprtmntId: dprtmnt_id },
+              { headers: { "Content-Type": "application/json" } },
+            );
+            tagged = response.data;
+          }
+
+          setTotalLecFees(Number(tagged.totalLecFee || 0));
+          setTotalLabFees(Number(tagged.totalLabFee || 0));
+          setIsHaveNSTP(Number(tagged.totalNstpCount || 0));
+          setIsHaveComputerFees(Number(tagged.totalComputerLab || 0));
+          setIsHaveLaboratory(Number(tagged.totalLaboratory || 0));
 
           const {
             token2,
@@ -474,7 +494,7 @@ const CertificateOfRegistrationForCollege = forwardRef(
             firstName: first_name,
             middleName: middle_name,
             lastName: last_name,
-          } = response.data;
+          } = tagged;
 
           console.log("data[0]:", data[0]);
           console.log(course_unit);
@@ -526,14 +546,9 @@ const CertificateOfRegistrationForCollege = forwardRef(
             },
           ]);
 
-          // 2. Fetch full student data (COR info)
-          const corResponse = await axios.get(
-            `${API_BASE_URL}/student-data/${studentNum}`,
-          );
-          const fullData = corResponse.data;
+          const fullData = tagged.corData || {};
           setData((prev) => [{ ...(prev[0] || {}), ...fullData }]);
 
-          // 3. Set additional fields: gender, age, email, program
           setGender(fullData.gender || null);
           setAge(fullData.age || null);
           console.log(age);
@@ -551,7 +566,7 @@ const CertificateOfRegistrationForCollege = forwardRef(
       };
 
       fetchStudent();
-    }, [student_number, dprtmnt_id]);
+    }, [student_number, dprtmnt_id, preload]);
 
     useEffect(() => {
       if (!student_number || !student_number.trim()) return;
@@ -4089,10 +4104,13 @@ const CertificateOfRegistrationForCollege = forwardRef(
                         </tr>
                         <tr>
                           <td style={{ textAlign: "center", fontSize: "11px" }}>
-                            {approvedBy?.signature_image && (
+                            {showApprovedBySignature ? (
                               <img
-                                src={`${API_BASE_URL}/uploads/${approvedBy.signature_image}`}
+                                src={approvedBySignatureUrl}
                                 alt="Signature"
+                                onError={() =>
+                                  setApprovedBySignatureMissing(true)
+                                }
                                 style={{
                                   height: "60px",
                                   objectFit: "contain",
@@ -4101,6 +4119,13 @@ const CertificateOfRegistrationForCollege = forwardRef(
                                   display: !student_number ? "none" : "block",
                                   marginLeft: "auto",
                                   marginRight: "auto",
+                                }}
+                              />
+                            ) : (
+                              <div
+                                style={{
+                                  height: "60px",
+                                  display: !student_number ? "none" : "block",
                                 }}
                               />
                             )}

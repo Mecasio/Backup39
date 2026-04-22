@@ -191,6 +191,22 @@ const CertificateOfRegistration = forwardRef(
 
     const [hasAccess, setHasAccess] = useState(null);
     const [approvedBy, setApprovedBy] = useState(null);
+    const [approvedBySignatureMissing, setApprovedBySignatureMissing] =
+      useState(false);
+    const approvedBySignature =
+      typeof approvedBy?.signature_image === "string"
+        ? approvedBy.signature_image.trim()
+        : "";
+    const approvedBySignatureUrl = approvedBySignature
+      ? `${API_BASE_URL}/uploads/${approvedBySignature}`
+      : "";
+    const showApprovedBySignature = Boolean(
+      student_number && approvedBySignatureUrl && !approvedBySignatureMissing,
+    );
+
+    useEffect(() => {
+      setApprovedBySignatureMissing(false);
+    }, [approvedBySignatureUrl]);
 
     useEffect(() => {
       const fetchApprovedBy = async () => {
@@ -4134,10 +4150,13 @@ const CertificateOfRegistration = forwardRef(
                         </tr>
                         <tr>
                           <td style={{ textAlign: "center", fontSize: "11px" }}>
-                            {approvedBy?.signature_image && (
+                            {showApprovedBySignature ? (
                               <img
-                                src={`${API_BASE_URL}/uploads/${approvedBy.signature_image}`}
+                                src={approvedBySignatureUrl}
                                 alt="Signature"
+                                onError={() =>
+                                  setApprovedBySignatureMissing(true)
+                                }
                                 style={{
                                   height: "60px",
                                   objectFit: "contain",
@@ -4146,6 +4165,13 @@ const CertificateOfRegistration = forwardRef(
                                   display: !student_number ? "none" : "block",
                                   marginLeft: "auto",
                                   marginRight: "auto",
+                                }}
+                              />
+                            ) : (
+                              <div
+                                style={{
+                                  height: "60px",
+                                  display: !student_number ? "none" : "block",
                                 }}
                               />
                             )}

@@ -1,5 +1,10 @@
 const express = require('express');
 const { db, db3 } = require('../database/database');
+const {
+  CanCreate,
+  CanDelete,
+  CanEdit,
+} = require("../../middleware/pagePermissions");
 
 const router = express.Router();
 
@@ -19,7 +24,36 @@ router.get("/api/year-levels", async (req, res) => {
   }
 });
 
-router.put("/years_level/:id", async (req, res) => {
+router.post("/years_level", CanCreate, async (req, res) => {
+  const { year_level_description, level_type } = req.body;
+
+  if (!year_level_description) {
+    return res
+      .status(400)
+      .json({ error: "year_level_description is required" });
+  }
+
+  const query =
+    "INSERT INTO year_level_table (year_level_description, level_type) VALUES (?, ?)";
+
+  try {
+    const [result] = await db3.query(query, [
+      year_level_description,
+      level_type || "year",
+    ]);
+
+    res.status(201).json({
+      year_level_id: result.insertId,
+      year_level_description,
+      level_type,
+    });
+  } catch (err) {
+    console.error("Insert error:", err);
+    res.status(500).json({ error: "Insert failed", details: err.message });
+  }
+});
+
+router.put("/years_level/:id", CanEdit, async (req, res) => {
   const { id } = req.params;
   const { year_level_description, level_type } = req.body;
 
@@ -42,7 +76,7 @@ router.put("/years_level/:id", async (req, res) => {
   }
 });
 
-router.delete("/years_level/:id", async (req, res) => {
+router.delete("/years_level/:id", CanDelete, async (req, res) => {
   const { id } = req.params;
 
   try {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext, useRef } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import { SettingsContext } from "../App";
 import {
   Box,
@@ -34,12 +34,8 @@ const RequirementUploader = () => {
   const [titleColor, setTitleColor] = useState("#000000");
   const [subtitleColor, setSubtitleColor] = useState("#555555");
   const [borderColor, setBorderColor] = useState("#000000");
-  const [mainButtonColor, setMainButtonColor] = useState("#1976d2");
-
-  const [fetchedLogo, setFetchedLogo] = useState(null);
   const [companyName, setCompanyName] = useState("");
   const [shortTerm, setShortTerm] = useState("");
-  const [campusAddress, setCampusAddress] = useState("");
 
   useEffect(() => {
     if (!settings) return;
@@ -48,20 +44,10 @@ const RequirementUploader = () => {
     if (settings.title_color) setTitleColor(settings.title_color);
     if (settings.subtitle_color) setSubtitleColor(settings.subtitle_color);
     if (settings.border_color) setBorderColor(settings.border_color);
-    if (settings.main_button_color)
-      setMainButtonColor(settings.main_button_color);
-
-    // 🏫 Logo
-    if (settings.logo_url) {
-      setFetchedLogo(`${API_BASE_URL}${settings.logo_url}`);
-    } else {
-      setFetchedLogo(EaristLogo);
-    }
 
     // 🏷️ School Information
     if (settings.company_name) setCompanyName(settings.company_name);
     if (settings.short_term) setShortTerm(settings.short_term);
-    if (settings.campus_address) setCampusAddress(settings.campus_address);
   }, [settings]);
 
   const [requirements, setRequirements] = useState([]); // ✅ dynamic requirements
@@ -151,23 +137,19 @@ const RequirementUploader = () => {
     }
   }, []);
 
-  const [totalRequirements, setTotalRequirements] = useState(0);
-
-  useEffect(() => {
-    const fetchTotalRequirements = async () => {
-      try {
-        const res = await axios.get(`${API_BASE_URL}/total-requirements`);
-        setTotalRequirements(res.data.total);
-      } catch (err) {
-        console.error("Error fetching total requirements:", err);
-      }
-    };
-
-    fetchTotalRequirements();
-  }, []);
-
   const handleUpload = async (key, file) => {
     if (!file) return;
+
+    const personId = userID || localStorage.getItem("person_id");
+
+    if (!personId) {
+      setSnack({
+        open: true,
+        severity: "error",
+        message: "Unable to upload: applicant ID was not found.",
+      });
+      return;
+    }
 
     // ✅ 4MB check
     const maxSize = 4 * 1024 * 1024;
@@ -186,16 +168,28 @@ const RequirementUploader = () => {
     const formData = new FormData();
     formData.append("file", file);
     formData.append("requirements_id", key);
-    formData.append("person_id", userID);
+    formData.append("person_id", personId);
 
     try {
       await axios.post(`${API_BASE_URL}/api/upload`, formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
-      fetchUploads(userID);
+      await fetchUploads(personId);
+
+      setSnack({
+        open: true,
+        severity: "success",
+        message: "File uploaded successfully.",
+      });
     } catch (err) {
       console.error("Upload error:", err);
+
+      setSelectedFiles((prev) => {
+        const next = { ...prev };
+        delete next[key];
+        return next;
+      });
 
       setSnack({
         open: true,
@@ -334,7 +328,7 @@ const RequirementUploader = () => {
               >
                 Browse File
                 <input
-                  key={selectedFiles[doc.key] || Date.now()}
+                  key={selectedFiles[doc.id] || `empty-${doc.id}`}
                   hidden
                   type="file"
                   accept=".jpg,.jpeg,.png,.pdf"

@@ -76,10 +76,19 @@ const TOSF = () => {
   const [user, setUser] = useState("");
   const [userRole, setUserRole] = useState("");
   const [hasAccess, setHasAccess] = useState(null);
+  const [canCreate, setCanCreate] = useState(false);
+  const [canEdit, setCanEdit] = useState(false);
+  const [canDelete, setCanDelete] = useState(false);
   const [loading, setLoading] = useState(false);
   const pageId = 99;
 
   const [employeeID, setEmployeeID] = useState("");
+  const permissionHeaders = {
+    headers: {
+      "x-employee-id": employeeID,
+      "x-page-id": pageId,
+    },
+  };
 
   useEffect(() => {
 
@@ -109,12 +118,21 @@ const TOSF = () => {
       const response = await axios.get(`${API_BASE_URL}/api/page_access/${employeeID}/${pageId}`);
       if (response.data && response.data.page_privilege === 1) {
         setHasAccess(true);
+        setCanCreate(Number(response.data?.can_create) === 1);
+        setCanEdit(Number(response.data?.can_edit) === 1);
+        setCanDelete(Number(response.data?.can_delete) === 1);
       } else {
         setHasAccess(false);
+        setCanCreate(false);
+        setCanEdit(false);
+        setCanDelete(false);
       }
     } catch (error) {
       console.error('Error checking access:', error);
       setHasAccess(false);
+      setCanCreate(false);
+      setCanEdit(false);
+      setCanDelete(false);
       if (error.response && error.response.data.message) {
         console.log(error.response.data.message);
       } else {
@@ -227,12 +245,22 @@ const TOSF = () => {
 
   // Handle submit for create or update
   const saveTosf = async () => {
+    if (editingId && !canEdit) {
+      showSnackbar("You do not have permission to edit this item", "error");
+      return;
+    }
+
+    if (!editingId && !canCreate) {
+      showSnackbar("You do not have permission to create items on this page", "error");
+      return;
+    }
+
     try {
       if (editingId) {
-        await axios.put(`${API_BASE_URL}/update_tosf/${editingId}`, formData);
+        await axios.put(`${API_BASE_URL}/update_tosf/${editingId}`, formData, permissionHeaders);
         showSnackbar("Data successfully updated!");
       } else {
-        await axios.post(`${API_BASE_URL}/insert_tosf`, formData);
+        await axios.post(`${API_BASE_URL}/insert_tosf`, formData, permissionHeaders);
         showSnackbar("Data successfully inserted!");
       }
       setFormData({
@@ -270,12 +298,20 @@ const TOSF = () => {
 
   // Handle edit
   const handleEdit = (item) => {
+    if (!canEdit) {
+      showSnackbar("You do not have permission to edit this item", "error");
+      return;
+    }
     setFormData(item);
     setEditingId(item.tosf_id);
   };
 
   // Open delete dialog
   const handleDeleteDialog = (tosf_id) => {
+    if (!canDelete) {
+      showSnackbar("You do not have permission to delete this item", "error");
+      return;
+    }
     setSelectedId(tosf_id);
     setDialogOpen(true);
   };
@@ -310,8 +346,14 @@ const TOSF = () => {
 
   // Confirm delete
   const handleDeleteConfirm = async () => {
+    if (!canDelete) {
+      showSnackbar("You do not have permission to delete this item", "error");
+      setDialogOpen(false);
+      setSelectedId(null);
+      return;
+    }
     try {
-      await axios.delete(`${API_BASE_URL}/delete_tosf/${selectedId}`);
+      await axios.delete(`${API_BASE_URL}/delete_tosf/${selectedId}`, permissionHeaders);
       showSnackbar("Data successfully deleted!");
       fetchTosf();
     } catch (error) {
@@ -526,15 +568,26 @@ const TOSF = () => {
   };
 
   const saveScholarshipType = async () => {
+    if (editingScholarshipId && !canEdit) {
+      showSnackbar("You do not have permission to edit this item", "error");
+      return;
+    }
+
+    if (!editingScholarshipId && !canCreate) {
+      showSnackbar("You do not have permission to create items on this page", "error");
+      return;
+    }
+
     try {
       if (editingScholarshipId) {
         await axios.put(
           `${API_BASE_URL}/update_scholarship_type/${editingScholarshipId}`,
-          scholarshipForm
+          scholarshipForm,
+          permissionHeaders,
         );
         showSnackbar("Scholarship type updated successfully!");
       } else {
-        await axios.post(`${API_BASE_URL}/insert_scholarship_type`, scholarshipForm);
+        await axios.post(`${API_BASE_URL}/insert_scholarship_type`, scholarshipForm, permissionHeaders);
         showSnackbar("Scholarship type added successfully!");
       }
 
@@ -556,6 +609,10 @@ const TOSF = () => {
   };
 
   const handleScholarshipEdit = (item) => {
+    if (!canEdit) {
+      showSnackbar("You do not have permission to edit this item", "error");
+      return;
+    }
     setScholarshipForm({
       scholarship_name: item.scholarship_name || "",
       scholarship_status: Number(item.scholarship_status ?? 1),
@@ -569,14 +626,24 @@ const TOSF = () => {
   };
 
   const handleScholarshipDelete = (id) => {
+    if (!canDelete) {
+      showSnackbar("You do not have permission to delete this item", "error");
+      return;
+    }
     setSelectedScholarshipId(id);
     setScholarshipDeleteDialogOpen(true);
   };
 
   const executeScholarshipDelete = async () => {
     if (!selectedScholarshipId) return;
+    if (!canDelete) {
+      showSnackbar("You do not have permission to delete this item", "error");
+      setScholarshipDeleteDialogOpen(false);
+      setSelectedScholarshipId(null);
+      return;
+    }
     try {
-      await axios.delete(`${API_BASE_URL}/delete_scholarship_type/${selectedScholarshipId}`);
+      await axios.delete(`${API_BASE_URL}/delete_scholarship_type/${selectedScholarshipId}`, permissionHeaders);
       showSnackbar("Scholarship type deleted successfully!");
       fetchScholarshipTypes();
     } catch (error) {
@@ -670,7 +737,10 @@ const TOSF = () => {
             <Button
               type="submit"
               variant="contained"
-
+              disabled={editingId ? !canEdit : !canCreate}
+              sx={{
+                opacity: editingId ? (canEdit ? 1 : 0.5) : (canCreate ? 1 : 0.5),
+              }}
             >
               {editingId ? "Update Fee" : (
                 <>
@@ -838,6 +908,7 @@ const TOSF = () => {
                   <Button
                     onClick={() => handleEdit(item)}
                     size="small"
+                    disabled={!canEdit}
                     sx={{
                       backgroundColor: "green",
                       color: "white",
@@ -848,6 +919,8 @@ const TOSF = () => {
                       alignItems: "center",
                       justifyContent: "center",
                       gap: "5px",
+                      opacity: canEdit ? 1 : 0.5,
+                      cursor: canEdit ? "pointer" : "not-allowed",
                     }}
                   >
                     <EditIcon fontSize="small" /> Edit
@@ -856,6 +929,7 @@ const TOSF = () => {
                   <Button
                     onClick={() => handleDeleteDialog(item.tosf_id)}
                     size="small"
+                    disabled={!canDelete}
                     sx={{
                       backgroundColor: "#9E0000",
                       color: "white",
@@ -866,6 +940,8 @@ const TOSF = () => {
                       alignItems: "center",
                       justifyContent: "center",
                       gap: "5px",
+                      opacity: canDelete ? 1 : 0.5,
+                      cursor: canDelete ? "pointer" : "not-allowed",
                     }}
                   >
                     <DeleteIcon fontSize="small" /> Delete
@@ -1110,6 +1186,7 @@ const TOSF = () => {
                     <Button
                       onClick={() => handleScholarshipEdit(item)}
                       size="small"
+                      disabled={!canEdit}
                       sx={{
                         backgroundColor: "green",
                         color: "white",
@@ -1120,6 +1197,8 @@ const TOSF = () => {
                         alignItems: "center",
                         justifyContent: "center",
                         gap: "5px",
+                        opacity: canEdit ? 1 : 0.5,
+                        cursor: canEdit ? "pointer" : "not-allowed",
                       }}
                     >
                       <EditIcon fontSize="small" /> Edit
@@ -1127,6 +1206,7 @@ const TOSF = () => {
                     <Button
                       onClick={() => handleScholarshipDelete(item.id)}
                       size="small"
+                      disabled={!canDelete}
                       sx={{
                         backgroundColor: "#9E0000",
                         color: "white",
@@ -1137,6 +1217,8 @@ const TOSF = () => {
                         alignItems: "center",
                         justifyContent: "center",
                         gap: "5px",
+                        opacity: canDelete ? 1 : 0.5,
+                        cursor: canDelete ? "pointer" : "not-allowed",
                       }}
                     >
                       <DeleteIcon fontSize="small" /> Delete

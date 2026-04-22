@@ -134,7 +134,7 @@ function LabeledField({ label, value, onChange, select, children, borderColor, w
 }
 
 // ─── SaveButton ───────────────────────────────────────────────────────────
-function SaveButton({ isEdit, onClick, headerColor, borderColor }) {
+function SaveButton({ isEdit, onClick, headerColor, borderColor, disabled = false }) {
     return (
         <Button
             variant="contained"
@@ -143,6 +143,7 @@ function SaveButton({ isEdit, onClick, headerColor, borderColor }) {
                 : <AddCircleOutlineIcon sx={{ fontSize: "16px" }} />
             }
             onClick={onClick}
+            disabled={disabled}
             sx={{
                 fontWeight: 700,
                 fontSize: "0.78rem",
@@ -157,6 +158,7 @@ function SaveButton({ isEdit, onClick, headerColor, borderColor }) {
                 boxShadow: "none",
                 whiteSpace: "nowrap",
                 alignSelf: "flex-end",
+                opacity: disabled ? 0.5 : 1,
                 "&:hover": {
                     backgroundColor: headerColor,
                     opacity: 0.88,
@@ -171,7 +173,7 @@ function SaveButton({ isEdit, onClick, headerColor, borderColor }) {
 }
 
 // ─── ActionButton ─────────────────────────────────────────────────────────
-function ActionButton({ label, icon, onClick, color = "green" }) {
+function ActionButton({ label, icon, onClick, color = "green", disabled = false }) {
     const isGreen = color === "green";
     return (
         <Button
@@ -179,6 +181,7 @@ function ActionButton({ label, icon, onClick, color = "green" }) {
             size="small"
             startIcon={icon}
             onClick={onClick}
+            disabled={disabled}
             sx={{
                 fontWeight: 700,
                 fontSize: "0.75rem",
@@ -189,6 +192,7 @@ function ActionButton({ label, icon, onClick, color = "green" }) {
                 px: 2,
                 py: 0.75,
                 minWidth: 88,
+                opacity: disabled ? 0.5 : 1,
                 background: isGreen
                     ? `linear-gradient(135deg, ${C.greenDark}, ${C.greenMid})`
                     : `linear-gradient(135deg, ${C.redDark}, ${C.redMid})`,
@@ -330,9 +334,18 @@ const GradeConversionAdmin = () => {
     const [user, setUser] = useState("");
     const [userRole, setUserRole] = useState("");
     const [hasAccess, setHasAccess] = useState(null);
+    const [canCreate, setCanCreate] = useState(false);
+    const [canEdit, setCanEdit] = useState(false);
+    const [canDelete, setCanDelete] = useState(false);
     const [loading, setLoading] = useState(false);
     const pageId = 144;
     const [employeeID, setEmployeeID] = useState("");
+    const permissionHeaders = {
+        headers: {
+            "x-employee-id": employeeID,
+            "x-page-id": pageId,
+        },
+    };
 
     useEffect(() => {
         const storedUser = localStorage.getItem("email");
@@ -361,12 +374,21 @@ const GradeConversionAdmin = () => {
             );
             if (response.data && response.data.page_privilege === 1) {
                 setHasAccess(true);
+                setCanCreate(Number(response.data?.can_create) === 1);
+                setCanEdit(Number(response.data?.can_edit) === 1);
+                setCanDelete(Number(response.data?.can_delete) === 1);
             } else {
                 setHasAccess(false);
+                setCanCreate(false);
+                setCanEdit(false);
+                setCanDelete(false);
             }
         } catch (error) {
             console.error("Error checking access:", error);
             setHasAccess(false);
+            setCanCreate(false);
+            setCanEdit(false);
+            setCanDelete(false);
             setLoading(false);
         }
     };
@@ -398,8 +420,18 @@ const GradeConversionAdmin = () => {
     }, [hasAccess]);
 
     const handleSave = async () => {
+        if (form.id && !canEdit) {
+            setSnack({ open: true, message: "You do not have permission to edit this item", severity: "error" });
+            return;
+        }
+
+        if (!form.id && !canCreate) {
+            setSnack({ open: true, message: "You do not have permission to create items on this page", severity: "error" });
+            return;
+        }
+
         try {
-            await axios.post(`${API_BASE_URL}/admin/grade-conversion`, form);
+            await axios.post(`${API_BASE_URL}/admin/grade-conversion`, form, permissionHeaders);
             setForm({ id: null, min_score: "", max_score: "", equivalent_grade: "", descriptive_rating: "" });
             fetchData();
             setSnack({ open: true, message: "Grade entry saved successfully!", severity: "success" });
@@ -409,10 +441,20 @@ const GradeConversionAdmin = () => {
         }
     };
 
-    const handleEdit = (row) => setForm(row);
+    const handleEdit = (row) => {
+        if (!canEdit) {
+            setSnack({ open: true, message: "You do not have permission to edit this item", severity: "error" });
+            return;
+        }
+        setForm(row);
+    };
 
     const handleDelete = async (id) => {
-        await axios.delete(`${API_BASE_URL}/admin/grade-conversion/${id}`);
+        if (!canDelete) {
+            setSnack({ open: true, message: "You do not have permission to delete this item", severity: "error" });
+            return;
+        }
+        await axios.delete(`${API_BASE_URL}/admin/grade-conversion/${id}`, permissionHeaders);
         fetchData();
         setSnack({ open: true, message: "Entry deleted.", severity: "info" });
     };
@@ -444,8 +486,18 @@ const GradeConversionAdmin = () => {
     }, [hasAccess]);
 
     const handleSaveHonor = async () => {
+        if (honorForm.id && !canEdit) {
+            setSnack({ open: true, message: "You do not have permission to edit this item", severity: "error" });
+            return;
+        }
+
+        if (!honorForm.id && !canCreate) {
+            setSnack({ open: true, message: "You do not have permission to create items on this page", severity: "error" });
+            return;
+        }
+
         try {
-            await axios.post(`${API_BASE_URL}/admin/honors-rules`, honorForm);
+            await axios.post(`${API_BASE_URL}/admin/honors-rules`, honorForm, permissionHeaders);
             setHonorForm({ id: null, title: "", min_grade: "", max_allowed_grade: "", type: "semester" });
             fetchHonors();
             setSnack({ open: true, message: "Honors rule saved!", severity: "success" });
@@ -455,7 +507,11 @@ const GradeConversionAdmin = () => {
     };
 
     const handleDeleteHonor = async (id) => {
-        await axios.delete(`${API_BASE_URL}/admin/honors-rules/${id}`);
+        if (!canDelete) {
+            setSnack({ open: true, message: "You do not have permission to delete this item", severity: "error" });
+            return;
+        }
+        await axios.delete(`${API_BASE_URL}/admin/honors-rules/${id}`, permissionHeaders);
         fetchHonors();
         setSnack({ open: true, message: "Honors rule deleted.", severity: "info" });
     };
@@ -571,6 +627,7 @@ const GradeConversionAdmin = () => {
                             onClick={handleSave}
                             headerColor={resolvedHeader}
                             borderColor={resolvedBorder}
+                            disabled={form.id ? !canEdit : !canCreate}
                         />
                     </Stack>
                 </Box>
@@ -635,12 +692,14 @@ const GradeConversionAdmin = () => {
                                                 icon={<EditIcon sx={{ fontSize: "14px" }} />}
                                                 onClick={() => handleEdit(row)}
                                                 color="green"
+                                                disabled={!canEdit}
                                             />
                                             <ActionButton
                                                 label="Delete"
                                                 icon={<DeleteIcon sx={{ fontSize: "14px" }} />}
                                                 onClick={() => handleDelete(row.id)}
                                                 color="red"
+                                                disabled={!canDelete}
                                             />
                                         </Stack>
                                     </TdCell>
@@ -729,6 +788,7 @@ const GradeConversionAdmin = () => {
                             onClick={handleSaveHonor}
                             headerColor={resolvedHeader}
                             borderColor={resolvedBorder}
+                            disabled={honorForm.id ? !canEdit : !canCreate}
                         />
                     </Stack>
                 </Box>
@@ -810,14 +870,22 @@ const GradeConversionAdmin = () => {
                                             <ActionButton
                                                 label="Edit"
                                                 icon={<EditIcon sx={{ fontSize: "14px" }} />}
-                                                onClick={() => setHonorForm(row)}
+                                                onClick={() => {
+                                                    if (!canEdit) {
+                                                        setSnack({ open: true, message: "You do not have permission to edit this item", severity: "error" });
+                                                        return;
+                                                    }
+                                                    setHonorForm(row);
+                                                }}
                                                 color="green"
+                                                disabled={!canEdit}
                                             />
                                             <ActionButton
                                                 label="Delete"
                                                 icon={<DeleteIcon sx={{ fontSize: "14px" }} />}
                                                 onClick={() => handleDeleteHonor(row.id)}
                                                 color="red"
+                                                disabled={!canDelete}
                                             />
                                         </Stack>
                                     </TdCell>

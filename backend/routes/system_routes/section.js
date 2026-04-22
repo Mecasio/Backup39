@@ -1,10 +1,15 @@
 const express = require('express');
 const { db, db3 } = require('../database/database');
+const {
+  CanCreate,
+  CanDelete,
+  CanEdit,
+} = require("../../middleware/pagePermissions");
 
 const router = express.Router();
 
 // INSERT WITH DUPLICATE CHECK
-router.post("/section_table", async (req, res) => {
+router.post("/section_table", CanCreate, async (req, res) => {
   const { description } = req.body;
   if (!description) {
     return res.status(400).json({ error: "Description is required" });
@@ -35,7 +40,7 @@ router.post("/section_table", async (req, res) => {
 });
 
 // UPDATE SECTION
-router.put("/section_table/:id", async (req, res) => {
+router.put("/section_table/:id", CanEdit, async (req, res) => {
   const { id } = req.params;
   const { description } = req.body;
 
@@ -64,7 +69,7 @@ router.put("/section_table/:id", async (req, res) => {
 });
 
 // DELETE SECTION
-router.delete("/section_table/:id", async (req, res) => {
+router.delete("/section_table/:id", CanDelete, async (req, res) => {
   const { id } = req.params;
 
   try {

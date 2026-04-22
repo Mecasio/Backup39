@@ -85,6 +85,9 @@ const DepartmentRegistration = () => {
   const [user, setUser] = useState("");
   const [userRole, setUserRole] = useState("");
   const [hasAccess, setHasAccess] = useState(null);
+  const [canCreate, setCanCreate] = useState(false);
+  const [canEdit, setCanEdit] = useState(false);
+  const [canDelete, setCanDelete] = useState(false);
   const [loading, setLoading] = useState(false);
   const [snack, setSnack] = useState({
     open: false,
@@ -94,6 +97,12 @@ const DepartmentRegistration = () => {
   const pageId = 21;
 
   const [employeeID, setEmployeeID] = useState("");
+  const permissionHeaders = {
+    headers: {
+      "x-employee-id": employeeID,
+      "x-page-id": pageId,
+    },
+  };
 
   useEffect(() => {
 
@@ -123,12 +132,21 @@ const DepartmentRegistration = () => {
       const response = await axios.get(`${API_BASE_URL}/api/page_access/${employeeID}/${pageId}`);
       if (response.data && response.data.page_privilege === 1) {
         setHasAccess(true);
+        setCanCreate(Number(response.data?.can_create) === 1);
+        setCanEdit(Number(response.data?.can_edit) === 1);
+        setCanDelete(Number(response.data?.can_delete) === 1);
       } else {
         setHasAccess(false);
+        setCanCreate(false);
+        setCanEdit(false);
+        setCanDelete(false);
       }
     } catch (error) {
       console.error('Error checking access:', error);
       setHasAccess(false);
+      setCanCreate(false);
+      setCanEdit(false);
+      setCanDelete(false);
       if (error.response && error.response.data.message) {
         console.log(error.response.data.message);
       } else {
@@ -164,11 +182,30 @@ const DepartmentRegistration = () => {
       return;
     }
 
+    if (editMode && !canEdit) {
+      setSnack({
+        open: true,
+        message: "You do not have permission to edit this item",
+        severity: "error",
+      });
+      return;
+    }
+
+    if (!editMode && !canCreate) {
+      setSnack({
+        open: true,
+        message: "You do not have permission to create items on this page",
+        severity: "error",
+      });
+      return;
+    }
+
     try {
       if (editMode) {
         await axios.put(
           `${API_BASE_URL}/department/${selectedId}`,
-          department
+          department,
+          permissionHeaders,
         );
 
         setSnack({
@@ -177,7 +214,7 @@ const DepartmentRegistration = () => {
           severity: "success",
         });
       } else {
-        await axios.post(`${API_BASE_URL}/department`, department);
+        await axios.post(`${API_BASE_URL}/department`, department, permissionHeaders);
 
         setSnack({
           open: true,
@@ -202,6 +239,15 @@ const DepartmentRegistration = () => {
   };
 
   const handleEdit = (dept) => {
+    if (!canEdit) {
+      setSnack({
+        open: true,
+        message: "You do not have permission to edit this item",
+        severity: "error",
+      });
+      return;
+    }
+
     setDepartment({
       dep_name: dept.dprtmnt_name,
       dep_code: dept.dprtmnt_code,
@@ -212,11 +258,20 @@ const DepartmentRegistration = () => {
   };
 
   const handleDelete = async (id) => {
+    if (!canDelete) {
+      setSnack({
+        open: true,
+        message: "You do not have permission to delete this item",
+        severity: "error",
+      });
+      return;
+    }
+
     if (!window.confirm("Are you sure you want to delete this department?"))
       return;
 
     try {
-      await axios.delete(`${API_BASE_URL}/department/${id}`);
+      await axios.delete(`${API_BASE_URL}/department/${id}`, permissionHeaders);
 
       setSnack({
         open: true,
@@ -311,8 +366,9 @@ const DepartmentRegistration = () => {
 
         <Button
           variant="contained"
+          disabled={!canCreate}
           sx={{
-
+            opacity: canCreate ? 1 : 0.5,
             textTransform: "none",
             fontWeight: 600,
             px: 3,
@@ -320,6 +376,14 @@ const DepartmentRegistration = () => {
             "&:hover": { opacity: 0.9 },
           }}
           onClick={() => {
+            if (!canCreate) {
+              setSnack({
+                open: true,
+                message: "You do not have permission to create items on this page",
+                severity: "error",
+              });
+              return;
+            }
             setEditMode(false);
             setDepartment({ dep_name: "", dep_code: "" });
             setOpenModal(true);
@@ -396,8 +460,10 @@ const DepartmentRegistration = () => {
                         alignItems: "center",
                         justifyContent: "center",
                         gap: "5px",
+                        opacity: canEdit ? 1 : 0.5,
+                        cursor: canEdit ? "pointer" : "not-allowed",
                       }}
-
+                      disabled={!canEdit}
                       onClick={() => handleEdit(department)}
                     >
                       <EditIcon fontSize="small" /> Edit
@@ -416,7 +482,10 @@ const DepartmentRegistration = () => {
                         alignItems: "center",
                         justifyContent: "center",
                         gap: "5px",
+                        opacity: canDelete ? 1 : 0.5,
+                        cursor: canDelete ? "pointer" : "not-allowed",
                       }}
+                      disabled={!canDelete}
                       onClick={() =>
                         handleDelete(department.dprtmnt_id)
                       }

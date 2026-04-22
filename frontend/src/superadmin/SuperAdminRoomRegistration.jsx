@@ -96,11 +96,20 @@ const RoomRegistration = () => {
   const [user, setUser] = useState("");
   const [userRole, setUserRole] = useState("");
   const [hasAccess, setHasAccess] = useState(null);
+  const [canCreate, setCanCreate] = useState(false);
+  const [canEdit, setCanEdit] = useState(false);
+  const [canDelete, setCanDelete] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const pageId = 52;
+  const pageId = 85;
 
   const [employeeID, setEmployeeID] = useState("");
+  const permissionHeaders = {
+    headers: {
+      "x-employee-id": employeeID,
+      "x-page-id": pageId,
+    },
+  };
 
   useEffect(() => {
 
@@ -130,12 +139,21 @@ const RoomRegistration = () => {
       const response = await axios.get(`${API_BASE_URL}/api/page_access/${employeeID}/${pageId}`);
       if (response.data && response.data.page_privilege === 1) {
         setHasAccess(true);
+        setCanCreate(Number(response.data?.can_create) === 1);
+        setCanEdit(Number(response.data?.can_edit) === 1);
+        setCanDelete(Number(response.data?.can_delete) === 1);
       } else {
         setHasAccess(false);
+        setCanCreate(false);
+        setCanEdit(false);
+        setCanDelete(false);
       }
     } catch (error) {
       console.error('Error checking access:', error);
       setHasAccess(false);
+      setCanCreate(false);
+      setCanEdit(false);
+      setCanDelete(false);
       if (error.response && error.response.data.message) {
         console.log(error.response.data.message);
       } else {
@@ -144,9 +162,6 @@ const RoomRegistration = () => {
       setLoading(false);
     }
   };
-
-
-
 
   // 🔹 Room management states
   const [roomName, setRoomName] = useState("");
@@ -193,6 +208,15 @@ const RoomRegistration = () => {
       return;
     }
 
+    if (!canCreate) {
+      setSnack({
+        open: true,
+        message: "You do not have permission to create items on this page",
+        severity: "error",
+      });
+      return;
+    }
+
     try {
       await axios.post(`${API_BASE_URL}/adding_room`, {
         room_description: roomName,
@@ -202,7 +226,7 @@ const RoomRegistration = () => {
         type,
         branch,
         updated_by: employeeID,
-      });
+      }, permissionHeaders);
 
       setSnack({
         open: true,
@@ -290,6 +314,15 @@ const RoomRegistration = () => {
 
 
   const handleEditRoom = (room) => {
+    if (!canEdit) {
+      setSnack({
+        open: true,
+        message: "You do not have permission to edit this item",
+        severity: "error",
+      });
+      return;
+    }
+
     setEditingRoom(room);
     setBuildingName(room.building_description || "");
     setRoomName(room.room_description || "");
@@ -306,6 +339,15 @@ const RoomRegistration = () => {
   const handleUpdateRoom = async () => {
     if (!editingRoom) return;
 
+    if (!canEdit) {
+      setSnack({
+        open: true,
+        message: "You do not have permission to edit this item",
+        severity: "error",
+      });
+      return;
+    }
+
     try {
       await axios.put(
         `${API_BASE_URL}/update_room/${editingRoom.room_id}`,
@@ -317,7 +359,8 @@ const RoomRegistration = () => {
           type,
           branch,
           updated_by: employeeID,
-        }
+        },
+        permissionHeaders,
       );
 
       setSnack({
@@ -347,8 +390,17 @@ const RoomRegistration = () => {
 
   // 🔹 Delete room (automatic, no confirm)
   const handleDeleteRoom = async (roomId) => {
+    if (!canDelete) {
+      setSnack({
+        open: true,
+        message: "You do not have permission to delete this item",
+        severity: "error",
+      });
+      return;
+    }
+
     try {
-      await axios.delete(`${API_BASE_URL}/delete_room/${roomId}`);
+      await axios.delete(`${API_BASE_URL}/delete_room/${roomId}`, permissionHeaders);
       setSnack({
         open: true,
         message: "Room deleted successfully",
@@ -460,10 +512,29 @@ const RoomRegistration = () => {
                     {/* RIGHT SIDE BUTTON */}
                     <Button
                       variant="contained"
-                      onClick={() => setOpenFormDialog(true)}
+                      onClick={() => {
+                        if (!canCreate) {
+                          setSnack({
+                            open: true,
+                            message: "You do not have permission to create items on this page",
+                            severity: "error",
+                          });
+                          return;
+                        }
+                        setEditingRoom(null);
+                        setRoomName("");
+                        setBuildingName("");
+                        setFloor("");
+                        setType("");
+                        setBranch(1);
+                        setIsAircon(0);
+                        setOpenFormDialog(true);
+                      }}
+                      disabled={!canCreate}
                       sx={{
                         backgroundColor: "#1976d2", // ✅ Blue
                         color: "#fff",
+                        opacity: canCreate ? 1 : 0.5,
                         fontWeight: "bold",
                         borderRadius: "8px",
                         width: "250px",
@@ -772,6 +843,7 @@ const RoomRegistration = () => {
                       <Button
                         variant="contained"
                         size="small"
+                        disabled={!canEdit}
                         sx={{
                           backgroundColor: "green",
                           color: "white",
@@ -782,6 +854,8 @@ const RoomRegistration = () => {
                           alignItems: "center",
                           justifyContent: "center",
                           gap: "5px",
+                          opacity: canEdit ? 1 : 0.5,
+                          cursor: canEdit ? "pointer" : "not-allowed",
                         }}
                         onClick={() => handleEditRoom(room)}
                       >
@@ -791,6 +865,7 @@ const RoomRegistration = () => {
                       <Button
                         variant="contained"
                         size="small"
+                        disabled={!canDelete}
                         sx={{
                           backgroundColor: "#9E0000",
                           color: "white",
@@ -801,8 +876,18 @@ const RoomRegistration = () => {
                           alignItems: "center",
                           justifyContent: "center",
                           gap: "5px",
+                          opacity: canDelete ? 1 : 0.5,
+                          cursor: canDelete ? "pointer" : "not-allowed",
                         }}
                         onClick={() => {
+                          if (!canDelete) {
+                            setSnack({
+                              open: true,
+                              message: "You do not have permission to delete this item",
+                              severity: "error",
+                            });
+                            return;
+                          }
                           setRoomToDelete(room);
                           setOpenDeleteDialog(true);
                         }}
@@ -1070,6 +1155,14 @@ const RoomRegistration = () => {
             }}
             onClick={() => {
               if (editingRoom) {
+                if (!canEdit) {
+                  setSnack({
+                    open: true,
+                    message: "You do not have permission to edit this item",
+                    severity: "error",
+                  });
+                  return;
+                }
                 setOpenUpdateDialog(true);
               } else {
                 handleAddRoom();

@@ -1,6 +1,11 @@
 const express = require('express');
 const multer = require("multer");
 const { db, db3 } = require('../database/database');
+const {
+  CanCreate,
+  CanDelete,
+  CanEdit,
+} = require("../../middleware/pagePermissions");
 
 const router = express.Router();
 
@@ -14,7 +19,7 @@ router.get("/tosf", async (req, res) => {
   }
 });
 
-router.post("/insert_tosf", async (req, res) => {
+router.post("/insert_tosf", CanCreate, async (req, res) => {
   const {
     athletic_fee,
     cultural_fee,
@@ -69,7 +74,7 @@ router.post("/insert_tosf", async (req, res) => {
   }
 });
 
-router.put("/update_tosf/:tosf_id", async (req, res) => {
+router.put("/update_tosf/:tosf_id", CanEdit, async (req, res) => {
   const { tosf_id } = req.params;
 
   const {
@@ -128,7 +133,7 @@ router.put("/update_tosf/:tosf_id", async (req, res) => {
   }
 });
 
-router.delete("/delete_tosf/:tosf_id", async (req, res) => {
+router.delete("/delete_tosf/:tosf_id", CanDelete, async (req, res) => {
   const { tosf_id } = req.params;
 
   try {
@@ -160,7 +165,7 @@ router.get("/scholarship_types", async (req, res) => {
   }
 });
 
-router.post("/insert_scholarship_type", async (req, res) => {
+router.post("/insert_scholarship_type", CanCreate, async (req, res) => {
   const { scholarship_name, scholarship_status, created_at } = req.body;
 
   if (!scholarship_name || !String(scholarship_name).trim()) {
@@ -195,7 +200,7 @@ router.post("/insert_scholarship_type", async (req, res) => {
   }
 });
 
-router.put("/update_scholarship_type/:id", async (req, res) => {
+router.put("/update_scholarship_type/:id", CanEdit, async (req, res) => {
   const { id } = req.params;
   const { scholarship_name, rfd, tfd, mfd, nfd, afd, scholarship_status } = req.body;
 
@@ -231,7 +236,7 @@ router.put("/update_scholarship_type/:id", async (req, res) => {
   }
 });
 
-router.delete("/delete_scholarship_type/:id", async (req, res) => {
+router.delete("/delete_scholarship_type/:id", CanDelete, async (req, res) => {
   const { id } = req.params;
 
   try {

@@ -93,7 +93,6 @@ const CoursePanel = () => {
     prereq: "",
     corequisite: "",
     is_included: 1,
-
     include_summa: 1,
     include_magna: 1,
     include_cum: 1,
@@ -104,6 +103,7 @@ const CoursePanel = () => {
   const [feeRules, setFeeRules] = useState([]);
   const [selectedGlobalFees, setSelectedGlobalFees] = useState([]);
 
+  // ✅ ADD PERMISSION STATES
   const [canCreate, setCanCreate] = useState(false);
   const [canEdit, setCanEdit] = useState(false);
   const [canDelete, setCanDelete] = useState(false);
@@ -171,6 +171,7 @@ const CoursePanel = () => {
     fetchHonorRules();
   }, []);
 
+  // ✅ UPDATED checkAccess
   const checkAccess = async (employeeID) => {
     try {
       const response = await axios.get(
@@ -290,7 +291,6 @@ const CoursePanel = () => {
         [name]: value,
       };
 
-      // Auto compute total
       const lec = parseFloat(updated.lec_unit) || 0;
       const lab = parseFloat(updated.lab_unit) || 0;
       updated.course_unit = (lec + lab).toFixed(2);
@@ -304,14 +304,15 @@ const CoursePanel = () => {
     setSnack((prev) => ({ ...prev, open: false }));
   };
 
+  // ✅ UPDATED handleAddingCourse
   const handleAddingCourse = async () => {
-    if(!course_code || !course_description) {
+    if(!course.course_code || !course.course_description) {
       showSnack('Please fill all fields', 'warning');
       return;
     }
 
     if(!canCreate) {
-      showSnack('You do not have permission to create items on this page', 'error')
+      showSnack('You do not have permission to create items on this page', 'error');
       return;
     }
     
@@ -323,7 +324,6 @@ const CoursePanel = () => {
         lab_unit: parseFloat(course.lab_unit) || 0,
         prereq: course.prereq || null,
         corequisite: course.corequisite || null,
-
         is_included: Number(course.is_included) || 0,
         include_summa: Number(course.include_summa) ?? 1,
         include_magna: Number(course.include_magna) ?? 1,
@@ -353,7 +353,13 @@ const CoursePanel = () => {
     }
   };
 
+  // ✅ UPDATED handleEdit
   const handleEdit = (item) => {
+    if (!canEdit) {
+      showSnack("You do not have permission to edit this item", "error");
+      return;
+    }
+
     setCourse({
       course_code: item.course_code ?? "",
       course_description: item.course_description ?? "",
@@ -363,7 +369,6 @@ const CoursePanel = () => {
       prereq: item.prereq ?? "",
       corequisite: item.corequisite ?? "",
       is_included: item.is_included ?? 1,
-
       include_summa: item.include_summa ?? 1,
       include_magna: item.include_magna ?? 1,
       include_cum: item.include_cum ?? 1,
@@ -371,17 +376,18 @@ const CoursePanel = () => {
 
     setEditMode(true);
     setEditId(item.course_id);
-    setOpenCourseDialog(true); // ✅ OPEN DIALOG
+    setOpenCourseDialog(true);
   };
 
+  // ✅ UPDATED handleUpdateCourse
   const handleUpdateCourse = async () => {
     if (!editId) {
       showSnack("Invalid course selected.", "error");
       return;
     }
 
-    if(!canEdit) {
-      showSnack('You do not have permission to edit anything in this page', 'warning');
+    if (!canEdit) {
+      showSnack("You do not have permission to edit this item", "error");
       return;
     }
 
@@ -395,11 +401,10 @@ const CoursePanel = () => {
         corequisite: course.corequisite || null,
       });
 
-      await fetchCourses(); // ✅ wait for refresh
+      await fetchCourses();
 
       showSnack("Course updated successfully!", "success");
 
-      // ✅ CLOSE ONLY AFTER SUCCESS
       setOpenCourseDialog(false);
 
       setEditMode(false);
@@ -426,9 +431,10 @@ const CoursePanel = () => {
     }
   };
 
+  // ✅ UPDATED handleDelete
   const handleDelete = async (id) => {
-    if(!canDelete) {
-      showSnack('You do not have permission to delete in this page.', 'warning');
+    if (!canDelete) {
+      showSnack("You do not have permission to delete this item", "error");
       return;
     }
 
@@ -446,13 +452,14 @@ const CoursePanel = () => {
     }
   };
 
+  // ✅ UPDATED handleCourseImport
   const handleCourseImport = async (event) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    if(!canCreate) {
-      showSnack('You do not have permission to upload a file in this page', 'warning');
-      event.target.value = '';
+    if (!canCreate) {
+      showSnack("You do not have permission to create items on this page.", "error");
+      event.target.value = "";
       return;
     }
 
@@ -533,7 +540,6 @@ const CoursePanel = () => {
         p: 2,
       }}
     >
-      {/* ===== HEADER ===== */}
       <Box
         sx={{
           display: "flex",
@@ -592,7 +598,7 @@ const CoursePanel = () => {
           <Button
             variant="contained"
             onClick={() => importInputRef.current?.click()}
-            disabled={!canCreate || importingXlsx}
+            disabled={importingXlsx || !canCreate}
             sx={{
               height: 40,
               mb: 2,
@@ -643,7 +649,7 @@ const CoursePanel = () => {
               >
                 <Box
                   display="flex"
-                  justifyContent="space-between" // Left & right sides
+                  justifyContent="space-between"
                   alignItems="center"
                   flexWrap="wrap"
                   gap={1}
@@ -651,7 +657,6 @@ const CoursePanel = () => {
                   <Typography fontSize="14px" fontWeight="bold" color="white">
                     Total Subjects: {filteredCourses.length}
                   </Typography>
-                  {/* Right side: Pagination / Filtering Controls */}
                   <Box
                     display="flex"
                     alignItems="center"
@@ -710,7 +715,6 @@ const CoursePanel = () => {
                       Prev
                     </Button>
 
-                    {/* Page Dropdown */}
                     <FormControl size="small" sx={{ minWidth: 80 }}>
                       <Select
                         value={currentPage}
@@ -804,7 +808,12 @@ const CoursePanel = () => {
                     </Button>
                     <Button
                       variant="contained"
+                      disabled={!canCreate}
                       onClick={() => {
+                        if (!canCreate) {
+                          showSnack("You do not have permission to create items on this page", "error");
+                          return;
+                        }
                         setEditMode(false);
                         setCourse({
                           course_code: "",
@@ -822,7 +831,7 @@ const CoursePanel = () => {
                         setOpenCourseDialog(true);
                       }}
                       sx={{
-                        backgroundColor: "#1976d2", // ✅ Blue
+                        backgroundColor: "#1976d2",
                         color: "#fff",
                         fontWeight: "bold",
                         borderRadius: "8px",
@@ -831,7 +840,7 @@ const CoursePanel = () => {
                         px: 2,
                         mr: "15px",
                         "&:hover": {
-                          backgroundColor: "#1565c0", // darker blue hover
+                          backgroundColor: "#1565c0",
                         },
                       }}
                     >
@@ -883,7 +892,6 @@ const CoursePanel = () => {
 
           <tbody>
             {currentCourses.map((c, index) => {
-              // decide fee per course
               const courseFee = feeRules.find((fee) => {
                 if (fee.fee_code === "NSTP_SPECIAL_FEE") {
                   return Number(c.is_nstp) === 1;
@@ -899,7 +907,7 @@ const CoursePanel = () => {
 
               return (
                 <tr key={c.course_id}>
-                  <td style={styles.tableCell}>{index + 1}</td>
+                  <td style={styles.tableCell}>{indexOfFirstItem + index + 1}</td>
                   <td style={styles.tableCell}>{c.course_code}</td>
                   <td style={styles.tableCell}>{c.course_description}</td>
                   <td style={styles.tableCell}>{c.lec_unit}</td>
@@ -929,14 +937,6 @@ const CoursePanel = () => {
                     {Number(c.include_cum) === 1 ? "YES" : "NO"}
                   </td>
 
-                  {/* ✅ SINGLE FEE CELL */}
-                  {/* <td style={styles.tableCell}>
-                      {courseFee ? courseFee.description : "—"}
-                    </td>
-                    <td style={styles.tableCell}>
-                      {courseFee ? `₱${Number(courseFee.amount).toFixed(2)}` : "₱0.00"}
-                    </td> */}
-
                   <td style={styles.tableCell}>
                     <div
                       style={{
@@ -946,44 +946,50 @@ const CoursePanel = () => {
                       }}
                     >
                       <button
-                        disabled = {!canEdit}
                         onClick={() => handleEdit(c)}
+                        disabled={!canEdit}
                         style={{
                           backgroundColor: "green",
                           color: "white",
                           border: "none",
                           borderRadius: "5px",
                           padding: "8px 14px",
-                          cursor: "pointer",
+                          cursor: canEdit ? "pointer" : "not-allowed",
                           width: "100px",
                           height: "40px",
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
                           gap: "5px",
+                          opacity: canEdit ? 1 : 0.5,
                         }}
                       >
                         <EditIcon fontSize="small" /> Edit
                       </button>
                       <button
-                        disabled = {!canEdit}
                         onClick={() => {
+                          if (!canDelete) {
+                            showSnack("You do not have permission to delete this item", "error");
+                            return;
+                          }
                           setCourseToDelete(c);
                           setOpenDeleteDialog(true);
                         }}
+                        disabled={!canDelete}
                         style={{
                           backgroundColor: "#9E0000",
                           color: "white",
                           border: "none",
                           borderRadius: "5px",
                           padding: "8px 14px",
-                          cursor: "pointer",
+                          cursor: canDelete ? "pointer" : "not-allowed",
                           width: "100px",
                           height: "40px",
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
                           gap: "5px",
+                          opacity: canDelete ? 1 : 0.5,
                         }}
                       >
                         <DeleteIcon fontSize="small" /> Delete
@@ -996,6 +1002,8 @@ const CoursePanel = () => {
           </tbody>
         </table>
       </div>
+
+      {/* Bottom pagination table - same as top */}
       <TableContainer component={Paper} sx={{ width: "100%" }}>
         <Table size="small">
           <TableHead sx={{ backgroundColor: "#6D2323", color: "white" }}>
@@ -1011,7 +1019,7 @@ const CoursePanel = () => {
               >
                 <Box
                   display="flex"
-                  justifyContent="space-between" // Left & right sides
+                  justifyContent="space-between"
                   alignItems="center"
                   flexWrap="wrap"
                   gap={1}
@@ -1019,7 +1027,6 @@ const CoursePanel = () => {
                   <Typography fontSize="14px" fontWeight="bold" color="white">
                     Total Subjects: {filteredCourses.length}
                   </Typography>
-                  {/* Right side: Pagination / Filtering Controls */}
                   <Box
                     display="flex"
                     alignItems="center"
@@ -1078,7 +1085,6 @@ const CoursePanel = () => {
                       Prev
                     </Button>
 
-                    {/* Page Dropdown */}
                     <FormControl size="small" sx={{ minWidth: 80 }}>
                       <Select
                         value={currentPage}
@@ -1194,7 +1200,7 @@ const CoursePanel = () => {
 
         <DialogActions>
           <Button
-     color="error"
+            color="error"
             variant="outlined"
             onClick={() => setOpenDeleteDialog(false)}
           >
@@ -1215,7 +1221,6 @@ const CoursePanel = () => {
         </DialogActions>
       </Dialog>
 
-      {/* ✅ Snackbar */}
       <Snackbar
         key={snack.key}
         open={snack.open}
@@ -1225,7 +1230,7 @@ const CoursePanel = () => {
       >
         <Alert
           onClose={handleClose}
-          severity={snack.severity} // ✅ Use severity: "success" | "error" | "info" | "warning"
+          severity={snack.severity}
           sx={{ width: "100%" }}
         >
           {snack.message}
@@ -1245,7 +1250,6 @@ const CoursePanel = () => {
           },
         }}
       >
-        {/* ===== HEADER ===== */}
         <DialogTitle
           sx={{
             background: settings?.header_color || "#1976d2",
@@ -1259,7 +1263,6 @@ const CoursePanel = () => {
           {editMode ? "Edit Course" : "Add New Course"}
         </DialogTitle>
 
-        {/* ===== CONTENT ===== */}
         <DialogContent sx={{ p: 3 }}>
           <Grid container spacing={2}>
             <Grid item xs={12} md={4}>
@@ -1418,7 +1421,6 @@ const CoursePanel = () => {
           </Grid>
         </DialogContent>
 
-        {/* ===== ACTIONS ===== */}
         <DialogActions
           sx={{
             px: 3,
@@ -1428,7 +1430,7 @@ const CoursePanel = () => {
         >
           <Button
             onClick={() => setOpenCourseDialog(false)}
-      color="error"
+            color="error"
             variant="outlined"
           >
             Cancel
@@ -1443,13 +1445,13 @@ const CoursePanel = () => {
             }}
             onClick={() => {
               if (editMode) {
-                handleUpdateCourse(); // already closes on success
+                handleUpdateCourse();
               } else {
                 handleAddingCourse();
               }
             }}
           >
-            <SaveIcon fontSize="small" /> Save
+            <SaveIcon fontSize="small" sx={{ mr: 1 }} /> Save
           </Button>
         </DialogActions>
       </Dialog>
