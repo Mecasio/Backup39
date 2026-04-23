@@ -171,9 +171,7 @@ const RequirementUploader = () => {
     formData.append("person_id", personId);
 
     try {
-      await axios.post(`${API_BASE_URL}/api/upload`, formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
+      await axios.post(`${API_BASE_URL}/api/applicant/upload`, formData);
 
       await fetchUploads(personId);
 

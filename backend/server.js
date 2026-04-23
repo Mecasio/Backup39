@@ -852,7 +852,7 @@ async function getActorInfo(user_person_id) {
   return { actorEmail, actorName };
 }
 
-app.post("/api/upload", upload.single("file"), async (req, res) => {
+const handleApplicantRequirementUpload = async (req, res) => {
   const { requirements_id, person_id, remarks } = req.body;
 
   if (!requirements_id || !person_id || !req.file) {
@@ -957,7 +957,15 @@ app.post("/api/upload", upload.single("file"), async (req, res) => {
       .status(500)
       .json({ error: "Failed to save upload", details: err.message });
   }
-});
+};
+
+app.post(
+  "/api/applicant/upload",
+  upload.single("file"),
+  handleApplicantRequirementUpload,
+);
+
+app.post("/api/upload", upload.single("file"), handleApplicantRequirementUpload);
 
 //  ADMIN DELETE
 app.delete("/admin/uploads/:uploadId", async (req, res) => {
